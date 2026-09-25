@@ -1,0 +1,201 @@
+rules_version = '2';
+
+// Firestore security rules for منصة بيئيين.
+//
+// Notes:
+// - The legacy demo allowed open access; these rules keep the SAME user-visible
+//   behavior while locking writes down to owners/participants.
+// - Messages are readable ONLY by their participants, and list queries must be
+//   constrained the same way (Firestore verifies both). Messages created by the
+//   legacy app have no `participants` field and are therefore NOT client-readable
+//   until `npm run migrate:messages` backfills them (the Admin SDK migration is
+//   unaffected by these rules).
+// - `chatId` and `participants` must be consistent (`chat_{orgUid}_{specUid}`),
+//   which prevents injecting messages or chats into unrelated conversations.
+// - Admin status changes bypass these rules via the server-only Admin SDK.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function approvedOrganization(appId, uid) {
+      return get(/databases/(default)/documents/artifacts/$(appId)/public/data/organizations/$(uid)).data.status == 'approved';
+    }
+
+    function approvedSpecialist(appId, uid) {
+      return get(/databases/(default)/documents/artifacts/$(appId)/public/data/specialists/$(uid)).data.status == 'approved';
+    }
+
+    // ---------- Specialists ----------
+    match /artifacts/{appId}/public/data/specialists/{uid} {
+      // Full profiles are private to their owner. Organization-facing views use
+      // the server-authenticated public directory projection instead.
+      allow read: if signedIn() && request.auth.uid == uid;
+
+      // Registration creates are always pending. Approval is privileged and is
+      // performed by the server-side registration policy or Admin SDK only.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly([
+          'status', 'fullName', 'nationalId', 'email', 'phone', 'license',
+          'issueDate', 'licenseDocUrl', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'fullName', 'nationalId', 'email', 'phone', 'license', 'createdAt'
+        ]);
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        // The affected-key allowlist is the immutability boundary: status,
+        // nationalId, license, and createdAt cannot be changed by the owner.
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'fullName', 'email', 'phone', 'edu', 'years', 'exp', 'portfolio',
+          'profilePic', 'resumeFile'
+        ]);
+
+      allow delete: if false;
+    }
+
+    // ---------- Organizations ----------
+    match /artifacts/{appId}/public/data/organizations/{uid} {
+      // Full organization profiles are private to their owner. The specialist
+      // directory uses the server-authenticated public projection.
+      allow read: if signedIn() && request.auth.uid == uid;
+
+      // Registration creates are always pending. Approval is privileged and is
+      // performed by the server-side registration policy or Admin SDK only.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly([
+          'status', 'orgName', 'crNumber', 'phone', 'orgDesc', 'crDocUrl', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'orgName', 'crNumber', 'phone', 'orgDesc', 'createdAt'
+        ]);
+
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        // The affected-key allowlist is the immutability boundary: status,
+        // crNumber, and createdAt cannot be changed by the owner.
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'orgName', 'phone', 'orgDesc', 'crDocUrl'
+        ]);
+
+      allow delete: if false;
+    }
+
+    // ---------- Conversation metadata ----------
+    match /artifacts/{appId}/public/data/chats/{chatId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participants;
+
+      allow create: if signedIn()
+        && request.auth.uid in request.resource.data.participants
+        && approvedOrganization(appId, request.resource.data.participants[0])
+        && approvedSpecialist(appId, request.resource.data.participants[1])
+        && request.resource.data.participants.size() == 2
+        && chatId.split('_').size() == 3
+        && chatId.split('_')[0] == 'chat'
+        && request.resource.data.participants[0] == chatId.split('_')[1]
+        && request.resource.data.participants[1] == chatId.split('_')[2];
+
+      // Participants list is immutable once created.
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.participants
+        && approvedOrganization(appId, resource.data.participants[0])
+        && approvedSpecialist(appId, resource.data.participants[1])
+        && request.resource.data.participants == resource.data.participants
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastMessage', 'lastMessageIsContract', 'lastMessageAt'
+        ]);
+
+      allow delete: if false;
+    }
+
+    // ---------- Messages (incl. contracts) ----------
+    match /artifacts/{appId}/public/data/messages/{messageId} {
+      function participants() {
+        return resource.data.participants;
+      }
+      function hasParticipants() {
+        return 'participants' in resource.data;
+      }
+      // chatId is `chat_{orgUid}_{specUid}`; stored participants must match it.
+      function chatIdMatchesParticipants() {
+        return request.resource.data.chatId is string
+          && request.resource.data.chatId.split('_').size() == 3
+          && request.resource.data.chatId.split('_')[0] == 'chat'
+          && request.resource.data.participants[0] == request.resource.data.chatId.split('_')[1]
+          && request.resource.data.participants[1] == request.resource.data.chatId.split('_')[2]
+          && approvedOrganization(appId, request.resource.data.participants[0])
+          && approvedSpecialist(appId, request.resource.data.participants[1])
+          && (
+            (!('isContract' in request.resource.data) && !('contractData' in request.resource.data))
+            || (
+              request.resource.data.isContract == true
+              && request.auth.uid == request.resource.data.participants[0]
+              && request.resource.data.contractData.status == 'pending'
+              && request.resource.data.contractData.specSig == null
+              && request.resource.data.contractData.title is string
+              && request.resource.data.contractData.value is string
+              && request.resource.data.contractData.duration is string
+              && request.resource.data.contractData.orgSig is string
+            )
+          );
+      }
+
+      // Participant-only reads (list queries must contain the same constraint).
+      // Legacy messages without `participants` are not client-readable until the
+      // `npm run migrate:messages` backfill has run.
+      allow read: if signedIn() && request.auth.uid in participants();
+
+      allow create: if signedIn()
+        && request.auth.uid == request.resource.data.senderId
+        && 'participants' in request.resource.data
+        && request.resource.data.participants.size() == 2
+        && request.auth.uid in request.resource.data.participants
+        && chatIdMatchesParticipants();
+
+      // Only the specialist participant ([1]) may sign a pending contract,
+      // exactly once, without touching the organization's signature.
+      allow update: if signedIn()
+        && hasParticipants()
+        && request.auth.uid in participants()
+        && request.resource.data.senderId == resource.data.senderId
+        && request.resource.data.chatId == resource.data.chatId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['contractData'])
+        && 'contractData' in request.resource.data
+        && resource.data.contractData.status == 'pending'
+        && request.resource.data.contractData.status == 'signed'
+        && request.auth.uid == participants()[1]
+        && request.resource.data.contractData.specSig is string
+        && request.resource.data.contractData.specSig.size() > 0
+        && request.resource.data.contractData.orgSig == resource.data.contractData.orgSig
+        && request.resource.data.contractData.title == resource.data.contractData.title
+        && request.resource.data.contractData.value == resource.data.contractData.value
+        && request.resource.data.contractData.duration == resource.data.contractData.duration;
+
+      allow delete: if false;
+    }
+
+    // ---------- Applications (additive structured history) ----------
+    match /artifacts/{appId}/public/data/applications/{applicationId} {
+      allow read: if signedIn()
+        && (resource.data.specialistId == request.auth.uid
+            || resource.data.organizationId == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.specialistId == request.auth.uid
+        && approvedSpecialist(appId, request.resource.data.specialistId)
+        && approvedOrganization(appId, request.resource.data.organizationId)
+        && request.resource.data.status == 'submitted'
+        && request.resource.data.chatId is string
+        && request.resource.data.chatId
+          == 'chat_' + request.resource.data.organizationId + '_' + request.resource.data.specialistId;
+
+      allow update, delete: if false;
+    }
+  }
+}

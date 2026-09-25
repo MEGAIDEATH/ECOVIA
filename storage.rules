@@ -1,0 +1,57 @@
+rules_version = '2';
+
+// Firebase Storage rules for منصة بيئيين.
+// - Owners write their own folders.
+// - Approved organizations can read approved specialist CV files; other users cannot.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function approvedSpecialist(uid) {
+      return firestore.get(/databases/(default)/documents/artifacts/default-app-id/public/data/specialists/$(uid)).data.status == 'approved';
+    }
+
+    function approvedOrganization(uid) {
+      return firestore.get(/databases/(default)/documents/artifacts/default-app-id/public/data/organizations/$(uid)).data.status == 'approved';
+    }
+
+    function validProfileImage() {
+      return request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+    }
+
+    function validResumePdf() {
+      return request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf';
+    }
+
+    function canReadSpecialistFile(uid) {
+      return signedIn()
+        && (request.auth.uid == uid
+          || (approvedSpecialist(uid) && approvedOrganization(request.auth.uid)));
+    }
+
+    match /specialists/{uid}/{fileName} {
+      allow read: if canReadSpecialistFile(uid);
+      allow write: if signedIn()
+        && request.auth.uid == uid
+        && (
+          (fileName.matches('profile-.*') && validProfileImage())
+          || (fileName.matches('resume-.*') && validResumePdf())
+        );
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /ocr-documents/{uid}/{fileName} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*|application/pdf');
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+  }
+}

@@ -1,0 +1,17 @@
+I0925 13:42:51.677486    6025 load.go:31] Reloading schema and connectors...
+I0925 13:42:51.689920    6025 control.go:100] [projects/emulator/locations/emulator/services/vscode f100] UpdateResources(): done
+Main schema: sources: schema/schema.gql [1992B] 
+Connector "example": sources: example/queries.gql [1801B] example/mutations.gql [1243B] 
+I0925 13:42:51.704828    6025 codegen.go:101] [connector "example" javascriptSdk] Generating sources into "/home/MEGAIDEATH/vscode/src/dataconnect-generated"
+I0925 13:42:51.716636    6025 codegen.go:101] [connector "example" adminSdk] Generating sources into "/home/MEGAIDEATH/vscode/src/dataconnect-admin-generated"
+I0925 13:42:51.720310    6025 collector.go:107] schema extensions wrote into "/home/MEGAIDEATH/vscode/dataconnect/.dataconnect/schema"
+Generated sources: main/relation.gql [14318B] main/query.gql [5099B] main/mutation.gql [13679B] prelude.gql [84995B] main/implicit.gql [1261B] main/input.gql [29309B] 
+I0925 13:42:51.722302    6025 collector.go:107] connector "example" javascriptSdk wrote into "/home/MEGAIDEATH/vscode/src/dataconnect-generated"
+Generated sources: package.json [853B] react/index.d.ts [3961B] README.md [41217B] react/esm/index.esm.js [3269B] .guides/setup.md [1682B] esm/index.esm.js [5349B] esm/package.json [17B] react/index.cjs.js [3439B] react/README.md [48281B] react/package.json [460B] react/esm/package.json [17B] .guides/usage.md [3489B] .guides/config.json [236B] index.d.ts [8408B] index.cjs.js [5893B] 
+I0925 13:42:51.731291    6025 installsdk.go:55] Package @dataconnect/generated is already installed. Skipping installation
+I0925 13:42:51.732083    6025 collector.go:107] connector "example" adminSdk wrote into "/home/MEGAIDEATH/vscode/src/dataconnect-admin-generated"
+Generated sources: index.cjs.js [3269B] package.json [632B] index.d.ts [7648B] esm/index.esm.js [2976B] esm/package.json [17B] 
+I0925 13:42:51.733791    6025 installsdk.go:55] Package @dataconnect/admin-generated is already installed. Skipping installation
+I0925 13:42:51.733825    6025 load.go:109] Finished reloading
+I0925 13:42:51.734384    6025 dev.go:101] Listening on address (HTTP + gRPC): 127.0.0.1:50001
+I0925 13:42:51.892805    6025 engine.go:209] [projects/emulator/locations/emulator/services/vscode f100] ExecuteGraphqlRead query IntrospectionQuery: succeeded. 
