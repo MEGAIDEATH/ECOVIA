@@ -1,0 +1,14 @@
+# Netlify build configuration for ECOVIA (Next.js App Router + Route Handlers).
+# Framework detection is automatic; Netlify's Next.js runtime (OpenNext-based)
+# handles SSR, Server Components, and /api/* Route Handlers — do NOT add
+# `publish = ".next"` manually and do NOT switch the app to a static export.
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+# Environment variables are configured in the Netlify UI (Site settings >
+# Environment variables), not here — see .env.example for the full list:
+#   public:  NEXT_PUBLIC_FIREBASE_* , NEXT_PUBLIC_DATA_APP_ID
+#   server:  FIREBASE_SERVICE_ACCOUNT, ADMIN_PASSWORD, ADMIN_SESSION_SECRET

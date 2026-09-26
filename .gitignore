@@ -31,3 +31,13 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /blob-report/
+
+# local logs and emulator/tooling artifacts (regenerated on demand)
+*.log
+/.firebase/
+/.lsp/
+
+# service-account credentials — NEVER commit these
+service-account*.json
+*firebase-adminsdk*.json
+*-credentials.json

@@ -26,6 +26,10 @@ export function SpecialistStep2Form() {
   const cancelledRef = useRef(false);
 
   useEffect(() => {
+    // Reset on mount: React Strict Mode runs effect → cleanup → effect on the
+    // same instance, and the cleanup below leaves the flag stale otherwise —
+    // every scan would then be silently cancelled in `npm run dev` only.
+    cancelledRef.current = false;
     return () => {
       cancelledRef.current = true;
     };
