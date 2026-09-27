@@ -1,4 +1,9 @@
-import type { Timestamp } from 'firebase/firestore';
+/**
+ * Shared domain types.
+ *
+ * Timestamps are plain ISO-8601 strings produced by the server, and records
+ * are keyed by PostgreSQL `uuid` ids plus Better Auth user ids (`user.id`).
+ */
 
 export interface OrganizationDirectoryEntry {
   id: string;
@@ -10,14 +15,17 @@ export interface SpecialistDirectoryEntry {
   fullName: string;
   edu?: string | null;
 }
+
 export type UserRole = 'spec' | 'org';
 
-/** Approval status stored on specialist/organization documents. */
+/** Approval status stored on specialist/organization accounts. */
 export type AccountStatus = 'pending' | 'approved';
 
 export interface Specialist {
-  /** Document id = Firebase Auth uid. */
+  /** Profile id (`specialists.id`). */
   id: string;
+  /** Owning account id (`user.id`). */
+  userId: string;
   status: AccountStatus;
   fullName: string;
   nationalId: string;
@@ -31,28 +39,28 @@ export interface Specialist {
   /** Detailed experience/projects description. */
   exp?: string | null;
   portfolio?: string | null;
-  /** Profile image: Firebase Storage URL (new) or legacy data-URL. */
-  profilePic?: string | null;
-  /** Resume PDF: Firebase Storage URL (new) or legacy data-URL. */
-  resumeFile?: string | null;
-  /** License issue date captured during registration (additive field). */
+  /** Uploaded profile image document id (served through /api/files/{id}). */
+  profilePicId?: string | null;
+  /** Resume PDF document id. */
+  resumeFileId?: string | null;
+  /** License issue date captured during registration. */
   issueDate?: string | null;
-  /** Uploaded license document Storage URL (additive field). */
-  licenseDocUrl?: string | null;
-  createdAt?: Timestamp | null;
+  /** Uploaded license document id. */
+  licenseDocId?: string | null;
+  createdAt?: string | null;
 }
 
 export interface Organization {
-  /** Document id = Firebase Auth uid. */
   id: string;
+  userId: string;
   status: AccountStatus;
   orgName: string;
   crNumber: string;
   phone: string;
   orgDesc: string;
-  /** Uploaded commercial registration document Storage URL (additive field). */
-  crDocUrl?: string | null;
-  createdAt?: Timestamp | null;
+  /** Uploaded commercial registration document id. */
+  crDocId?: string | null;
+  createdAt?: string | null;
 }
 
 export type PublicSpecialist = Omit<Specialist, 'nationalId'> & {
@@ -60,8 +68,13 @@ export type PublicSpecialist = Omit<Specialist, 'nationalId'> & {
   nationalId: string;
 };
 
-/** Directory-card projection; private CV fields are fetched only on demand. */
-export type PublicSpecialistSummary = Pick<Specialist, 'id' | 'status' | 'fullName' | 'edu'>;
+/** Directory-card projection; private CV fields are fetched only on demand.
+ * `userId` lets the organization side build the legacy chat key
+ * (`chat_{orgUserId}_{specUserId}`) the server expects. */
+export type PublicSpecialistSummary = Pick<
+  Specialist,
+  'id' | 'userId' | 'status' | 'fullName' | 'edu'
+>;
 
 export type ContractStatus = 'pending' | 'signed';
 
@@ -75,23 +88,23 @@ export interface ContractData {
 }
 
 export interface Message {
-  /** Firestore document id. */
   id: string;
-  chatId: string;
-  /** [orgUid, specUid] — additive field so queries can stay constrained. */
-  participants?: string[];
-  senderId: string;
+  /** Conversation id (`conversations.id`). */
+  conversationId: string;
+  senderUserId: string;
   text: string;
-  timestamp?: Timestamp | null;
+  /** ISO-8601 timestamp. */
+  timestamp?: string | null;
   isContract?: boolean;
   contractData?: ContractData;
 }
 
 export interface Conversation {
   chatId: string;
+  /** [organizationUserId, specialistUserId] — kept for client display logic. */
   participants: string[];
   lastMessage: string;
-  lastMessageAt?: Timestamp | null;
+  lastMessageAt?: string | null;
   lastMessageIsContract?: boolean;
 }
 
@@ -105,7 +118,7 @@ export interface Application {
   organizationName?: string;
   status: ApplicationStatus;
   chatId: string;
-  createdAt?: Timestamp | null;
+  createdAt?: string | null;
 }
 
 /** Result of running OCR extraction over an uploaded document. */

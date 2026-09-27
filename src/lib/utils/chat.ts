@@ -31,8 +31,9 @@ export function getOtherParticipantId(chatId: string, role: UserRole): string | 
 }
 
 /**
- * Participants in legacy chatId order: [organizationUid, specialistUid].
- * Stored on messages/conversations so Firestore can run constrained queries.
+ * Participants in chatId order: [organizationUid, specialistUid].
+ * Stored denormalized on messages/conversations so SQL can run constrained
+ * queries without joining the conversation table.
  */
 export function buildParticipants(chatId: string): [string, string] | null {
   const parsed = parseChatId(chatId);

@@ -11,7 +11,7 @@ export function SpecialistMessages() {
   return (
     <ChatLayout
       role="spec"
-      currentUid={user.uid}
+      currentUid={user.id}
       listTitle="الطلبات والمحادثات"
       listIcon="inbox"
       emptyIcon="forum"

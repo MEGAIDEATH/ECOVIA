@@ -30,7 +30,7 @@ export function SpecialistOrganizations() {
 
     getApprovedOrganizations()
       .then((list) => {
-        if (active) setOrganizations(list.filter((org) => org.id !== user?.uid));
+        if (active) setOrganizations(list);
       })
       .catch((err: unknown) => {
         console.error('[organizations] load failed:', err);
@@ -43,13 +43,13 @@ export function SpecialistOrganizations() {
     return () => {
       active = false;
     };
-  }, [user?.uid]);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
     let active = true;
 
-    getApplicationsForSpecialist(user.uid)
+    getApplicationsForSpecialist()
       .then((list) => {
         if (!active) return;
         setApplications(list);
@@ -71,15 +71,12 @@ export function SpecialistOrganizations() {
     if (!user || submittingTo) return;
     setSubmittingTo(org.id);
     try {
-      await createApplication({
-        specialistId: user.uid,
-        organizationId: org.id,
-        organizationName: org.orgName,
-        chatId: `chat_${org.id}_${user.uid}`,
-      });
+      // Only the target id is sent — the specialist profile, organization name
+      // and conversation are all resolved server-side from the session.
+      await createApplication({ organizationId: org.id });
       showToast(`تم التقديم بنجاح إلى ${org.orgName}`);
       setAppliedOrgIds((previous) => new Set(previous).add(org.id));
-      setApplications(await getApplicationsForSpecialist(user.uid));
+      setApplications(await getApplicationsForSpecialist());
     } catch (submitError) {
       console.error('[applications] submit failed:', submitError);
       showToast('حدث خطأ', true);
@@ -165,8 +162,8 @@ export function SpecialistOrganizations() {
                     {application.organizationName || 'منشأة'}
                   </p>
                   <p className="text-xs text-secondary mt-0.5">
-                    {application.createdAt?.toDate
-                      ? application.createdAt.toDate().toLocaleDateString('ar-SA')
+                    {application.createdAt
+                      ? new Date(application.createdAt).toLocaleDateString('ar-SA')
                       : ''}
                   </p>
                 </div>

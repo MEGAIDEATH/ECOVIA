@@ -7,14 +7,13 @@ import { signContract } from '@/features/chat/messageRepository';
 
 interface ContractSignatureProps {
   messageId: string;
-  currentUid: string;
 }
 
 /**
  * Inline specialist signature input shown on pending contracts
  * (legacy `confirmInlineSignature`).
  */
-export function ContractSignature({ messageId, currentUid }: ContractSignatureProps) {
+export function ContractSignature({ messageId }: ContractSignatureProps) {
   const [name, setName] = useState('');
   const [signing, setSigning] = useState(false);
   const { showToast } = useToast();
@@ -28,7 +27,7 @@ export function ContractSignature({ messageId, currentUid }: ContractSignaturePr
 
     setSigning(true);
     try {
-      await signContract(messageId, signature, currentUid);
+      await signContract(messageId, signature);
       showToast('تم اعتماد العقد بنجاح!');
     } catch (error) {
       console.error('[contract] signature failed:', error);

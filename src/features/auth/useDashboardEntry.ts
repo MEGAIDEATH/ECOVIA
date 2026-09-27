@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
 import { useToast } from '@/components/ui/Toast';
-import { getOrganizationById } from '@/features/organizations/organizationRepository';
-import { getSpecialistById } from '@/features/specialists/specialistRepository';
+import { getOwnOrganization } from '@/features/organizations/organizationRepository';
+import { getOwnSpecialist } from '@/features/specialists/specialistRepository';
 
 import { useAuth } from './AuthProvider';
 import { resolveDestination } from './dashboardRouting';
@@ -13,7 +13,7 @@ import { getPreferredRole } from './preferredRole';
 
 /**
  * Port of the legacy `checkAndGoToDashboard()`: inspects both account
- * documents for the current UID, applies the preferred-role order, then
+ * documents for the current session, applies the preferred-role order, then
  * routes to the dashboard (approved) or the waiting room (pending).
  */
 export function useDashboardEntry() {
@@ -31,8 +31,8 @@ export function useDashboardEntry() {
     setChecking(true);
     try {
       const [specialist, organization] = await Promise.all([
-        getSpecialistById(user.uid),
-        getOrganizationById(user.uid),
+        getOwnSpecialist(),
+        getOwnOrganization(),
       ]);
 
       const destination = resolveDestination(

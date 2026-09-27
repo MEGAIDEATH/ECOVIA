@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { cvSchema, type CvValues } from '@/lib/validation/forms';
+import { documentIdFromUrl, fileUrl } from '@/lib/utils/cv';
 import { useAuth } from '@/features/auth/AuthProvider';
 import {
   uploadProfileImage,
@@ -28,13 +29,13 @@ export function CVEditor() {
   const [saving, setSaving] = useState(false);
 
   // Profile photo state: instant local preview + Storage upload.
-  const [picPreview, setPicPreview] = useState<string | null>(specialist?.profilePic ?? null);
-  const [picUrl, setPicUrl] = useState<string | null>(specialist?.profilePic ?? null);
+  const [picPreview, setPicPreview] = useState<string | null>(fileUrl(specialist?.profilePicId));
+  const [picUrl, setPicUrl] = useState<string | null>(fileUrl(specialist?.profilePicId));
   const [picUploading, setPicUploading] = useState(false);
   const [pendingPic, setPendingPic] = useState<Promise<string> | null>(null);
 
   // Resume state.
-  const [resumeUrl, setResumeUrl] = useState<string | null>(specialist?.resumeFile ?? null);
+  const [resumeUrl, setResumeUrl] = useState<string | null>(fileUrl(specialist?.resumeFileId));
   const [resumeName, setResumeName] = useState<string | null>(null);
   const [resumeUploading, setResumeUploading] = useState(false);
   const [pendingResume, setPendingResume] = useState<Promise<string> | null>(null);
@@ -66,7 +67,7 @@ export function CVEditor() {
     setPicPreview(localUrl);
     setPicUploading(true);
     try {
-      const handle = uploadProfileImage(user.uid, file);
+      const handle = uploadProfileImage(file);
       setPendingPic(handle.promise);
       const url = await handle.promise;
       setPicUrl(url);
@@ -90,7 +91,7 @@ export function CVEditor() {
     setResumeName(file.name);
     setResumeUploading(true);
     try {
-      const handle = uploadResume(user.uid, file);
+      const handle = uploadResume(file);
       setPendingResume(handle.promise);
       const url = await handle.promise;
       setResumeUrl(url);
@@ -116,7 +117,7 @@ export function CVEditor() {
         pendingResume ?? Promise.resolve(resumeUrl),
       ]);
 
-      await updateSpecialistProfile(user.uid, {
+      await updateSpecialistProfile({
         fullName: values.fullName,
         email: values.email,
         phone: values.phone,
@@ -124,8 +125,8 @@ export function CVEditor() {
         years: values.years,
         exp: values.exp,
         portfolio: values.portfolio,
-        profilePic: finalPic ?? null,
-        resumeFile: finalResume ?? null,
+        profilePicId: documentIdFromUrl(finalPic),
+        resumeFileId: documentIdFromUrl(finalResume),
       });
       setPicUrl(finalPic ?? null);
       setResumeUrl(finalResume ?? null);

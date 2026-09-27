@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ToastProvider } from '@/components/ui/Toast';
 
@@ -12,7 +12,11 @@ vi.mock('next/navigation', () => ({
   useRouter: () => routerMocks,
 }));
 
-const authMock = vi.hoisted(() => ({ user: { uid: 'new-user' }, loading: false }));
+const authMock = vi.hoisted(() => ({
+  user: { id: 'new-user' },
+  loading: false,
+  refresh: vi.fn(),
+}));
 vi.mock('@/features/auth/AuthProvider', () => ({
   useAuth: () => authMock,
 }));
@@ -40,16 +44,40 @@ async function typeCode(user: ReturnType<typeof userEvent.setup>, code: string) 
   }
 }
 
+function jsonResponse(body: unknown, ok = true): Response {
+  return {
+    ok,
+    json: () => Promise.resolve(body),
+  } as Response;
+}
+
 describe('OtpVerification (demo flow)', () => {
   beforeEach(() => {
     routerMocks.replace.mockClear();
     registerSpecialistMock
       .mockReset()
-      .mockResolvedValue({ status: 'created', role: 'spec', accountStatus: 'pending', uid: 'u1' });
+      .mockResolvedValue({ status: 'created', role: 'spec', accountStatus: 'pending', userId: 'u1' });
     registerOrganizationMock
       .mockReset()
-      .mockResolvedValue({ status: 'created', role: 'org', accountStatus: 'pending', uid: 'u1' });
+      .mockResolvedValue({ status: 'created', role: 'org', accountStatus: 'pending', userId: 'u1' });
+    // Routes /api/session/otp (sent on mount) and /api/session/verify by code.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url === '/api/session/otp') return jsonResponse({ ok: true });
+        if (url === '/api/session/verify') {
+          const body = JSON.parse(String(init?.body ?? '{}')) as { code?: string };
+          if (body.code === '123456') return jsonResponse({ ok: true });
+          return jsonResponse({ error: 'رمز التحقق غير صحيح!' }, false);
+        }
+        throw new Error(`unexpected fetch: ${String(url)}`);
+      }),
+    );
     localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('requires six digits before verifying', async () => {
@@ -119,7 +147,7 @@ describe('OtpVerification (demo flow)', () => {
       status: 'existing',
       role: 'spec',
       accountStatus: 'pending',
-      uid: 'u1',
+      userId: 'u1',
     });
 
     const user = userEvent.setup();
@@ -141,7 +169,7 @@ describe('OtpVerification (demo flow)', () => {
       status: 'existing',
       role: 'spec',
       accountStatus: 'approved',
-      uid: 'u1',
+      userId: 'u1',
     });
 
     const user = userEvent.setup();
@@ -161,7 +189,7 @@ describe('OtpVerification (demo flow)', () => {
       status: 'existing',
       role: 'org',
       accountStatus: 'pending',
-      uid: 'u1',
+      userId: 'u1',
     });
 
     const user = userEvent.setup();
@@ -182,7 +210,7 @@ describe('OtpVerification (demo flow)', () => {
       status: 'existing',
       role: 'org',
       accountStatus: 'approved',
-      uid: 'u1',
+      userId: 'u1',
     });
 
     const user = userEvent.setup();

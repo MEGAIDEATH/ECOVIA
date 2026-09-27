@@ -41,7 +41,7 @@ export function OrganizationMessages() {
     <>
       <ChatLayout
         role="org"
-        currentUid={user.uid}
+        currentUid={user.id}
         listTitle="المحادثات النشطة"
         listIcon="forum"
         emptyIcon="chat_bubble"

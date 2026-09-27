@@ -1,0 +1,37 @@
+# Local development PostgreSQL for ECOVIA.
+#
+#   docker compose up -d      # start (creates the named volume on first run)
+#   docker compose down       # stop (data is kept in the named volume)
+#   docker compose down -v    # stop and DELETE the local data volume
+#
+# These credentials are for LOCAL DEVELOPMENT ONLY and are intentionally
+# non-production values. Production (company-owned Neon or any other
+# PostgreSQL provider) is configured exclusively through DATABASE_URL.
+# Host port 5433 is used on purpose: many developer machines (including the
+# ECOVIA workstation) already run a system PostgreSQL on 5432, which would make
+# `docker compose up -d` fail to bind. The container itself always listens on
+# 5432 internally; only the published host port differs. Point DATABASE_URL at
+# whichever host port you use.
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: ecovia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ecovia
+      POSTGRES_PASSWORD: ecovia_dev_password
+      POSTGRES_DB: ecovia_dev
+      # Deterministic collation for Arabic text comparisons.
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8'
+    ports:
+      - '5433:5432'
+    volumes:
+      - ecovia-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecovia -d ecovia_dev']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  ecovia-postgres-data:

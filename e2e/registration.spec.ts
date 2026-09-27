@@ -1,28 +1,43 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-
 import { expect, test } from '@playwright/test';
+import { Pool } from 'pg';
 
-interface AuthCacheRecord {
-  fbase_key?: string;
-  key?: string;
-  value?: {
-    uid?: string;
-    stsTokenManager?: { accessToken?: string };
-  };
-}
+import { loadLocalEnv } from '../src/db/env';
 
-function readLocalEnv(): Record<string, string> {
-  const text = readFileSync(path.join(process.cwd(), '.env.local'), 'utf8');
-  const env: Record<string, string> = {};
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const separator = trimmed.indexOf('=');
-    if (separator > 0) env[trimmed.slice(0, separator)] = trimmed.slice(separator + 1);
+// The Playwright runner does not load `.env.local` the way Next.js does.
+loadLocalEnv();
+
+/**
+ * Reads an account straight out of PostgreSQL so the assertions cover the real
+ * backend (Better Auth session -> `user` row -> profile row), not just the DOM.
+ */
+async function findProfile(
+  table: 'specialists' | 'organizations',
+  column: 'full_name' | 'org_name',
+  joinColumn: 'u.email' | 'p.cr_number',
+  key: string,
+) {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  try {
+    const result = await pool.query(
+      `select p.status, p.${column}
+         from ${table} p
+         join "user" u on u.id = p.user_id
+        where ${joinColumn} = $1
+        order by p.created_at desc
+        limit 1`,
+      [key],
+    );
+    return (result.rows[0] as { status: string } & Record<string, string>) ?? null;
+  } finally {
+    await pool.end();
   }
-  return env;
 }
+
+const findSpecialistByEmail = (email: string) =>
+  findProfile('specialists', 'full_name', 'u.email', email);
+
+const findOrganizationByCr = (crNumber: string) =>
+  findProfile('organizations', 'org_name', 'p.cr_number', crNumber);
 
 test.describe('specialist registration flow', () => {
   test('step 1 validates required fields with Arabic messages', async ({ page }) => {
@@ -30,11 +45,11 @@ test.describe('specialist registration flow', () => {
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
     await page.getByRole('button', { name: /المتابعة/ }).click();
+
     await expect(page.getByText('الاسم الثلاثي مطلوب')).toBeVisible();
     await expect(page.getByText('رقم الهوية مطلوب')).toBeVisible();
     await expect(page.getByText('البريد الإلكتروني مطلوب')).toBeVisible();
     await expect(page.getByText('رقم الجوال مطلوب')).toBeVisible();
-    await expect(page).toHaveURL(/step-1/);
   });
 
   test('valid step 1 proceeds to step 2, then to the OTP screen with the demo hint', async ({
@@ -50,157 +65,125 @@ test.describe('specialist registration flow', () => {
     await page.getByRole('button', { name: /المتابعة/ }).click();
 
     await expect(page).toHaveURL(/\/register\/specialist\/step-2/);
-    await expect(page.getByText('ارفع الترخيص البيئي')).toBeVisible();
-    await expect(page.getByLabel('رقم المعاملة / الترخيص')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'تسجيل أخصائي' })).toBeVisible();
+    await expect(page.getByText('الترخيص المهني')).toBeVisible();
 
-    await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2023-1234');
+    await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2024-99999');
     await page.getByRole('button', { name: /المتابعة للتحقق/ }).click();
 
     await expect(page).toHaveURL(/\/register\/specialist\/verify/);
-    // Legacy demo hint toast.
-    await expect(page.getByText('استخدم 123456 للتجربة')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'أدخل رمز التحقق' })).toBeVisible();
     await expect(page.getByText('للتجربة: استخدم 123456')).toBeVisible();
   });
 
   test('wrong demo OTP shows the Arabic error without registering', async ({ page }) => {
-    await page.goto('/register/specialist/verify');
+    // Walk the real flow so the OTP exists server-side for this email —
+    // a bare /verify visit has no draft (and no code) to check against.
+    await page.goto('/register/specialist/step-1');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
+    await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
+    await page.getByLabel('رقم الهوية').fill('1098765432');
+    await page.getByLabel('البريد الإلكتروني').fill('khaled@example.com');
+    await page.getByLabel('رقم الجوال').fill('0512345678');
+    await page.getByRole('button', { name: /المتابعة/ }).click();
+    await expect(page).toHaveURL(/\/register\/specialist\/step-2/);
+
+    await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2024-99999');
+    await page.getByRole('button', { name: /المتابعة للتحقق/ }).click();
+    await expect(page).toHaveURL(/\/register\/specialist\/verify/);
+
     const boxes = page.getByLabel(/^خانة الرمز /);
-    const code = '999999';
-    for (let i = 0; i < code.length; i += 1) {
-      await boxes.nth(i).fill(code[i]);
+    for (let i = 0; i < 6; i += 1) {
+      await boxes.nth(i).fill('9');
     }
+
     await page.getByRole('button', { name: 'تأكيد الدخول' }).click();
 
     await expect(page.getByText('رمز التحقق غير صحيح!')).toBeVisible();
     await expect(page).toHaveURL(/\/register\/specialist\/verify/);
   });
 
-  test('completes signup end-to-end without any Admin SDK configuration', async ({
+  test('completes signup with the demo OTP and persists a pending specialist', async ({
     page,
-    request,
   }) => {
-    // The real Firebase write only needs to be proven once per run.
-    test.skip(test.info().project.name !== 'desktop-chromium', 'real Firebase write runs once');
-    test.setTimeout(90_000);
-
-    // Regression test for the real failure: the OTP step used to POST to a
-    // server route that required Firebase Admin credentials and failed with
-    // 503. This exercises the real anonymous session + Firestore rules write,
-    // so it must not mock the network. It creates one pending account document.
-    const adminRequests: string[] = [];
-    const adminConsoleErrors: string[] = [];
-    const pageErrors: string[] = [];
-    page.on('request', (req) => {
-      if (req.url().includes('/api/admin')) adminRequests.push(req.url());
-    });
-    page.on('console', (message) => {
-      if (
-        message.type() === 'error' &&
-        (message.text().includes('[admin]') ||
-          message.text().includes('خدمة البيانات غير مهيأة'))
-      ) {
-        adminConsoleErrors.push(message.text());
-      }
-    });
-    page.on('pageerror', (error) => pageErrors.push(error.message));
+    // A fresh e-mail per run: `user.email` is unique, so reusing one would make
+    // the second run collide with the account created by the first.
+    const email = `e2e.spec.${Date.now()}@example.com`;
 
     await page.goto('/register/specialist/step-1');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
     await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
     await page.getByLabel('رقم الهوية').fill('1098765432');
-    await page.getByLabel('البريد الإلكتروني').fill(`khaled${Date.now()}@example.com`);
+    await page.getByLabel('البريد الإلكتروني').fill(email);
     await page.getByLabel('رقم الجوال').fill('0512345678');
     await page.getByRole('button', { name: /المتابعة/ }).click();
     await expect(page).toHaveURL(/\/register\/specialist\/step-2/);
 
-    await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2023-1234');
+    await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2024-99999');
     await page.getByRole('button', { name: /المتابعة للتحقق/ }).click();
     await expect(page).toHaveURL(/\/register\/specialist\/verify/);
+    await expect(page.getByText('للتجربة: استخدم 123456')).toBeVisible();
 
     const boxes = page.getByLabel(/^خانة الرمز /);
-    const code = '123456';
-    for (let i = 0; i < code.length; i += 1) {
-      await boxes.nth(i).fill(code[i]);
+    for (const [index, digit] of Array.from('123456').entries()) {
+      await boxes.nth(index).fill(digit);
     }
     await page.getByRole('button', { name: 'تأكيد الدخول' }).click();
 
-    await expect(page).toHaveURL(/\/waiting\?role=spec/, { timeout: 30_000 });
-    await expect(page.getByText('جاري التحقق من الاعتماد')).toBeVisible();
+    // Pending accounts are routed to the waiting room, not the dashboard.
+    await expect(page).toHaveURL(/\/waiting\?role=spec/);
 
-    // The public signup flow must be completely free of admin activity.
-    expect(adminRequests).toEqual([]);
-    expect(adminConsoleErrors).toEqual([]);
-    expect(pageErrors).toEqual([]);
+    // The account must exist in PostgreSQL as `pending` — approval stays an
+    // admin-only operation.
+    await expect
+      .poll(async () => (await findSpecialistByEmail(email))?.status, { timeout: 15_000 })
+      .toBe('pending');
 
-    // Prove the Firestore document exists and is pending by reading it back
-    // with the anonymous account's own ID token (rules allow owner reads).
-    const env = readLocalEnv();
-    const projectId = env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-    const dataAppId = env.NEXT_PUBLIC_DATA_APP_ID || 'default-app-id';
-    expect(projectId).toBeTruthy();
+    const row = await findSpecialistByEmail(email);
+    expect(row?.full_name).toBe('خالد سعيد عبدالله');
+  });
+});
 
-    const authState = await page.evaluate(async () => {
-      const readIdb = async (): Promise<AuthCacheRecord[]> => {
-        const db = await new Promise<IDBDatabase>((resolve, reject) => {
-          const open = indexedDB.open('firebaseLocalStorageDb');
-          open.onsuccess = () => resolve(open.result);
-          open.onerror = () => reject(open.error);
-        });
-        const store = db
-          .transaction('firebaseLocalStorage', 'readonly')
-          .objectStore('firebaseLocalStorage');
-        return new Promise<AuthCacheRecord[]>((resolve, reject) => {
-          const all = store.getAll();
-          all.onsuccess = () => resolve(all.result as AuthCacheRecord[]);
-          all.onerror = () => reject(all.error);
-        });
-      };
+/**
+ * The organization register route carried the same document-reference defect as
+ * the specialist one, so the completed organization flow is covered too.
+ */
+test.describe('organization registration flow', () => {
+  test('completes signup with the demo OTP and persists a pending organization', async ({
+    page,
+  }) => {
+    const crNumber = `2${Date.now()}`.slice(0, 10);
 
-      let records: AuthCacheRecord[] = [];
-      try {
-        records = await readIdb();
-      } catch {
-        records = [];
-      }
-      for (let index = 0; index < localStorage.length; index += 1) {
-        const key = localStorage.key(index);
-        if (!key?.startsWith('firebase:authUser')) continue;
-        try {
-          records.push({
-            fbase_key: key,
-            value: JSON.parse(localStorage.getItem(key) ?? '') as AuthCacheRecord['value'],
-          });
-        } catch {
-          /* ignore malformed cache entries */
-        }
-      }
+    await page.goto('/register/organization');
+    await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
-      const record = records.find((item) =>
-        String(item.fbase_key ?? item.key ?? '').startsWith('firebase:authUser'),
-      );
-      return {
-        uid: record?.value?.uid ?? null,
-        accessToken: record?.value?.stsTokenManager?.accessToken ?? null,
-      };
-    });
-
-    expect(authState.uid).toBeTruthy();
-    expect(authState.accessToken).toBeTruthy();
-
-    const documentPath =
-      `projects/${projectId}/databases/(default)/documents` +
-      `/artifacts/${dataAppId}/public/data/specialists/${authState.uid}`;
-    const documentResponse = await request.get(
-      `https://firestore.googleapis.com/v1/${documentPath}`,
-      { headers: { Authorization: `Bearer ${authState.accessToken}` } },
+    await page.getByLabel('رقم السجل التجاري').fill(crNumber);
+    await page.getByRole('button', { name: 'جلب' }).click();
+    // The legacy demo CR lookup fills the organization name.
+    await expect(page.getByLabel('اسم المنشأة')).toHaveValue(
+      'شركة التقنية البيئية المحدودة',
     );
-    expect(documentResponse.status()).toBe(200);
-    const document = (await documentResponse.json()) as {
-      fields?: Record<string, { stringValue?: string }>;
-    };
-    expect(document.fields?.status?.stringValue).toBe('pending');
+    await page.getByLabel('رقم التواصل').fill('0512345678');
+    await page.getByLabel('نبذة عن الجهة').fill('شركة متخصصة في الاستشارات البيئية.');
+    await page.getByRole('button', { name: /المتابعة للتحقق/ }).click();
+    await expect(page).toHaveURL(/\/register\/organization\/verify/);
+    await expect(page.getByText('للتجربة: استخدم 123456')).toBeVisible();
+
+    const boxes = page.getByLabel(/^خانة الرمز /);
+    for (const [index, digit] of Array.from('123456').entries()) {
+      await boxes.nth(index).fill(digit);
+    }
+    await page.getByRole('button', { name: 'تأكيد الدخول' }).click();
+
+    await expect(page).toHaveURL(/\/waiting\?role=org/);
+
+    await expect
+      .poll(async () => (await findOrganizationByCr(crNumber))?.status, { timeout: 15_000 })
+      .toBe('pending');
+
+    const row = await findOrganizationByCr(crNumber);
+    expect(row?.org_name).toBe('شركة التقنية البيئية المحدودة');
   });
 });

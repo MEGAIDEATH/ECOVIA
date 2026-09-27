@@ -10,8 +10,9 @@ interface AdminLoginPanelProps {
   onLoggedIn: () => void;
 }
 
-/** Inline admin login shown when visiting /admin without a session. */
+/** Inline admin login (Better Auth email + password) for /admin without a session. */
 export function AdminLoginPanel({ onLoggedIn }: AdminLoginPanelProps) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
@@ -19,7 +20,7 @@ export function AdminLoginPanel({ onLoggedIn }: AdminLoginPanelProps) {
   const submit = async () => {
     setLoading(true);
     try {
-      await adminLogin(password);
+      await adminLogin(email.trim(), password);
       setPassword('');
       onLoggedIn();
     } catch (error) {
@@ -53,6 +54,18 @@ export function AdminLoginPanel({ onLoggedIn }: AdminLoginPanelProps) {
           </h3>
         </div>
         <input
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          onKeyDown={onKeyDown}
+          aria-label="البريد الإلكتروني"
+          className="w-full px-4 py-3 bg-slate-50 rounded-xl border focus:border-primary mb-3 text-center outline-none"
+          placeholder="admin@example.com"
+          dir="ltr"
+          autoComplete="email"
+          autoFocus
+        />
+        <input
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
@@ -61,7 +74,7 @@ export function AdminLoginPanel({ onLoggedIn }: AdminLoginPanelProps) {
           className="w-full px-4 py-3 bg-slate-50 rounded-xl border focus:border-primary mb-6 text-center text-xl tracking-widest outline-none"
           placeholder="****"
           dir="ltr"
-          autoFocus
+          autoComplete="current-password"
         />
         <button
           type="submit"

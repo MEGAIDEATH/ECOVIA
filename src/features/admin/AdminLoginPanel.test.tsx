@@ -10,6 +10,11 @@ vi.mock('@/features/admin/adminRepository', () => ({
   adminLogin: adminLoginMock,
 }));
 
+function fillCredentials(email: string, password: string) {
+  fireEvent.change(screen.getByLabelText('البريد الإلكتروني'), { target: { value: email } });
+  fireEvent.change(screen.getByLabelText('رمز الدخول'), { target: { value: password } });
+}
+
 function renderPanel(onLoggedIn = vi.fn()) {
   render(
     <ToastProvider>
@@ -19,20 +24,20 @@ function renderPanel(onLoggedIn = vi.fn()) {
   return onLoggedIn;
 }
 
-describe('AdminLoginPanel (server-side password validation)', () => {
+describe('AdminLoginPanel (Better Auth email + password)', () => {
   beforeEach(() => {
     adminLoginMock.mockReset();
   });
 
-  it('shows the Arabic error toast when the server rejects the password', async () => {
+  it('shows the Arabic error toast when the server rejects the credentials', async () => {
     adminLoginMock.mockRejectedValue(new Error('رمز الدخول غير صحيح!'));
     const onLoggedIn = renderPanel();
 
-    fireEvent.change(screen.getByLabelText('رمز الدخول'), { target: { value: '0000' } });
+    fillCredentials('admin@ecovia.local', '0000');
     fireEvent.click(screen.getByRole('button', { name: 'دخول' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('رمز الدخول غير صحيح!');
-    expect(adminLoginMock).toHaveBeenCalledWith('0000');
+    expect(adminLoginMock).toHaveBeenCalledWith('admin@ecovia.local', '0000');
     expect(onLoggedIn).not.toHaveBeenCalled();
   });
 
@@ -40,20 +45,21 @@ describe('AdminLoginPanel (server-side password validation)', () => {
     adminLoginMock.mockRejectedValue(new Error('حدث خطأ في الاتصال'));
     renderPanel();
 
-    fireEvent.change(screen.getByLabelText('رمز الدخول'), { target: { value: '1234' } });
+    fillCredentials('admin@ecovia.local', '1234');
     fireEvent.click(screen.getByRole('button', { name: 'دخول' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('حدث خطأ في الاتصال');
   });
 
   it('calls onLoggedIn after a successful server-side login', async () => {
-    adminLoginMock.mockResolvedValue({ ok: true });
+    adminLoginMock.mockResolvedValue(undefined);
     const onLoggedIn = renderPanel();
 
-    fireEvent.change(screen.getByLabelText('رمز الدخول'), { target: { value: '1234' } });
+    fillCredentials('admin@ecovia.local', '1234');
     fireEvent.click(screen.getByRole('button', { name: 'دخول' }));
 
     await waitFor(() => expect(onLoggedIn).toHaveBeenCalledTimes(1));
+    expect(adminLoginMock).toHaveBeenCalledWith('admin@ecovia.local', '1234');
     expect(screen.getByLabelText('رمز الدخول')).toHaveValue('');
   });
 });

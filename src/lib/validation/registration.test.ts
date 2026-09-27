@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  organizationRegistrationPayloadSchema,
   organizationRegistrationSchema,
   otpSchema,
+  specialistRegistrationPayloadSchema,
   specialistStep1Schema,
   specialistStep2Schema,
 } from './registration';
@@ -97,5 +99,79 @@ describe('otpSchema', () => {
         expect(result.error.issues[0].message).toBe('أدخل رمز التحقق المكون من 6 أرقام');
       }
     }
+  });
+});
+
+/**
+ * Regression: the register routes used to force the document reference to
+ * `undefined` while the schema declared it `.nullable()` (string | null, not
+ * undefined). Every registration therefore failed with HTTP 400 and no account
+ * could ever be created. The payload must validate exactly as the client sends
+ * it, with an explicit `null` when no document was attached.
+ */
+describe('registration payloads carry a document id (never undefined)', () => {
+  const specialistBase = {
+    fullName: 'خالد سعيد عبدالله',
+    nationalId: '1098765432',
+    email: 'khaled@example.com',
+    phone: '0512345678',
+    license: 'ELESL-2023-1234',
+    issueDate: null,
+  };
+
+  const organizationBase = {
+    orgName: 'منشأة بيئية',
+    crNumber: '1010123456',
+    phone: '0512345678',
+    orgDesc: 'نبذة عن المنشأة',
+  };
+
+  it('accepts a specialist payload without an attached document', () => {
+    const result = specialistRegistrationPayloadSchema.safeParse({
+      ...specialistBase,
+      licenseDocId: null,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a specialist payload with an uploaded document id', () => {
+    const result = specialistRegistrationPayloadSchema.safeParse({
+      ...specialistBase,
+      licenseDocId: '3f1c2b4a-5d6e-4f70-8a91-2b3c4d5e6f70',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects a document reference that is undefined rather than null', () => {
+    // Documents the exact regression: `undefined` is not a valid nullable value.
+    const result = specialistRegistrationPayloadSchema.safeParse({
+      ...specialistBase,
+      licenseDocId: undefined,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a non-uuid document reference', () => {
+    const result = specialistRegistrationPayloadSchema.safeParse({
+      ...specialistBase,
+      licenseDocId: 'https://example.com/file.pdf',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts an organization payload without an attached document', () => {
+    const result = organizationRegistrationPayloadSchema.safeParse({
+      ...organizationBase,
+      crDocId: null,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts an organization payload with an uploaded document id', () => {
+    const result = organizationRegistrationPayloadSchema.safeParse({
+      ...organizationBase,
+      crDocId: '3f1c2b4a-5d6e-4f70-8a91-2b3c4d5e6f70',
+    });
+    expect(result.success).toBe(true);
   });
 });

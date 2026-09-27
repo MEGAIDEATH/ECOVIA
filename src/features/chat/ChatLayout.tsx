@@ -50,7 +50,6 @@ export function ChatLayout({
   const { conversations, loading, error } = useConversations(currentUid, role);
   const { messages, loading: messagesLoading, error: messagesError } = useChatMessages(
     activeChatId,
-    currentUid,
   );
 
   const activeConversation = conversations.find((c) => c.chatId === activeChatId) ?? null;

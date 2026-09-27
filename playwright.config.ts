@@ -29,6 +29,9 @@ export default defineConfig({
   webServer: {
     command: `npm run build && npm run start -- --port ${PORT}`,
     url: `http://localhost:${PORT}`,
+    // Re-enable the development OTP path (fixed demo code + visible hint) for
+    // this local production-build run; real deployments never set this.
+    env: { ...process.env, NEXT_PUBLIC_ALLOW_DEV_OTP: 'true' } as Record<string, string>,
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,
   },

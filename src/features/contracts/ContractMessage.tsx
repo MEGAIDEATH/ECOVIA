@@ -7,7 +7,6 @@ import { ContractStatusBadge } from './ContractStatusBadge';
 
 interface ContractMessageProps {
   message: Message;
-  currentUid: string;
   role: UserRole;
 }
 
@@ -15,7 +14,7 @@ interface ContractMessageProps {
  * Contract card inside the chat — visual structure, badges, signatures and
  * states ported 1:1 from the legacy implementation.
  */
-export function ContractMessage({ message, currentUid, role }: ContractMessageProps) {
+export function ContractMessage({ message, role }: ContractMessageProps) {
   const contract = message.contractData;
   if (!contract) return null;
 
@@ -47,7 +46,7 @@ export function ContractMessage({ message, currentUid, role }: ContractMessagePr
                 {contract.specSig}
               </p>
             ) : role === 'spec' ? (
-              <ContractSignature messageId={message.id} currentUid={currentUid} />
+              <ContractSignature messageId={message.id} />
             ) : (
               <p className="text-sm text-orange-500 mt-2 font-bold animate-pulse">
                 بانتظار الأخصائي...

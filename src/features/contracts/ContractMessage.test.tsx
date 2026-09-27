@@ -14,9 +14,8 @@ vi.mock('@/features/chat/messageRepository', () => ({
 function makeContractMessage(status: 'pending' | 'signed'): Message {
   return {
     id: 'msg-1',
-    chatId: 'chat_org1_spec1',
-    participants: ['org1', 'spec1'],
-    senderId: 'org1',
+    conversationId: 'chat_org1_spec1',
+    senderUserId: 'org1',
     text: 'عقد جديد',
     isContract: true,
     contractData: {
@@ -30,10 +29,10 @@ function makeContractMessage(status: 'pending' | 'signed'): Message {
   };
 }
 
-function renderContract(message: Message, role: 'spec' | 'org', uid = 'spec1') {
+function renderContract(message: Message, role: 'spec' | 'org') {
   return render(
     <ToastProvider>
-      <ContractMessage message={message} currentUid={uid} role={role} />
+      <ContractMessage message={message} role={role} />
     </ToastProvider>,
   );
 }
@@ -71,7 +70,7 @@ describe('ContractMessage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'توقيع' }));
 
     await waitFor(() =>
-      expect(signContractMock).toHaveBeenCalledWith('msg-1', 'خالد سعيد', 'spec1'),
+      expect(signContractMock).toHaveBeenCalledWith('msg-1', 'خالد سعيد'),
     );
     expect(await screen.findByRole('alert')).toHaveTextContent('تم اعتماد العقد بنجاح!');
   });

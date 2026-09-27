@@ -1,11 +1,5 @@
 import type { AccountStatus } from '@/types';
 
-/**
- * Client-side access to the admin API. All privileged work (password check,
- * session cookie, Admin SDK writes) happens in Route Handlers — nothing
- * privileged is exposed to the browser.
- */
-
 export interface AdminSpecialistRow {
   id: string;
   name: string;
@@ -51,10 +45,15 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
-export async function adminLogin(password: string): Promise<void> {
+/**
+ * Signs the administrator in through Better Auth (email + password).
+ * Authorization (`role === 'admin'`) is checked server-side; this client only
+ * forwards the credentials.
+ */
+export async function adminLogin(email: string, password: string): Promise<void> {
   await request<{ ok: boolean }>('/api/admin/login', {
     method: 'POST',
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ email, password }),
   });
 }
 

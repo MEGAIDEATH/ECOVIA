@@ -11,15 +11,15 @@ vi.mock('@/features/specialists/specialistRepository', () => ({
   getApprovedSpecialists: getApprovedSpecialistsMock,
 }));
 
-const authMock = vi.hoisted(() => ({ user: { uid: 'org-1' }, loading: false }));
+const authMock = vi.hoisted(() => ({ user: { id: 'org-1' }, loading: false }));
 vi.mock('@/features/auth/AuthProvider', () => ({
   useAuth: () => authMock,
 }));
 
 const SPECIALISTS: Specialist[] = [
-  { id: 'org-1', status: 'approved', fullName: 'مستخدم خاص', nationalId: '1', email: '', phone: '', license: '' },
-  { id: 'spec-1', status: 'approved', fullName: 'خالد سعيد', nationalId: '1098765432', email: '', phone: '', license: '', edu: 'هندسة بيئية' },
-  { id: 'spec-2', status: 'approved', fullName: 'نورة العنزي', nationalId: '1098765433', email: '', phone: '', license: '', edu: 'استشارات استدامة' },
+  { id: 'org-1', userId: 'org-1', status: 'approved', fullName: 'مستخدم خاص', nationalId: '1', email: '', phone: '', license: '' },
+  { id: 'spec-1', userId: 'spec-1', status: 'approved', fullName: 'خالد سعيد', nationalId: '1098765432', email: '', phone: '', license: '', edu: 'هندسة بيئية' },
+  { id: 'spec-2', userId: 'spec-2', status: 'approved', fullName: 'نورة العنزي', nationalId: '1098765433', email: '', phone: '', license: '', edu: 'استشارات استدامة' },
 ];
 
 describe('SpecialistDirectory', () => {

@@ -7,11 +7,12 @@ import { DEMO_SESSION_RESET_ENABLED } from '@/lib/config/env';
 import { startFreshDemoSession } from './demoSession';
 
 /**
- * Demo/development-only action that starts a brand-new anonymous session so
- * the whole registration flow can be re-tested with a fresh UID.
+ * Demo/development-only action that resets the local session state so the
+ * whole registration flow can be re-tested with a fresh account.
  *
- * It only signs the browser out and reloads — no Firestore documents or
- * Firebase users are deleted, and security rules are untouched. Renders
+ * It signs the browser out via the server logout endpoint and clears the
+ * stored role preference, then reloads — no user data or documents are
+ * deleted. Renders
  * nothing unless `NEXT_PUBLIC_DEMO_SESSION_RESET=true` (never in production).
  */
 export function DemoSessionResetButton() {

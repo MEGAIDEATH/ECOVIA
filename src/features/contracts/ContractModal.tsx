@@ -40,7 +40,7 @@ export function ContractModal({ open, onClose, chatId }: ContractModalProps) {
       if (!user || !chatId) return;
       setSending(true);
       try {
-        await createContract(chatId, user.uid, values);
+        await createContract(chatId, values);
         reset();
         onClose();
         showToast('تم إرسال العقد');

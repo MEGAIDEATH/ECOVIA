@@ -3,59 +3,68 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthProvider, useAuth } from './AuthProvider';
 
-const authEmitters = vi.hoisted(() => ({
-  next: null as ((user: unknown) => void) | null,
-  error: null as ((error: unknown) => void) | null,
+const sessionPayload = vi.hoisted(() => ({
+  body: {
+    authenticated: true,
+    user: { id: 'user-1', email: 'spec@example.com', name: 'Spec', role: 'user' },
+    specialist: null,
+    organization: null,
+  } as unknown,
+  ok: true,
 }));
 
-const onAuthStateChangedMock = vi.hoisted(() => vi.fn());
-vi.mock('firebase/auth', () => ({ onAuthStateChanged: onAuthStateChangedMock }));
-
-const clientMock = vi.hoisted(() => ({
-  ensureAnonymousAuth: vi.fn(),
-  getFirebaseAuth: vi.fn(),
-}));
-vi.mock('@/lib/firebase/client', () => clientMock);
+function mockSession(body: unknown, ok = true): void {
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    new Response(JSON.stringify(body), { status: ok ? 200 : 401 }),
+  );
+}
 
 /** Renders the resolved auth state as plain text for assertions. */
 function AuthStateProbe() {
   const { user, loading } = useAuth();
-  return <div data-testid="auth-state">{loading ? 'loading' : user ? user.uid : 'none'}</div>;
+  return <div data-testid="auth-state">{loading ? 'loading' : user ? user.id : 'none'}</div>;
 }
 
-describe('AuthProvider (anonymous session bootstrap)', () => {
+describe('AuthProvider (database-backed session bootstrap)', () => {
   beforeEach(() => {
-    authEmitters.next = null;
-    authEmitters.error = null;
-    onAuthStateChangedMock.mockReset().mockImplementation(
-      (_auth: unknown, next: (user: unknown) => void, error: (err: unknown) => void) => {
-        authEmitters.next = next;
-        authEmitters.error = error;
-        return () => undefined;
-      },
-    );
-    clientMock.getFirebaseAuth.mockReset().mockReturnValue({ name: 'demo-auth' });
-    clientMock.ensureAnonymousAuth.mockReset().mockResolvedValue({ uid: 'fresh-uid' });
+    vi.restoreAllMocks();
+    sessionPayload.ok = true;
+    sessionPayload.body = {
+      authenticated: true,
+      user: { id: 'user-1', email: 'spec@example.com', name: 'Spec', role: 'user' },
+      specialist: null,
+      organization: null,
+    };
+    mockSession(sessionPayload.body, true);
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      if (String(input) === '/api/session') {
+        return new Response(JSON.stringify(sessionPayload.body), {
+          status: sessionPayload.ok ? 200 : 401,
+        });
+      }
+      return new Response(JSON.stringify({}), { status: 404 });
+    });
   });
 
-  it('creates the anonymous session only when the initial state has no user', async () => {
+  it('loads the authenticated user from the server session on mount', async () => {
     render(
       <AuthProvider>
         <AuthStateProbe />
       </AuthProvider>,
     );
     expect(screen.getByTestId('auth-state')).toHaveTextContent('loading');
-    expect(clientMock.ensureAnonymousAuth).not.toHaveBeenCalled();
 
     await act(async () => {
-      authEmitters.next?.(null);
+      await Promise.resolve();
     });
 
-    expect(clientMock.ensureAnonymousAuth).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId('auth-state')).toHaveTextContent('fresh-uid');
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/session');
+    expect(screen.getByTestId('auth-state')).toHaveTextContent('user-1');
   });
 
-  it('reuses an existing session and never signs in again', async () => {
+  it('reports no user when the server says the session is unauthenticated', async () => {
+    sessionPayload.body = { authenticated: false, user: null, specialist: null, organization: null };
+
     render(
       <AuthProvider>
         <AuthStateProbe />
@@ -63,51 +72,60 @@ describe('AuthProvider (anonymous session bootstrap)', () => {
     );
 
     await act(async () => {
-      authEmitters.next?.({ uid: 'existing-uid' });
-    });
-
-    expect(screen.getByTestId('auth-state')).toHaveTextContent('existing-uid');
-    expect(clientMock.ensureAnonymousAuth).not.toHaveBeenCalled();
-  });
-
-  it('keeps a persisted session usable across a provider remount', async () => {
-    const first = render(
-      <AuthProvider>
-        <AuthStateProbe />
-      </AuthProvider>,
-    );
-    await act(async () => {
-      authEmitters.next?.({ uid: 'persisted-uid' });
-    });
-    first.unmount();
-
-    render(
-      <AuthProvider>
-        <AuthStateProbe />
-      </AuthProvider>,
-    );
-    await act(async () => {
-      authEmitters.next?.({ uid: 'persisted-uid' });
-    });
-
-    expect(screen.getByTestId('auth-state')).toHaveTextContent('persisted-uid');
-    expect(clientMock.ensureAnonymousAuth).not.toHaveBeenCalled();
-  });
-
-  it('stops loading when the auth listener reports an error', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    render(
-      <AuthProvider>
-        <AuthStateProbe />
-      </AuthProvider>,
-    );
-
-    await act(async () => {
-      authEmitters.error?.(new Error('listener failed'));
+      await Promise.resolve();
     });
 
     expect(screen.getByTestId('auth-state')).toHaveTextContent('none');
-    expect(clientMock.ensureAnonymousAuth).not.toHaveBeenCalled();
-    consoleError.mockRestore();
+  });
+
+  it('stops loading when the session request fails', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network down'));
+
+    render(
+      <AuthProvider>
+        <AuthStateProbe />
+      </AuthProvider>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId('auth-state')).toHaveTextContent('none');
+  });
+
+  it('refreshes the session on demand', async () => {
+    function RefreshProbe() {
+      const { refresh, user } = useAuth();
+      return (
+        <button type="button" data-testid="refresh" onClick={() => void refresh()}>
+          {user ? user.id : 'none'}
+        </button>
+      );
+    }
+
+    render(
+      <AuthProvider>
+        <RefreshProbe />
+      </AuthProvider>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    sessionPayload.body = {
+      authenticated: true,
+      user: { id: 'user-2', email: 'org@example.com', name: 'Org', role: 'user' },
+      specialist: null,
+      organization: null,
+    };
+
+    await act(async () => {
+      screen.getByTestId('refresh').click();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId('refresh')).toHaveTextContent('user-2');
   });
 });

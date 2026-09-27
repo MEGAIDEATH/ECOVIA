@@ -1,80 +1,73 @@
 'use client';
 
-import { onAuthStateChanged } from 'firebase/auth';
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 
-import { ensureAnonymousAuth, getFirebaseAuth } from '@/lib/firebase/client';
+import type { Organization, Specialist } from '@/types';
 
-interface AuthContextValue {
-  user: import('firebase/auth').User | null;
-  /** True until the anonymous session is resolved (or sign-in failed). */
+export interface ClientUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
+
+export interface AuthContextValue {
+  user: ClientUser | null;
+  specialist: Specialist | null;
+  organization: Organization | null;
   loading: boolean;
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
 }
 
-/**
- * Resolves the Firebase session exactly like the legacy app: the user is
- * signed in anonymously at startup and the resulting UID keys all documents.
- * (Logout intentionally does NOT sign out — the legacy behavior kept the
- * same anonymous UID across logout/login so users return to their account.)
- */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthContextValue['user']>(null);
+  const [user, setUser] = useState<ClientUser | null>(null);
+  const [specialist, setSpecialist] = useState<Specialist | null>(null);
+  const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const auth = getFirebaseAuth();
-    let cancelled = false;
+  const refresh = useCallback(async () => {
+    const res = await fetch('/api/session').catch(() => null);
+    const data = res?.ok ? await res.json().catch(() => null) : null;
 
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (nextUser) => {
-        if (cancelled) return;
-        if (nextUser) {
-          // Existing (persisted) anonymous session — reuse it as-is.
-          setUser(nextUser);
-          setLoading(false);
-          return;
-        }
-        // Initial signed-out emission: only now do we create a session, so a
-        // restored UID is never replaced by a fresh one. `ensureAnonymousAuth`
-        // also de-duplicates concurrent callers (React Strict Mode double
-        // mount), so exactly one anonymous session is created per browser.
-        ensureAnonymousAuth()
-          .then((signedInUser) => {
-            if (cancelled) return;
-            setUser(signedInUser);
-            setLoading(false);
-          })
-          .catch((error: unknown) => {
-            console.error('[auth] anonymous sign-in failed:', error);
-            if (!cancelled) setLoading(false);
-          });
-      },
-      (error) => {
-        console.error('[auth] onAuthStateChanged error:', error);
-        if (!cancelled) setLoading(false);
-      },
-    );
-
-    return () => {
-      cancelled = true;
-      unsubscribe();
-    };
+    if (data?.authenticated) {
+      setUser(data.user);
+      setSpecialist(data.specialist);
+      setOrganization(data.organization);
+    } else {
+      setUser(null);
+      setSpecialist(null);
+      setOrganization(null);
+    }
+    setLoading(false);
   }, []);
 
-  const contextValue = useMemo(() => ({ user, loading }), [user, loading]);
+  useEffect(() => {
+    // Bootstrap the session once. `refresh` awaits the network before any
+    // setState, so nothing is set synchronously during this commit.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- setState runs only after `await fetch`
+    void refresh();
+  }, [refresh]);
 
-  return (
-    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+  const value = useMemo(
+    () => ({ user, specialist, organization, loading, refresh }),
+    [user, specialist, organization, loading, refresh],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

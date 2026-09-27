@@ -8,10 +8,9 @@ import { useToast } from '@/components/ui/Toast';
 import { clearPreferredRole } from './preferredRole';
 
 /**
- * Port of the legacy `performLogout()`:
+ * Signs the user out on the server:
  * clears the preferred role, toasts, then returns home after 1s.
- * The anonymous Firebase session is intentionally kept (legacy reloaded the
- * page without signing out, so the same UID could log back in).
+ * Only the server session is authoritative — nothing is cached in the browser.
  */
 export function usePerformLogout() {
   const router = useRouter();

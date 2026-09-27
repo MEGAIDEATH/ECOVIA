@@ -41,17 +41,17 @@ export type OrganizationRegistrationValues = z.infer<typeof organizationRegistra
  * Storage download URL of an uploaded document. `null` means the user did not
  * attach a file — registration must still succeed without it.
  */
-export const httpUrlSchema = z
-  .string()
-  .max(2048)
-  .url()
-  .refine((value) => ['http:', 'https:'].includes(new URL(value).protocol), 'رابط غير صالح');
+/**
+ * Uploaded-document reference. The database stores the document id (the
+ * `documents` row), never a public URL. `null` means the user did not attach a
+ * file, and registration must still succeed without it.
+ */
+export const documentIdSchema = z.string().uuid().nullable();
 
 /**
  * Full specialist registration payload (form fields + optional document URL).
- * Validated client-side before the Firestore write so empty/garbage documents
- * can never reach the database — the same guarantee the removed
- * `/api/registration` route provided.
+ * Validated client-side before the register API call so empty/garbage
+ * documents can never reach the database.
  */
 export const specialistRegistrationPayloadSchema = specialistStep1Schema.extend({
   fullName: z.string().trim().min(1, 'الاسم الثلاثي مطلوب').max(200),
@@ -64,7 +64,7 @@ export const specialistRegistrationPayloadSchema = specialistStep1Schema.extend(
   phone: z.string().trim().min(1, 'رقم الجوال مطلوب').max(32),
   license: z.string().trim().min(1, 'رقم المعاملة / الترخيص مطلوب').max(120),
   issueDate: z.string().trim().max(40).nullable(),
-  licenseDocUrl: httpUrlSchema.nullable(),
+  licenseDocId: documentIdSchema,
 });
 
 export type SpecialistRegistrationPayload = z.infer<typeof specialistRegistrationPayloadSchema>;
@@ -75,7 +75,7 @@ export const organizationRegistrationPayloadSchema = organizationRegistrationSch
   orgName: z.string().trim().min(1, 'اسم المنشأة مطلوب').max(200),
   phone: z.string().trim().min(1, 'رقم التواصل مطلوب').max(32),
   orgDesc: z.string().trim().min(1, 'نبذة عن الجهة مطلوبة').max(2000),
-  crDocUrl: httpUrlSchema.nullable(),
+  crDocId: documentIdSchema,
 });
 
 export type OrganizationRegistrationPayload = z.infer<

@@ -32,7 +32,8 @@ export function SpecialistDirectory({ onViewCv, onContact }: SpecialistDirectory
 
     getApprovedSpecialists()
       .then((list) => {
-        if (active) setSpecialists(list.filter((spec) => spec.id !== user?.uid));
+        // Never list the signed-in organization's own entry.
+        if (active) setSpecialists(list.filter((spec) => spec.userId !== user?.id));
       })
       .catch((err: unknown) => {
         console.error('[specialist-directory] load failed:', err);
@@ -45,7 +46,7 @@ export function SpecialistDirectory({ onViewCv, onContact }: SpecialistDirectory
     return () => {
       active = false;
     };
-  }, [user?.uid]);
+  }, [user?.id]);
 
   const filtered = useMemo(() => {
     const normalized = deferredQuery.trim().toLowerCase();

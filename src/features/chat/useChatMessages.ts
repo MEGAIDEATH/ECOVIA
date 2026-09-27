@@ -1,17 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
 import type { Message } from '@/types';
-
-import { subscribeToMessages } from './messageRepository';
-
-interface ChatMessagesState {
-  chatId: string | null;
-  messages: Message[];
-  loading: boolean;
-  error: boolean;
-}
 
 interface UseChatMessagesResult {
   messages: Message[];
@@ -19,54 +9,50 @@ interface UseChatMessagesResult {
   error: boolean;
 }
 
-const idle = (chatId: string | null): ChatMessagesState => ({
-  chatId,
-  messages: [],
-  loading: chatId !== null,
-  error: false,
-});
+const EMPTY_MESSAGES: Message[] = [];
 
 /**
- * Realtime messages for one chat. State is keyed by chatId so switching
- * conversations resets derived values WITHOUT synchronous setState inside
- * the effect. The listener is ALWAYS unsubscribed on unmount/chat change —
- * this replaces the legacy full-collection `onSnapshot` scanning.
- *
- * `uid` is required because the Firestore read rule only allows participants
- * to list a chat's messages, and list queries must carry the same constraint.
+ * Polls for messages of the active chat.
  */
-export function useChatMessages(
-  chatId: string | null,
-  uid: string | null,
-): UseChatMessagesResult {
-  const [state, setState] = useState<ChatMessagesState>(() => idle(chatId));
+export const useChatMessages = (chatId: string | null): UseChatMessagesResult => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(Boolean(chatId));
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!chatId || !uid) return;
+    if (!chatId) return;
 
     let active = true;
-    const unsubscribe = subscribeToMessages(
-      chatId,
-      uid,
-      (list) => {
-        if (!active) return;
-        setState({ chatId, messages: list, loading: false, error: false });
-      },
-      () => {
-        if (!active) return;
-        setState({ chatId, messages: [], loading: false, error: true });
-      },
-    );
+
+    async function load() {
+      try {
+        const res = await fetch(`/api/chat/messages?chatId=${encodeURIComponent(chatId!)}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (active) {
+          setMessages(data);
+          setError(false);
+        }
+      } catch {
+        if (active) setError(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void load();
+    const interval = setInterval(load, 3000);
 
     return () => {
       active = false;
-      unsubscribe();
+      clearInterval(interval);
     };
-  }, [chatId, uid]);
+  }, [chatId]);
 
-  if (state.chatId === chatId) {
-    return { messages: state.messages, loading: state.loading, error: state.error };
+  // No active chat: derive an empty result instead of resetting state in the
+  // effect (avoids synchronous setState during render commit).
+  if (!chatId) {
+    return { messages: EMPTY_MESSAGES, loading: false, error: false };
   }
-  // chatId just changed: derive the pre-load state (no effect writes needed).
-  return { messages: [], loading: chatId !== null, error: false };
-}
+  return { messages, loading, error };
+};

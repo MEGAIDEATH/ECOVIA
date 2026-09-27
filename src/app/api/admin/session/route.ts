@@ -1,8 +1,16 @@
 import type { NextRequest } from 'next/server';
 
-import { isAdminAuthenticated } from '@/lib/admin/apiAuth';
+import { getSessionUserFromRequest } from '@/lib/auth/session';
+import { jsonOk } from '@/lib/api/http';
 
-/** GET /api/admin/session — tells the client whether an admin session exists. */
+/**
+ * GET /api/admin/session — returns whether the current user is an admin.
+ */
 export async function GET(request: NextRequest): Promise<Response> {
-  return Response.json({ authenticated: isAdminAuthenticated(request) });
+  try {
+    const user = await getSessionUserFromRequest(request);
+    return jsonOk({ authenticated: Boolean(user && user.role === 'admin') });
+  } catch {
+    return jsonOk({ authenticated: false });
+  }
 }

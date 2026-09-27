@@ -1,18 +1,12 @@
 'use client';
 
-import { getFirebaseAuth } from '@/lib/firebase/client';
-
 import type { OrganizationDirectoryEntry, PublicSpecialist, PublicSpecialistSummary } from '@/types';
 
-async function directoryRequest<T>(kind: 'specialists' | 'organizations', uid?: string): Promise<T> {
-  const user = getFirebaseAuth().currentUser;
-  if (!user) throw new Error('يرجى تسجيل الدخول أولاً.');
-
+async function directoryRequest<T>(kind: 'specialists' | 'organizations', id?: string): Promise<T> {
   const params = new URLSearchParams({ kind });
-  if (uid) params.set('uid', uid);
-  const response = await fetch(`/api/directory?${params.toString()}`, {
-    headers: { Authorization: `Bearer ${await user.getIdToken()}` },
-  });
+  if (id) params.set('id', id);
+
+  const response = await fetch(`/api/directory?${params.toString()}`);
   let body: unknown;
   try {
     body = await response.json();
@@ -34,14 +28,14 @@ export function getPublicSpecialists(): Promise<PublicSpecialistSummary[]> {
   return directoryRequest<PublicSpecialistSummary[]>('specialists');
 }
 
-export function getPublicSpecialist(uid: string): Promise<PublicSpecialist> {
-  return directoryRequest<PublicSpecialist>('specialists', uid);
+export function getPublicSpecialist(id: string): Promise<PublicSpecialist> {
+  return directoryRequest<PublicSpecialist>('specialists', id);
 }
 
 export function getPublicOrganizations(): Promise<OrganizationDirectoryEntry[]> {
   return directoryRequest<OrganizationDirectoryEntry[]>('organizations');
 }
 
-export function getPublicOrganization(uid: string): Promise<OrganizationDirectoryEntry> {
-  return directoryRequest<OrganizationDirectoryEntry>('organizations', uid);
+export function getPublicOrganization(id: string): Promise<OrganizationDirectoryEntry> {
+  return directoryRequest<OrganizationDirectoryEntry>('organizations', id);
 }

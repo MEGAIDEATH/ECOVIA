@@ -14,11 +14,12 @@ interface AdminLoginModalProps {
 }
 
 /**
- * Admin login modal. Unlike the legacy version (which compared against a
- * hard-coded password in browser JS), this posts to /api/admin/login where
- * the ADMIN_PASSWORD environment variable is validated server-side.
+ * Admin login modal (Better Auth email + password). Credentials are validated
+ * by /api/admin/login against the stored password hash and authorized by the
+ * database role — never compared against any value in browser JS.
  */
 export function AdminLoginModal({ open, onClose }: AdminLoginModalProps) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
@@ -27,7 +28,7 @@ export function AdminLoginModal({ open, onClose }: AdminLoginModalProps) {
   const submit = async () => {
     setLoading(true);
     try {
-      await adminLogin(password);
+      await adminLogin(email.trim(), password);
       setPassword('');
       onClose();
       router.push('/admin');
@@ -56,6 +57,17 @@ export function AdminLoginModal({ open, onClose }: AdminLoginModalProps) {
       headerClassName="flex justify-between items-center mb-6"
     >
       <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        onKeyDown={onKeyDown}
+        aria-label="البريد الإلكتروني"
+        className="w-full px-4 py-3 bg-surface-container-low rounded-xl border focus:border-primary mb-3 text-center outline-none"
+        placeholder="admin@example.com"
+        dir="ltr"
+        autoComplete="email"
+      />
+      <input
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
@@ -64,6 +76,7 @@ export function AdminLoginModal({ open, onClose }: AdminLoginModalProps) {
         className="w-full px-4 py-3 bg-surface-container-low rounded-xl border focus:border-primary mb-6 text-center text-xl tracking-widest outline-none"
         placeholder="****"
         dir="ltr"
+        autoComplete="current-password"
       />
       <LoadingButton
         loading={loading}

@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useToast } from '@/components/ui/Toast';
-import { getOrganizationById } from '@/features/organizations/organizationRepository';
-import { getSpecialistById } from '@/features/specialists/specialistRepository';
+import { getOwnOrganization } from '@/features/organizations/organizationRepository';
+import { getOwnSpecialist } from '@/features/specialists/specialistRepository';
 import type { Organization, Specialist, UserRole } from '@/types';
 
 import { useAuth } from './AuthProvider';
@@ -22,7 +22,7 @@ interface DashboardGuardState {
 
 /**
  * Protects a dashboard route:
- * - resolves both account documents for the current UID (legacy
+ * - resolves both account documents for the current session (legacy
  *   `checkAndGoToDashboard` order),
  * - pending → /waiting, wrong role → other dashboard, none → home,
  * - approved + matching role → children render with the loaded profile.
@@ -36,9 +36,7 @@ export function useDashboardGuard(requiredRole: UserRole): DashboardGuardState {
 
   const loadProfile = useCallback(async (): Promise<Specialist | Organization | null> => {
     if (!user) return null;
-    return requiredRole === 'spec'
-      ? getSpecialistById(user.uid)
-      : getOrganizationById(user.uid);
+    return requiredRole === 'spec' ? getOwnSpecialist() : getOwnOrganization();
   }, [user, requiredRole]);
 
   const refresh = useCallback(async () => {
@@ -60,8 +58,8 @@ export function useDashboardGuard(requiredRole: UserRole): DashboardGuardState {
     (async () => {
       try {
         const [specialist, organization] = await Promise.all([
-          getSpecialistById(user.uid),
-          getOrganizationById(user.uid),
+          getOwnSpecialist(),
+          getOwnOrganization(),
         ]);
 
         const destination = resolveDestination(

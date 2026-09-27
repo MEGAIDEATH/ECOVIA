@@ -1,52 +1,36 @@
 import type { NextRequest } from 'next/server';
 
-import { isAdminAuthenticated, jsonError } from '@/lib/admin/apiAuth';
-import { FirebaseAdminConfigError, getAdminDb } from '@/lib/firebase/admin';
-import { organizationCollectionPath, specialistCollectionPath } from '@/lib/firestore/paths';
-
-const ALLOWED_COLLECTIONS: Record<string, string> = {
-  specialists: specialistCollectionPath,
-  organizations: organizationCollectionPath,
-};
+import { jsonError, jsonOk, mapError, readJson } from '@/lib/api/http';
+import { requireAdmin } from '@/lib/auth/session';
+import { approveAccount, type AdminTarget } from '@/repositories/profiles';
 
 /**
- * POST /api/admin/accounts/approve — sets a pending account to `approved`.
- * The collection name is whitelisted server-side; requires an admin session.
+ * POST /api/admin/accounts/approve
+ * Requires admin session. Approves a specialist or organization account.
  */
 export async function POST(request: NextRequest): Promise<Response> {
-  if (!isAdminAuthenticated(request)) {
-    return jsonError('غير مصرح بالوصول.', 401);
-  }
-
-  let target: unknown;
-  let id: unknown;
   try {
-    const body: unknown = await request.json();
-    if (body && typeof body === 'object') {
-      target = (body as { collection?: unknown }).collection;
-      id = (body as { id?: unknown }).id;
+    const admin = await requireAdmin(request);
+    const body = await readJson(request);
+    if (!body) return jsonError('طلب غير صالح.', 400);
+
+    const target = body.collection as AdminTarget | undefined;
+    const id = body.id as string | undefined;
+
+    if (!target || (target !== 'specialists' && target !== 'organizations')) {
+      return jsonError('نوع الحساب غير صالح.', 400);
     }
-  } catch {
-    return jsonError('طلب غير صالح.', 400);
-  }
+    if (!id || typeof id !== 'string') {
+      return jsonError('معرّف الحساب مطلوب.', 400);
+    }
 
-  if (typeof target !== 'string' || !(target in ALLOWED_COLLECTIONS)) {
-    return jsonError('طلب غير صالح.', 400);
-  }
-  if (typeof id !== 'string' || id.length === 0 || id.length > 128) {
-    return jsonError('طلب غير صالح.', 400);
-  }
+    const success = await approveAccount(target, id, admin.id);
+    if (!success) {
+      return jsonError('الحساب غير موجود.', 404);
+    }
 
-  try {
-    const db = getAdminDb();
-    await db.doc(`${ALLOWED_COLLECTIONS[target]}/${id}`).update({ status: 'approved' });
-    return Response.json({ ok: true });
+    return jsonOk({ ok: true });
   } catch (error) {
-    if (error instanceof FirebaseAdminConfigError) {
-      console.error('[admin/approve] admin credentials are not configured.');
-      return jsonError('خدمة البيانات غير مهيأة حالياً.', 503);
-    }
-    console.error('[admin/approve] update failed:', error);
-    return jsonError('تعذر تحديث الحساب، حاول مرة أخرى.', 500);
+    return mapError(error, 'admin/accounts/approve');
   }
 }

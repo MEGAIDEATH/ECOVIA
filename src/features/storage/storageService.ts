@@ -1,10 +1,6 @@
-import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
-
-import { getFirebaseStorage } from '@/lib/firebase/client';
-
 /**
- * Firebase Storage abstractions. Only paths/URLs are persisted to Firestore —
- * never Base64 payloads (the legacy approach).
+ * Client document upload service.
+ * Uploads files to the server's protected document storage via /api/files.
  */
 
 const PROFILE_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -31,17 +27,9 @@ export interface UploadProgress {
 }
 
 export interface UploadHandle {
-  /** Resolves to the download URL once the upload completes. */
+  /** Resolves to the file's ID / serving URL once uploaded. */
   promise: Promise<string>;
-  /** Cancels an in-flight upload (best effort). */
   cancel(): void;
-}
-
-function extensionFor(file: File): string {
-  const fromType = file.type.split('/')[1];
-  if (fromType) return fromType === 'jpeg' ? 'jpg' : fromType;
-  const dot = file.name.lastIndexOf('.');
-  return dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : 'bin';
 }
 
 function assertImage(file: File): void {
@@ -72,77 +60,64 @@ function assertScannableDocument(file: File): void {
   }
 }
 
-function startUpload(
-  storagePath: string,
-  file: File,
-  onProgress?: UploadProgress,
-): UploadHandle {
-  const storageRef = ref(getFirebaseStorage(), storagePath);
-  const task = uploadBytesResumable(storageRef, file);
+function uploadViaHttp(file: File, kind: string, onProgress?: UploadProgress): UploadHandle {
+  const controller = new AbortController();
 
   const promise = new Promise<string>((resolve, reject) => {
-    task.on(
-      'state_changed',
-      (snapshot) => {
-        if (onProgress) {
-          const percent = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          onProgress(percent);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('kind', kind);
+
+    if (onProgress) onProgress(20);
+
+    fetch('/api/files', {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (onProgress) onProgress(90);
+        if (!res.ok) {
+          const body = (await res.json().catch(() => null)) as { error?: string } | null;
+          throw new UploadError(body?.error || 'تعذر رفع الملف.');
         }
-      },
-      (error) => {
-        console.error('[storage] upload failed:', storagePath, error);
-        if (error.code === 'storage/canceled') {
+        return res.json() as Promise<{ id: string; url: string }>;
+      })
+      .then((data) => {
+        if (onProgress) onProgress(100);
+        resolve(data.url);
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) {
           reject(new UploadError('تم إلغاء الرفع.'));
         } else {
-          reject(new UploadError());
+          reject(err instanceof Error ? err : new UploadError());
         }
-      },
-      async () => {
-        try {
-          resolve(await getDownloadURL(task.snapshot.ref));
-        } catch (error) {
-          console.error('[storage] getDownloadURL failed:', error);
-          reject(new UploadError());
-        }
-      },
-    );
+      });
   });
 
-  return { promise, cancel: () => void task.cancel() };
+  return {
+    promise,
+    cancel: () => controller.abort(),
+  };
 }
 
-/** Uploads the specialist's profile picture → `specialists/{uid}/profile-*`. */
-export function uploadProfileImage(
-  uid: string,
-  file: File,
-  onProgress?: UploadProgress,
-): UploadHandle {
+export function uploadProfileImage(file: File, onProgress?: UploadProgress): UploadHandle {
   assertImage(file);
-  return startUpload(`specialists/${uid}/profile-${Date.now()}.${extensionFor(file)}`, file, onProgress);
+  return uploadViaHttp(file, 'profile_image', onProgress);
 }
 
-/** Uploads the specialist's resume PDF → `specialists/{uid}/resume-*`. */
-export function uploadResume(
-  uid: string,
-  file: File,
-  onProgress?: UploadProgress,
-): UploadHandle {
+export function uploadResume(file: File, onProgress?: UploadProgress): UploadHandle {
   assertPdf(file);
-  return startUpload(`specialists/${uid}/resume-${Date.now()}.pdf`, file, onProgress);
+  return uploadViaHttp(file, 'resume', onProgress);
 }
 
-/** Archives the scanned registration document → `ocr-documents/{uid}/…`. */
 export function uploadDocumentForOCR(
-  uid: string,
   file: File,
   kind: 'license' | 'commercial',
   onProgress?: UploadProgress,
 ): UploadHandle {
   assertScannableDocument(file);
-  const ext = extensionFor(file);
-  return startUpload(
-    `ocr-documents/${uid}/${kind}-${Date.now()}.${ext}`,
-    file,
-    onProgress,
-  );
+  const documentKind = kind === 'license' ? 'license' : 'commercial_registration';
+  return uploadViaHttp(file, documentKind, onProgress);
 }

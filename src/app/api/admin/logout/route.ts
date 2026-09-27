@@ -1,21 +1,25 @@
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-import { jsonError, sessionCookieOptions } from '@/lib/admin/apiAuth';
+import { mapError } from '@/lib/api/http';
+import { getAuth } from '@/lib/auth';
 
-/** POST /api/admin/logout — clears the admin session cookie. */
-export async function POST(): Promise<Response> {
-  const cookie = sessionCookieOptions();
-  const response = NextResponse.json({ ok: true });
-  response.cookies.set(cookie.name, '', {
-    maxAge: 0,
-    httpOnly: cookie.httpOnly,
-    sameSite: cookie.sameSite,
-    secure: cookie.secure,
-    path: cookie.path,
-  });
-  return response;
-}
-
-export function GET(): Response {
-  return jsonError('Method not allowed.', 405);
+/**
+ * POST /api/admin/logout
+ */
+export async function POST(request: NextRequest): Promise<Response> {
+  try {
+    await getAuth().api.signOut({ headers: request.headers, asResponse: true });
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set('better-auth.session_token', '', {
+      maxAge: 0,
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+    });
+    return response;
+  } catch (error) {
+    return mapError(error, 'admin/logout');
+  }
 }

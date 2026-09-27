@@ -16,10 +16,10 @@ interface ChatMessageProps {
  */
 export function ChatMessage({ message, currentUid, role }: ChatMessageProps) {
   if (message.isContract) {
-    return <ContractMessage message={message} currentUid={currentUid} role={role} />;
+    return <ContractMessage message={message} role={role} />;
   }
 
-  const isMe = message.senderId === currentUid;
+  const isMe = message.senderUserId === currentUid;
 
   const bubbleClass = isMe
     ? role === 'spec'

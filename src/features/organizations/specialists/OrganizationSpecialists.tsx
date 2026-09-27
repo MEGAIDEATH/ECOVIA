@@ -35,10 +35,12 @@ export function OrganizationSpecialists() {
     if (!user || contacting) return;
     setContacting(true);
     try {
-      const chatId = buildChatId(user.uid, specialist.id);
+      // Server contract: `chat_{orgUserId}_{specUserId}` — both segments are
+      // Better Auth user ids (the organization's own id + the specialist's).
+      const chatId = buildChatId(user.id, specialist.userId);
       await sendMessage({
         chatId,
-        senderId: user.uid,
+        senderId: user.id,
         text: 'مرحباً بك، تواصلنا معك بخصوص فرصة تعاون.',
       });
       showToast('تم فتح قناة تواصل');

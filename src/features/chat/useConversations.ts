@@ -1,43 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-import { getPublicOrganization, getPublicSpecialist } from '@/features/directory/directoryService';
-import { getOtherParticipantId } from '@/lib/utils/chat';
+import { fetchConversations } from './conversationRepository';
 import type { Conversation, UserRole } from '@/types';
-
-import { subscribeToConversations } from './conversationRepository';
-
-/** Display-name cache (replaces the legacy `window.userNamesCache`). */
-const nameCache = new Map<string, string>();
-
-async function resolveDisplayName(
-  chatId: string,
-  role: UserRole,
-): Promise<{ otherId: string | null; name: string }> {
-  const otherId = getOtherParticipantId(chatId, role);
-  if (!otherId) return { otherId: null, name: 'مستخدم' };
-
-  const cacheKey = `${role}:${otherId}`;
-  const cached = nameCache.get(cacheKey);
-  if (cached) return { otherId, name: cached };
-
-  try {
-    let name: string | null = null;
-    if (role === 'spec') {
-      name = (await getPublicOrganization(otherId)).orgName;
-    } else {
-      name = (await getPublicSpecialist(otherId)).fullName;
-    }
-    if (name) {
-      nameCache.set(cacheKey, name);
-      return { otherId, name };
-    }
-  } catch (error) {
-    console.error('[conversations] display name lookup failed:', error);
-  }
-  return { otherId, name: 'مستخدم' };
-}
 
 export interface ConversationView extends Conversation {
   otherId: string | null;
@@ -50,52 +15,55 @@ interface UseConversationsResult {
   error: boolean;
 }
 
-/**
- * Realtime conversation list for the current user, with the counterpart's
- * display name resolved (and cached). Cleans up the listener on unmount.
- */
-export function useConversations(uid: string | null, role: UserRole): UseConversationsResult {
+const EMPTY_CONVERSATIONS: ConversationView[] = [];
+
+export const useConversations = (
+  currentUid: string | null,
+  role: UserRole,
+): UseConversationsResult => {
   const [conversations, setConversations] = useState<ConversationView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!uid) return;
+    if (!currentUid) return;
 
     let active = true;
 
-    const unsubscribe = subscribeToConversations(
-      uid,
-      (list) => {
+    async function load() {
+      try {
+        const raw = await fetchConversations();
         if (!active) return;
-        setLoading(false);
-        if (list.length === 0) {
-          setConversations([]);
-          return;
-        }
-
-        void Promise.all(
-          list.map(async (conversation) => {
-            const { otherId, name } = await resolveDisplayName(conversation.chatId, role);
-            return { ...conversation, otherId, otherName: name };
-          }),
-        ).then((resolved) => {
-          if (active) setConversations(resolved);
+        const mapped = raw.map((c) => {
+          const otherId = role === 'spec' ? c.participants[0] : c.participants[1];
+          return {
+            ...c,
+            otherId,
+            otherName: 'محادثة',
+          };
         });
-      },
-      () => {
-        if (active) {
-          setLoading(false);
-          setError(true);
-        }
-      },
-    );
+        setConversations(mapped);
+        setError(false);
+      } catch {
+        if (active) setError(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void load();
+    const interval = setInterval(load, 5000);
 
     return () => {
       active = false;
-      unsubscribe();
+      clearInterval(interval);
     };
-  }, [uid, role]);
+  }, [currentUid, role]);
 
+  // Signed-out: derive an empty result instead of resetting state inside the
+  // effect (avoids synchronous setState during render commit).
+  if (!currentUid) {
+    return { conversations: EMPTY_CONVERSATIONS, loading: false, error: false };
+  }
   return { conversations, loading, error };
-}
+};

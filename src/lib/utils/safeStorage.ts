@@ -1,12 +1,12 @@
 /**
- * localStorage wrapper with an in-memory/window fallback (ported from the
- * legacy `safeStorage` helper so private-mode storage failures degrade softly).
+ * safeStorage probing: the probe key must never collide with real application
+ * keys, so it uses a distinctive reserved prefix.
  */
 const memoryStore = new Map<string, string>();
 
 function canUseLocalStorage(): boolean {
   try {
-    const probe = '__baeeyen_storage_probe__';
+    const probe = '__ecovia_storage_probe__';
     window.localStorage.setItem(probe, '1');
     window.localStorage.removeItem(probe);
     return true;

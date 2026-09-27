@@ -1,5 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 
+// Seeded administrator — matches ADMIN_EMAIL / ADMIN_PASSWORD in .env.local.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@ecovia.local';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'admin_secure_password_123';
+
 /**
  * Public pages must not touch the admin API nor initialize the admin
  * dashboard. The admin error reported by users ("خدمة البيانات غير مهيأة
@@ -93,7 +97,8 @@ test.describe('public flow isolation', () => {
     await page.goto('/admin');
     await expect(page.getByText('دخول الإدارة')).toBeVisible();
 
-    await page.getByLabel('رمز الدخول').fill('1234');
+    await page.getByLabel('البريد الإلكتروني').fill(ADMIN_EMAIL);
+    await page.getByLabel('رمز الدخول').fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: 'دخول' }).click();
 
     await expect

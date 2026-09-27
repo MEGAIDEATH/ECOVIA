@@ -11,8 +11,8 @@ import { getPreferredRole } from '@/features/auth/preferredRole';
 import { useApprovalListener } from '@/features/auth/useApprovalListener';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { usePerformLogout } from '@/features/auth/usePerformLogout';
-import { getOrganizationById } from '@/features/organizations/organizationRepository';
-import { getSpecialistById } from '@/features/specialists/specialistRepository';
+import { getOwnOrganization } from '@/features/organizations/organizationRepository';
+import { getOwnSpecialist } from '@/features/specialists/specialistRepository';
 import type { UserRole } from '@/types';
 
 const AdminLoginModal = dynamic(
@@ -48,8 +48,8 @@ function WaitingContent() {
     (async () => {
       try {
         const [specialist, organization] = await Promise.all([
-          getSpecialistById(user.uid),
-          getOrganizationById(user.uid),
+          getOwnSpecialist(),
+          getOwnOrganization(),
         ]);
         const destination = resolveDestination(
           getPreferredRole(),
@@ -86,7 +86,7 @@ function WaitingContent() {
     }, 1500);
   }, [showToast, router, role]);
 
-  useApprovalListener(user?.uid ?? null, role, handleApproved);
+  useApprovalListener(user?.id ?? null, role, handleApproved);
 
   useEffect(() => {
     return () => {
