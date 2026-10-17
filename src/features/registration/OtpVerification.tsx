@@ -48,9 +48,14 @@ export function OtpVerification({ role }: OtpVerificationProps) {
   const email = role === 'spec' ? draft.email : `org_${draft.crNumber}@ecovia.local`;
 
   const backHref =
-    role === 'spec' ? '/register/specialist/step-2' : '/register/organization';
+    role === 'spec' ? '/register/specialist' : '/register/organization';
 
   const sendOtp = useCallback(async () => {
+    if (!email || !email.includes('@')) {
+      setOtpState('failed');
+      return;
+    }
+
     const res = await fetch('/api/session/otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,10 +68,20 @@ export function OtpVerification({ role }: OtpVerificationProps) {
     if (res?.ok) {
       setOtpState('sent');
     } else {
-      if (res) console.error('[registration] OTP request failed:', res.status);
+      let message = 'تعذر إرسال الرمز، حاول مرة أخرى.';
+      if (res) {
+        try {
+          const body = await res.json();
+          if (body?.error) message = body.error as string;
+        } catch {
+          // Non-JSON or empty body — use generic message
+        }
+        console.error(`[registration] OTP request failed: ${res.status}`);
+      }
+      showToast(message, true);
       setOtpState('failed');
     }
-  }, [email]);
+  }, [email, showToast]);
 
   // The code must exist server-side before it can be verified — request it as
   // soon as the step opens (and again via the retry button on failure).

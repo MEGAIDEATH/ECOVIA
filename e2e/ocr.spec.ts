@@ -52,7 +52,7 @@ function buildPdf(pages: string[]): Buffer {
 }
 
 async function openLicenseStep(page: import('@playwright/test').Page): Promise<void> {
-  await page.goto('/register/specialist/step-2');
+  await page.goto('/register/specialist');
   await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 }
 
@@ -60,7 +60,7 @@ test.describe('license PDF extraction (real pdf.js)', () => {
   test('extracts the license and issue date from a text PDF', async ({ page }) => {
     await openLicenseStep(page);
 
-    await page.locator('#file_upload').setInputFiles({
+    await page.locator('#license_upload').setInputFiles({
       name: 'license.pdf',
       mimeType: 'application/pdf',
       buffer: buildPdf(['ELESL-2023-12345 15/06/2024']),
@@ -74,7 +74,7 @@ test.describe('license PDF extraction (real pdf.js)', () => {
   test('finds the license on a later page of a multi-page PDF', async ({ page }) => {
     await openLicenseStep(page);
 
-    await page.locator('#file_upload').setInputFiles({
+    await page.locator('#license_upload').setInputFiles({
       name: 'license-multipage.pdf',
       mimeType: 'application/pdf',
       buffer: buildPdf(['COVER PAGE', 'ELESL-2024-77777 01/02/2025']),
@@ -105,7 +105,7 @@ test.describe('license PDF extraction (real pdf.js)', () => {
       return canvas.toDataURL('image/png');
     });
 
-    await page.locator('#file_upload').setInputFiles({
+    await page.locator('#license_upload').setInputFiles({
       name: 'license.png',
       mimeType: 'image/png',
       buffer: Buffer.from(dataUrl.split(',')[1], 'base64'),

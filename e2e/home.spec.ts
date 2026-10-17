@@ -51,8 +51,8 @@ test.describe('home screen', () => {
     await page.goto('/');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
     await page.getByRole('link', { name: /دخول كأخصائي/ }).click();
-    await expect(page).toHaveURL(/\/register\/specialist\/step-1/);
-    await expect(page.getByText('القارئ الآلي للبيانات')).toBeVisible();
+    await expect(page).toHaveURL(/\/register\/specialist/);
+    await expect(page.getByText('ارفع المستند الشخصي والترخيص')).toBeVisible();
   });
 
   test('organization card enters the organization registration form', async ({ page }) => {

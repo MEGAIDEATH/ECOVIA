@@ -110,7 +110,7 @@ export function HomeView() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 w-full max-w-3xl">
           <Link
-            href="/register/specialist/step-1"
+            href="/register/specialist"
             className="group relative bg-white/70 backdrop-blur-xl p-6 md:p-8 rounded-3xl border-2 border-white/60 hover:border-primary shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col items-center text-center overflow-hidden hover:-translate-y-2 fade-up"
             style={{ animationDelay: '0.2s' }}
           >

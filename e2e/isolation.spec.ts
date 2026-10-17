@@ -49,16 +49,16 @@ test.describe('public flow isolation', () => {
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
     await page.getByRole('link', { name: /دخول كأخصائي/ }).click();
-    await expect(page).toHaveURL(/\/register\/specialist\/step-1/);
-    await expect(page.getByText('القارئ الآلي للبيانات')).toBeVisible();
+    await expect(page).toHaveURL(/\/register\/specialist/);
+    await expect(page.getByText('ارفع المستند الشخصي والترخيص')).toBeVisible();
 
     await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
     await page.getByLabel('رقم الهوية').fill('1098765432');
     await page.getByLabel('البريد الإلكتروني').fill('khaled@example.com');
     await page.getByLabel('رقم الجوال').fill('0512345678');
-    await page.getByRole('button', { name: /المتابعة/ }).click();
-    await expect(page).toHaveURL(/\/register\/specialist\/step-2/);
-    await expect(page.getByText('ارفع الترخيص البيئي')).toBeVisible();
+    await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
+    await expect(page).toHaveURL(/\/register\/specialist/);
+    await expect(page.getByText('ارفع المستند الشخصي والترخيص')).toBeVisible();
 
     expectNoAdminActivity(evidence);
     // OCR/PDF engines stay lazy until a scan actually starts.

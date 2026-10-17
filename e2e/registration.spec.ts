@@ -41,10 +41,10 @@ const findOrganizationByCr = (crNumber: string) =>
 
 test.describe('specialist registration flow', () => {
   test('step 1 validates required fields with Arabic messages', async ({ page }) => {
-    await page.goto('/register/specialist/step-1');
+    await page.goto('/register/specialist');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
-    await page.getByRole('button', { name: /المتابعة/ }).click();
+    await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
 
     await expect(page.getByText('الاسم الثلاثي مطلوب')).toBeVisible();
     await expect(page.getByText('رقم الهوية مطلوب')).toBeVisible();
@@ -55,21 +55,20 @@ test.describe('specialist registration flow', () => {
   test('valid step 1 proceeds to step 2, then to the OTP screen with the demo hint', async ({
     page,
   }) => {
-    await page.goto('/register/specialist/step-1');
+    await page.goto('/register/specialist');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
     await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
     await page.getByLabel('رقم الهوية').fill('1098765432');
     await page.getByLabel('البريد الإلكتروني').fill('khaled@example.com');
     await page.getByLabel('رقم الجوال').fill('0512345678');
-    await page.getByRole('button', { name: /المتابعة/ }).click();
+    await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
 
-    await expect(page).toHaveURL(/\/register\/specialist\/step-2/);
     await expect(page.getByRole('heading', { name: 'تسجيل أخصائي' })).toBeVisible();
     await expect(page.getByText('الترخيص المهني')).toBeVisible();
 
     await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2024-99999');
-    await page.getByRole('button', { name: /المتابعة للتحقق/ }).click();
+    await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
 
     await expect(page).toHaveURL(/\/register\/specialist\/verify/);
     await expect(page.getByRole('heading', { name: 'أدخل رمز التحقق' })).toBeVisible();
@@ -79,18 +78,17 @@ test.describe('specialist registration flow', () => {
   test('wrong demo OTP shows the Arabic error without registering', async ({ page }) => {
     // Walk the real flow so the OTP exists server-side for this email —
     // a bare /verify visit has no draft (and no code) to check against.
-    await page.goto('/register/specialist/step-1');
+    await page.goto('/register/specialist');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
     await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
     await page.getByLabel('رقم الهوية').fill('1098765432');
     await page.getByLabel('البريد الإلكتروني').fill('khaled@example.com');
     await page.getByLabel('رقم الجوال').fill('0512345678');
-    await page.getByRole('button', { name: /المتابعة/ }).click();
-    await expect(page).toHaveURL(/\/register\/specialist\/step-2/);
+    await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
 
     await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2024-99999');
-    await page.getByRole('button', { name: /المتابعة للتحقق/ }).click();
+    await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
     await expect(page).toHaveURL(/\/register\/specialist\/verify/);
 
     const boxes = page.getByLabel(/^خانة الرمز /);
@@ -111,18 +109,16 @@ test.describe('specialist registration flow', () => {
     // the second run collide with the account created by the first.
     const email = `e2e.spec.${Date.now()}@example.com`;
 
-    await page.goto('/register/specialist/step-1');
+    await page.goto('/register/specialist');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
     await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
     await page.getByLabel('رقم الهوية').fill('1098765432');
     await page.getByLabel('البريد الإلكتروني').fill(email);
     await page.getByLabel('رقم الجوال').fill('0512345678');
-    await page.getByRole('button', { name: /المتابعة/ }).click();
-    await expect(page).toHaveURL(/\/register\/specialist\/step-2/);
-
+    await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
     await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2024-99999');
-    await page.getByRole('button', { name: /المتابعة للتحقق/ }).click();
+    await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
     await expect(page).toHaveURL(/\/register\/specialist\/verify/);
     await expect(page.getByText('للتجربة: استخدم 123456')).toBeVisible();
 

@@ -1,5 +1,5 @@
-import { SpecialistStep1Form } from '@/features/registration/SpecialistStep1Form';
+import { redirect } from "next/navigation";
 
-export default function SpecialistStep1Page() {
-  return <SpecialistStep1Form />;
+export default function Page() {
+  redirect("/register/specialist");
 }
