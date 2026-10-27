@@ -64,8 +64,8 @@ describe('OtpVerification (demo flow)', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
-        if (url === '/api/session/otp') return jsonResponse({ ok: true });
-        if (url === '/api/session/verify') {
+        if (url === '/api/session/otp' || url === '/api/session/phone-otp') return jsonResponse({ ok: true });
+        if (url === '/api/session/verify' || url === '/api/session/phone-verify') {
           const body = JSON.parse(String(init?.body ?? '{}')) as { code?: string };
           if (body.code === '123456') return jsonResponse({ ok: true });
           return jsonResponse({ error: 'رمز التحقق غير صحيح!' }, false);
@@ -118,7 +118,7 @@ describe('OtpVerification (demo flow)', () => {
     expect(payload).not.toHaveProperty('ocrSucceeded');
     expect(payload).not.toHaveProperty('status');
     expect(localStorage.getItem('preferredRole')).toBe('spec');
-    await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/waiting?role=spec'));
+    await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/set-password?next=%2Fwaiting%3Frole%3Dspec'));
   });
 
   it('stores the organization role preference for org registration', async () => {
@@ -131,7 +131,7 @@ describe('OtpVerification (demo flow)', () => {
     expect(registerOrganizationMock.mock.calls[0][0]).not.toHaveProperty('ocrSucceeded');
     expect(registerOrganizationMock.mock.calls[0][0]).not.toHaveProperty('status');
     expect(localStorage.getItem('preferredRole')).toBe('org');
-    await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/waiting?role=org'));
+    await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/set-password?next=%2Fwaiting%3Frole%3Dorg'));
   });
 
   it('shows the demo hint copy from the legacy screen', () => {
@@ -155,7 +155,7 @@ describe('OtpVerification (demo flow)', () => {
     await typeCode(user, '123456');
     await user.click(screen.getByRole('button', { name: 'تأكيد الدخول' }));
 
-    await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/waiting?role=spec'));
+    await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/set-password?next=%2Fwaiting%3Frole%3Dspec'));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'هذا الحساب مسجل مسبقاً، سيتم فتح حالة التحقق الحالية.',
     );
@@ -177,10 +177,10 @@ describe('OtpVerification (demo flow)', () => {
     await typeCode(user, '123456');
     await user.click(screen.getByRole('button', { name: 'تأكيد الدخول' }));
 
-    await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/specialist'));
+    await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/set-password?next=%2Fspecialist'));
     expect(await screen.findByRole('alert')).toHaveTextContent('تم التفعيل!');
     expect(consoleError).not.toHaveBeenCalled();
-    expect(routerMocks.replace).not.toHaveBeenCalledWith('/waiting?role=spec');
+    expect(routerMocks.replace).not.toHaveBeenCalledWith('/set-password?next=%2Fwaiting%3Frole%3Dspec');
   });
 
   it('routes an existing pending organization to the waiting room as a normal state (no error)', async () => {
@@ -197,7 +197,7 @@ describe('OtpVerification (demo flow)', () => {
     await typeCode(user, '123456');
     await user.click(screen.getByRole('button', { name: 'تأكيد الدخول' }));
 
-    await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/waiting?role=org'));
+    await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/set-password?next=%2Fwaiting%3Frole%3Dorg'));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'هذا الحساب مسجل مسبقاً، سيتم فتح حالة التحقق الحالية.',
     );
@@ -218,10 +218,10 @@ describe('OtpVerification (demo flow)', () => {
     await typeCode(user, '123456');
     await user.click(screen.getByRole('button', { name: 'تأكيد الدخول' }));
 
-    await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/organization'));
+    await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/set-password?next=%2Forganization'));
     expect(await screen.findByRole('alert')).toHaveTextContent('تم التفعيل!');
     expect(consoleError).not.toHaveBeenCalled();
-    expect(routerMocks.replace).not.toHaveBeenCalledWith('/waiting?role=org');
+    expect(routerMocks.replace).not.toHaveBeenCalledWith('/set-password?next=%2Fwaiting%3Frole%3Dorg');
   });
 
   it('still surfaces unexpected registration failures as an error toast', async () => {

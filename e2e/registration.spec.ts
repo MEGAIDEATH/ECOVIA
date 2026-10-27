@@ -13,7 +13,7 @@ loadLocalEnv();
 async function findProfile(
   table: 'specialists' | 'organizations',
   column: 'full_name' | 'org_name',
-  joinColumn: 'u.email' | 'p.cr_number',
+  joinColumn: 'u.email' | 'p.cr_number' | 'p.phone',
   key: string,
 ) {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -33,13 +33,32 @@ async function findProfile(
   }
 }
 
-const findSpecialistByEmail = (email: string) =>
-  findProfile('specialists', 'full_name', 'u.email', email);
+const findSpecialistByPhone = (phone: string) =>
+  findProfile('specialists', 'full_name', 'p.phone', phone);
 
 const findOrganizationByCr = (crNumber: string) =>
   findProfile('organizations', 'org_name', 'p.cr_number', crNumber);
 
+async function getPhoneOtp(phone: string): Promise<string> {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  try {
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const result = await pool.query(
+        `select value from verification where identifier = $1 order by created_at desc limit 1`,
+        [phone],
+      );
+      const value = result.rows[0]?.value as string | undefined;
+      if (value) return value.split(':')[0];
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    throw new Error(`Timed out waiting for OTP for ${phone}`);
+  } finally {
+    await pool.end();
+  }
+}
+
 test.describe('specialist registration flow', () => {
+  test.describe.configure({ mode: 'serial' });
   test('step 1 validates required fields with Arabic messages', async ({ page }) => {
     await page.goto('/register/specialist');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
@@ -48,7 +67,6 @@ test.describe('specialist registration flow', () => {
 
     await expect(page.getByText('الاسم الثلاثي مطلوب')).toBeVisible();
     await expect(page.getByText('رقم الهوية مطلوب')).toBeVisible();
-    await expect(page.getByText('البريد الإلكتروني مطلوب')).toBeVisible();
     await expect(page.getByText('رقم الجوال مطلوب')).toBeVisible();
   });
 
@@ -60,13 +78,10 @@ test.describe('specialist registration flow', () => {
 
     await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
     await page.getByLabel('رقم الهوية').fill('1098765432');
-    await page.getByLabel('البريد الإلكتروني').fill('khaled@example.com');
     await page.getByLabel('رقم الجوال').fill('0512345678');
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
 
     await expect(page.getByRole('heading', { name: 'تسجيل أخصائي' })).toBeVisible();
-    await expect(page.getByText('الترخيص المهني')).toBeVisible();
-
     await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2024-99999');
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
 
@@ -83,7 +98,6 @@ test.describe('specialist registration flow', () => {
 
     await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
     await page.getByLabel('رقم الهوية').fill('1098765432');
-    await page.getByLabel('البريد الإلكتروني').fill('khaled@example.com');
     await page.getByLabel('رقم الجوال').fill('0512345678');
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
 
@@ -91,9 +105,11 @@ test.describe('specialist registration flow', () => {
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
     await expect(page).toHaveURL(/\/register\/specialist\/verify/);
 
+    const realOtp = await getPhoneOtp('0512345678');
+    const wrongOtp = realOtp.slice(0, 5) + (realOtp.endsWith('9') ? '0' : '9');
     const boxes = page.getByLabel(/^خانة الرمز /);
-    for (let i = 0; i < 6; i += 1) {
-      await boxes.nth(i).fill('9');
+    for (const [index, digit] of Array.from(wrongOtp).entries()) {
+      await boxes.nth(index).fill(digit);
     }
 
     await page.getByRole('button', { name: 'تأكيد الدخول' }).click();
@@ -107,20 +123,16 @@ test.describe('specialist registration flow', () => {
   }) => {
     // A fresh e-mail per run: `user.email` is unique, so reusing one would make
     // the second run collide with the account created by the first.
-    const email = `e2e.spec.${Date.now()}@example.com`;
-
     await page.goto('/register/specialist');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
     await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
     await page.getByLabel('رقم الهوية').fill('1098765432');
-    await page.getByLabel('البريد الإلكتروني').fill(email);
     await page.getByLabel('رقم الجوال').fill('0512345678');
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
     await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2024-99999');
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
     await expect(page).toHaveURL(/\/register\/specialist\/verify/);
-    await expect(page.getByText('للتجربة: استخدم 123456')).toBeVisible();
 
     const boxes = page.getByLabel(/^خانة الرمز /);
     for (const [index, digit] of Array.from('123456').entries()) {
@@ -129,15 +141,15 @@ test.describe('specialist registration flow', () => {
     await page.getByRole('button', { name: 'تأكيد الدخول' }).click();
 
     // Pending accounts are routed to the waiting room, not the dashboard.
-    await expect(page).toHaveURL(/\/waiting\?role=spec/);
+    await expect(page).toHaveURL(/\/set-password/);
 
     // The account must exist in PostgreSQL as `pending` — approval stays an
     // admin-only operation.
     await expect
-      .poll(async () => (await findSpecialistByEmail(email))?.status, { timeout: 15_000 })
+      .poll(async () => (await findSpecialistByPhone('0512345678'))?.status, { timeout: 15_000 })
       .toBe('pending');
 
-    const row = await findSpecialistByEmail(email);
+    const row = await findSpecialistByPhone('0512345678');
     expect(row?.full_name).toBe('خالد سعيد عبدالله');
   });
 });
@@ -173,7 +185,7 @@ test.describe('organization registration flow', () => {
     }
     await page.getByRole('button', { name: 'تأكيد الدخول' }).click();
 
-    await expect(page).toHaveURL(/\/waiting\?role=org/);
+    await expect(page).toHaveURL(/\/set-password/);
 
     await expect
       .poll(async () => (await findOrganizationByCr(crNumber))?.status, { timeout: 15_000 })

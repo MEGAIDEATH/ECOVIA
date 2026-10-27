@@ -31,17 +31,9 @@ describe('specialistStep1Schema', () => {
 
   it('rejects missing national id / email / phone', () => {
     expect(specialistStep1Schema.safeParse({ ...valid, nationalId: '' }).success).toBe(false);
-    expect(specialistStep1Schema.safeParse({ ...valid, email: '' }).success).toBe(false);
     expect(specialistStep1Schema.safeParse({ ...valid, phone: '' }).success).toBe(false);
   });
 
-  it('rejects malformed emails', () => {
-    const result = specialistStep1Schema.safeParse({ ...valid, email: 'not-an-email' });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].message).toBe('البريد الإلكتروني غير صالح');
-    }
-  });
 });
 
 describe('specialistStep2Schema', () => {
@@ -113,8 +105,7 @@ describe('registration payloads carry a document id (never undefined)', () => {
   const specialistBase = {
     fullName: 'خالد سعيد عبدالله',
     nationalId: '1098765432',
-    email: 'khaled@example.com',
-    phone: '0512345678',
+      phone: '0512345678',
     license: 'ELESL-2023-1234',
     issueDate: null,
   };

@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, type ReactNode } from 'react';

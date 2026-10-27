@@ -36,6 +36,11 @@ export interface OtpDelivery {
   type: string;
 }
 
+export interface SmsOtpDelivery {
+  phoneNumber: string;
+  otp: string;
+}
+
 /**
  * Delivers a code. Today the "provider" is the server log (development only);
  * swapping in SMTP/an SMS gateway later means changing only this function.
@@ -51,4 +56,18 @@ export async function deliverOtp({ email, otp, type }: OtpDelivery): Promise<voi
     );
   }
   console.info(`[auth:otp] ${type} code for ${email}: ${otp} (development only)`);
+}
+
+/**
+ * SMS delivery adapter. In development the code is logged; in production a real
+ * provider must be configured. The function never reports delivery success when
+ * only the development mock ran.
+ */
+export async function deliverSmsOtp({ phoneNumber, otp }: SmsOtpDelivery): Promise<void> {
+  if (isProduction()) {
+    throw new Error(
+      'SMS delivery is not configured. Set up an SMS provider before running in production.',
+    );
+  }
+  console.info(`[auth:sms] code for ${phoneNumber}: ${otp} (development only)`);
 }

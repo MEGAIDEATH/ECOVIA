@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import { getOwnOrganization } from '@/features/organizations/organizationRepository';
 import { getOwnSpecialist } from '@/features/specialists/specialistRepository';
 
+import type { ClientUser } from './AuthProvider';
 import { useAuth } from './AuthProvider';
 import { resolveDestination } from './dashboardRouting';
 import { getPreferredRole } from './preferredRole';
@@ -22,9 +23,10 @@ export function useDashboardEntry() {
   const router = useRouter();
   const [checking, setChecking] = useState(false);
 
-  const checkAndGoToDashboard = useCallback(async () => {
-    if (!user) {
-      showToast('يرجى المحاولة مجدداً', true);
+  const checkAndGoToDashboard = useCallback(async (providedUser?: ClientUser | null) => {
+    const activeUser = providedUser ?? user;
+    if (!activeUser) {
+      router.push('/login');
       return;
     }
 

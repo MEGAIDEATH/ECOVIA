@@ -43,7 +43,7 @@ export const specialists = pgTable(
     status: accountStatus('status').notNull().default('pending'),
     fullName: text('full_name').notNull(),
     nationalId: text('national_id').notNull(),
-    email: text('email').notNull(),
+    email: text('email'),
     phone: text('phone').notNull(),
     license: text('license').notNull(),
     issueDate: text('issue_date'),

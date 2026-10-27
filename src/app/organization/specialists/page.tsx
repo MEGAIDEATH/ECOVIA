@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { OrganizationSpecialists } from '@/features/organizations/specialists/OrganizationSpecialists';
 

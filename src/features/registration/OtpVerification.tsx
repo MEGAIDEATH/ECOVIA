@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -45,21 +45,27 @@ export function OtpVerification({ role }: OtpVerificationProps) {
   const { showToast } = useToast();
   const router = useRouter();
 
-  const email = role === 'spec' ? draft.email : `org_${draft.crNumber}@ecovia.local`;
+  const phoneNumber = role === 'spec' ? draft.phone.trim() : '';
+  const email = role === 'spec' ? '' : `org_${draft.crNumber}@ecovia.local`;
 
   const backHref =
     role === 'spec' ? '/register/specialist' : '/register/organization';
 
   const sendOtp = useCallback(async () => {
-    if (!email || !email.includes('@')) {
+    if (role === 'spec') {
+      if (!phoneNumber) {
+        setOtpState('failed');
+        return;
+      }
+    } else if (!email || !email.includes('@')) {
       setOtpState('failed');
       return;
     }
 
-    const res = await fetch('/api/session/otp', {
+    const res = await fetch(role === 'spec' ? '/api/session/phone-otp' : '/api/session/otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify(role === 'spec' ? { phoneNumber } : { email }),
     }).catch((error: unknown) => {
       console.error('[registration] OTP request failed:', error);
       return null;
@@ -81,7 +87,7 @@ export function OtpVerification({ role }: OtpVerificationProps) {
       showToast(message, true);
       setOtpState('failed');
     }
-  }, [email, showToast]);
+  }, [email, phoneNumber, role, showToast]);
 
   // The code must exist server-side before it can be verified — request it as
   // soon as the step opens (and again via the retry button on failure).
@@ -92,8 +98,31 @@ export function OtpVerification({ role }: OtpVerificationProps) {
     void sendOtp();
   }, [sendOtp]);
 
-  const finish = (result: RegistrationResult, rolePath: UserRole) => {
+  const finish = async (result: RegistrationResult, rolePath: UserRole) => {
     setPreferredRole(rolePath);
+
+    let hasPassword = false;
+    try {
+      const statusRes = await fetch('/api/account/password-status');
+      const statusData = statusRes.ok ? await statusRes.json().catch(() => null) : null;
+      hasPassword = Boolean(statusData?.hasPassword);
+    } catch {
+      hasPassword = false;
+    }
+
+    if (!hasPassword) {
+      if (result.accountStatus === 'approved') {
+        showToast('تم التفعيل!');
+      }
+      if (result.status === 'existing' && result.accountStatus !== 'approved') {
+        showToast('هذا الحساب مسجل مسبقاً، سيتم فتح حالة التحقق الحالية.');
+      }
+      const next = result.accountStatus === 'approved'
+        ? (rolePath === 'spec' ? '/specialist' : '/organization')
+        : `/waiting?role=${rolePath}`;
+      router.replace(`/set-password?next=${encodeURIComponent(next)}`);
+      return;
+    }
 
     if (result.accountStatus === 'approved') {
       showToast('تم التفعيل!');
@@ -131,10 +160,14 @@ export function OtpVerification({ role }: OtpVerificationProps) {
     setLoading(true);
     try {
       // 1. Verify code and create session in PostgreSQL
-      const verifyRes = await fetch('/api/session/verify', {
+      const verifyRes = await fetch(role === 'spec' ? '/api/session/phone-verify' : '/api/session/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code: parsed.data.code }),
+        body: JSON.stringify(
+          role === 'spec'
+            ? { phoneNumber, code: parsed.data.code }
+            : { email, code: parsed.data.code },
+        ),
       });
 
       if (!verifyRes.ok) {
@@ -151,7 +184,6 @@ export function OtpVerification({ role }: OtpVerificationProps) {
         const result = await registerSpecialist({
           fullName: draft.fullName,
           nationalId: draft.nationalId,
-          email: draft.email,
           phone: draft.phone,
           license: draft.license,
           issueDate: draft.issueDate || null,
@@ -211,6 +243,9 @@ export function OtpVerification({ role }: OtpVerificationProps) {
           )}
         </p>
 
+        {role === 'spec' && !draft.phone && (
+          <p className="text-xs text-red-500 mb-4">رقم الجوال مطلوب لإتمام التسجيل.</p>
+        )}
         <form
           className="w-full max-w-sm flex flex-col items-center"
           onSubmit={(event) => {

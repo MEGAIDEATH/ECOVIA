@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { useRouter } from 'next/navigation';
 import { useState, type KeyboardEvent } from 'react';

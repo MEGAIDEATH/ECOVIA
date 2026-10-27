@@ -49,7 +49,7 @@ export interface CreateSpecialistInput {
   userId: string;
   fullName: string;
   nationalId: string;
-  email: string;
+  email: string | null;
   phone: string;
   license: string;
   issueDate?: string | null;
@@ -130,7 +130,7 @@ export async function getOrganizationById(id: string): Promise<Organization | nu
 
 export interface SpecialistProfilePatch {
   fullName?: string;
-  email?: string;
+  email?: string | null;
   phone?: string;
   edu?: string | null;
   years?: string | null;

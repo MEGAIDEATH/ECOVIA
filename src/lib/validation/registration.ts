@@ -5,16 +5,9 @@ import { z } from 'zod';
  * attributes; messages are Arabic for accessible inline feedback.
  */
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export const specialistStep1Schema = z.object({
   fullName: z.string().trim().min(1, 'الاسم الثلاثي مطلوب'),
   nationalId: z.string().trim().min(1, 'رقم الهوية مطلوب'),
-  email: z
-    .string()
-    .trim()
-    .min(1, 'البريد الإلكتروني مطلوب')
-    .regex(EMAIL_PATTERN, 'البريد الإلكتروني غير صالح'),
   phone: z.string().trim().min(1, 'رقم الجوال مطلوب'),
 });
 
@@ -56,11 +49,6 @@ export const documentIdSchema = z.string().uuid().nullable();
 export const specialistRegistrationPayloadSchema = specialistStep1Schema.extend({
   fullName: z.string().trim().min(1, 'الاسم الثلاثي مطلوب').max(200),
   nationalId: z.string().trim().min(1, 'رقم الهوية مطلوب').max(32),
-  email: z
-    .string()
-    .trim()
-    .max(320)
-    .regex(EMAIL_PATTERN, 'البريد الإلكتروني غير صالح'),
   phone: z.string().trim().min(1, 'رقم الجوال مطلوب').max(32),
   license: z.string().trim().min(1, 'رقم المعاملة / الترخيص مطلوب').max(120),
   issueDate: z.string().trim().max(40).nullable(),

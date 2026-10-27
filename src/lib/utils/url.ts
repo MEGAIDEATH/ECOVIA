@@ -29,6 +29,29 @@ export function safeImageUrl(value: string | null | undefined): string | null {
   return /^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(value) ? value : null;
 }
 
+/**
+ * Safe internal redirect target for post-login navigation.
+ *
+ * Only same-origin relative paths are allowed. Absolute URLs, protocol-relative
+ * URLs, backslashes (which some browsers normalize to `/`), and anything that
+ * does not start with a single `/` are rejected to prevent open redirects.
+ */
+export function safeRedirectPath(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return null;
+  if (trimmed.includes('\\')) return null;
+  // Reject control characters and CR/LF injection.
+  if (/[\\r\\n]/.test(trimmed)) return null;
+  try {
+    const url = new URL(trimmed, 'http://ecovia.local');
+    if (url.origin !== 'http://ecovia.local') return null;
+    return trimmed;
+  } catch {
+    return null;
+  }
+}
+
 /** Safe download sources: http(s) or a legacy PDF data URL, never scriptable data. */
 export function safeDownloadUrl(value: string | null | undefined): string | null {
   if (!value) return null;

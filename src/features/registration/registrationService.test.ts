@@ -5,7 +5,6 @@ import { registerOrganization, registerSpecialist } from './registrationService'
 const specialistInput = {
   fullName: 'خالد سعيد عبدالله',
   nationalId: '1098765432',
-  email: 'khaled@example.com',
   phone: '0512345678',
   license: 'ELESL-2023-1234',
   issueDate: '2025-01-01',
@@ -92,13 +91,6 @@ describe('registrationService (server-side PostgreSQL registration)', () => {
     await expect(registerSpecialist({ ...specialistInput, license: '   ' })).rejects.toThrow(
       'رقم المعاملة / الترخيص مطلوب',
     );
-    expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it('rejects an invalid email before calling the server', async () => {
-    await expect(
-      registerSpecialist({ ...specialistInput, email: 'not-an-email' }),
-    ).rejects.toThrow('البريد الإلكتروني غير صالح');
     expect(fetch).not.toHaveBeenCalled();
   });
 

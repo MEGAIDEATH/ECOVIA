@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -28,7 +28,6 @@ export function SpecialistRegistrationConsolidated() {
     defaultValues: {
       fullName: draft.fullName,
       nationalId: draft.nationalId,
-      email: draft.email,
       phone: draft.phone,
       license: draft.license,
       issueDate: draft.issueDate || undefined,
@@ -40,7 +39,6 @@ export function SpecialistRegistrationConsolidated() {
     update({
       fullName: values.fullName,
       nationalId: values.nationalId,
-      email: values.email,
       phone: values.phone,
       license: values.license,
       issueDate: values.issueDate || undefined,
@@ -93,7 +91,7 @@ export function SpecialistRegistrationConsolidated() {
         title="تسجيل أخصائي"
         subtitle="المعلومات الشخصية والترخيص المهني"
       />
-      <div className="flex-1 flex flex-col justify-center items-start px-4 max-w-2xl w-full">
+      <div className="flex-1 flex flex-col justify-center items-center px-4 max-w-2xl w-full mx-auto">
         <form noValidate onSubmit={onSubmit} className="w-full space-y-6">
 
           {/* Single PDF upload — processed once for both personal and license extraction. */}
@@ -157,26 +155,6 @@ export function SpecialistRegistrationConsolidated() {
             {errors.nationalId && (
               <p role="alert" className="mt-1 text-xs font-bold text-red-500">
                 {errors.nationalId.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <label htmlFor="email" className="block text-sm font-bold text-on-surface mb-1">
-              البريد الإلكتروني <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="email"
-              type="email"
-              dir="ltr"
-              {...register('email')}
-              aria-invalid={Boolean(errors.email)}
-              className={`${INPUT_CLASSES} text-left`}
-              placeholder="example@email.com"
-            />
-            {errors.email && (
-              <p role="alert" className="mt-1 text-xs font-bold text-red-500">
-                {errors.email.message}
               </p>
             )}
           </div>

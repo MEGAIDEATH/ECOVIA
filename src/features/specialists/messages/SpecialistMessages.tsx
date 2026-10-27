@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { ChatLayout } from '@/features/chat/ChatLayout';
 import { useAuth } from '@/features/auth/AuthProvider';

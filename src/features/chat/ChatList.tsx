@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { ChatListItem } from './ChatListItem';

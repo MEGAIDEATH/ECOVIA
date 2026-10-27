@@ -15,6 +15,9 @@ export const user = pgTable('user', {
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
+  /** Phone number used for phone-based sign-in/recovery (Better Auth phone-number plugin). */
+  phoneNumber: text('phone_number').unique(),
+  phoneNumberVerified: boolean('phone_number_verified').notNull().default(false),
   image: text('image'),
   /** Server-authoritative role. Authorization must NEVER trust the browser. */
   role: text('role').notNull().default('user'),

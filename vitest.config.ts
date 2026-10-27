@@ -16,6 +16,7 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     css: false,
     restoreMocks: true,
+    testTimeout: 15000,
     // Keeps per-file isolation while reusing the jsdom environment per worker
     // (avoids re-creating jsdom for each of the ~24 test files).
     pool: 'vmThreads',

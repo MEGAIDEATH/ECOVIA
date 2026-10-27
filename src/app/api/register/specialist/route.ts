@@ -30,7 +30,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       userId: user.id,
       fullName: parsed.data.fullName,
       nationalId: parsed.data.nationalId,
-      email: parsed.data.email,
+      email: null,
       phone: parsed.data.phone,
       license: parsed.data.license,
       issueDate: parsed.data.issueDate ?? null,

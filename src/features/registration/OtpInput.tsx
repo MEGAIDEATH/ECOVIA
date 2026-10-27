@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { useEffect, useRef, type ChangeEvent, type ClipboardEvent, type KeyboardEvent } from 'react';
 

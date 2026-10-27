@@ -54,7 +54,6 @@ test.describe('public flow isolation', () => {
 
     await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
     await page.getByLabel('رقم الهوية').fill('1098765432');
-    await page.getByLabel('البريد الإلكتروني').fill('khaled@example.com');
     await page.getByLabel('رقم الجوال').fill('0512345678');
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
     await expect(page).toHaveURL(/\/register\/specialist/);

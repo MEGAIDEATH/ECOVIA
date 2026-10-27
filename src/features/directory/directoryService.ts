@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import type { OrganizationDirectoryEntry, PublicSpecialist, PublicSpecialistSummary } from '@/types';
 

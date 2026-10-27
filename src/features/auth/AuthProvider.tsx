@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import {
   createContext,
@@ -24,7 +24,7 @@ export interface AuthContextValue {
   specialist: Specialist | null;
   organization: Organization | null;
   loading: boolean;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<ClientUser | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -49,12 +49,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data.user);
       setSpecialist(data.specialist);
       setOrganization(data.organization);
-    } else {
-      setUser(null);
-      setSpecialist(null);
-      setOrganization(null);
+      setLoading(false);
+      return data.user as ClientUser;
     }
+
+    setUser(null);
+    setSpecialist(null);
+    setOrganization(null);
     setLoading(false);
+    return null;
   }, []);
 
   useEffect(() => {

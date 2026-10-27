@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import type { Message, UserRole } from '@/types';
 import { ContractMessage } from '@/features/contracts/ContractMessage';

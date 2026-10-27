@@ -1,9 +1,10 @@
 import type { BetterAuthOptions } from 'better-auth';
 import { emailOTP } from 'better-auth/plugins';
+import { phoneNumber } from 'better-auth/plugins';
 
 import { account, session, user, verification } from '../../db/schema';
 
-import { deliverOtp, generateOtp } from './otp';
+import { deliverOtp, deliverSmsOtp, developmentOtpCode, generateOtp, isProduction } from './otp';
 
 /** Drizzle schema mapping handed to the Better Auth adapter. */
 export const authSchema = { user, session, account, verification };
@@ -62,6 +63,35 @@ export const authOptions = {
       generateOTP: generateOtp,
       sendVerificationOTP: async ({ email, otp, type }) => {
         await deliverOtp({ email, otp, type });
+      },
+    }),
+    phoneNumber({
+      otpLength: 6,
+      expiresIn: 5 * 60,
+      allowedAttempts: 5,
+      requireVerification: true,
+      // In development every phone OTP is the configured DEV_OTP_CODE so the
+      // frontend hint, issuance, and verification all agree. Production keeps
+      // Better Auth's random code and the provider handles delivery.
+      sendOTP: async ({ phoneNumber: targetPhoneNumber, code }) => {
+        const otp = isProduction() ? code : developmentOtpCode();
+        await deliverSmsOtp({ phoneNumber: targetPhoneNumber, otp });
+      },
+      sendPasswordResetOTP: async ({ phoneNumber: targetPhoneNumber, code }) => {
+        const otp = isProduction() ? code : developmentOtpCode();
+        await deliverSmsOtp({ phoneNumber: targetPhoneNumber, otp });
+      },
+      // Only override verification in development, where the code is fixed.
+      // Production uses Better Auth's stored/random-code verification.
+      ...(isProduction()
+        ? {}
+        : {
+            verifyOTP: async ({ code }) => code === developmentOtpCode(),
+          }),
+      signUpOnVerification: {
+        getTempEmail: (targetPhoneNumber) =>
+          `${targetPhoneNumber.replace(/[^0-9+]/g, '')}@phone.ecovia.local`,
+        getTempName: (targetPhoneNumber) => targetPhoneNumber,
       },
     }),
   ],

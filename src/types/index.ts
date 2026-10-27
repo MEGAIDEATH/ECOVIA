@@ -29,7 +29,7 @@ export interface Specialist {
   status: AccountStatus;
   fullName: string;
   nationalId: string;
-  email: string;
+  email: string | null;
   phone: string;
   license: string;
   /** Specialization (التخصص الدقيق). */

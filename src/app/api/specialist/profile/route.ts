@@ -33,7 +33,7 @@ export async function PATCH(request: NextRequest): Promise<Response> {
 
     await updateSpecialistProfile(user.id, {
       fullName: parsed.data.fullName,
-      email: parsed.data.email,
+      email: parsed.data.email === '' ? null : parsed.data.email,
       phone: parsed.data.phone,
       edu: parsed.data.edu ?? null,
       years: parsed.data.years != null ? String(parsed.data.years) : null,

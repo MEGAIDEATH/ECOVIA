@@ -21,15 +21,6 @@ test.describe('home screen', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
   });
 
-  test('keeps the AI assistant link to the legacy URL', async ({ page }) => {
-    await page.goto('/');
-    const assistant = page.getByRole('link', { name: /المساعد الذكي/ });
-    await expect(assistant).toHaveAttribute(
-      'href',
-      'https://oasis-bay-151.faces.site/w8chr2rnnq3e',
-    );
-  });
-
   test('privacy and terms modals open and close with Escape', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });

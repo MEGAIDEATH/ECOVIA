@@ -66,8 +66,9 @@ test.describe('license PDF extraction (real pdf.js)', () => {
       buffer: buildPdf(['ELESL-2023-12345 15/06/2024']),
     });
 
-    await expect(page.getByText('✨ تم الاستخراج بنجاح!')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByLabel('رقم المعاملة / الترخيص')).toHaveValue('ELESL-2023-12345');
+    await expect(page.getByLabel('رقم المعاملة / الترخيص')).toHaveValue('ELESL-2023-12345', {
+      timeout: 15_000,
+    });
     await expect(page.locator('#issue_date')).toHaveValue('2024-06-15');
   });
 

@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 

@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { Modal } from '@/components/ui/Modal';
 import { formatExperienceYears, maskNationalIdForOrganization } from '@/lib/utils/cv';
