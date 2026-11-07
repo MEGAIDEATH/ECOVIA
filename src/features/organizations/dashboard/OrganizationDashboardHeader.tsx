@@ -1,4 +1,4 @@
- 
+'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -7,6 +7,7 @@ import { usePerformLogout } from '@/features/auth/usePerformLogout';
 
 const TABS = [
   { href: '/organization', label: 'الرئيسية' },
+  { href: '/organization/requests', label: 'الطلبات' },
   { href: '/organization/specialists', label: 'الكفاءات (الدليل)' },
   { href: '/organization/messages', label: 'المراسلات والعقود' },
 ] as const;

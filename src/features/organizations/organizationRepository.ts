@@ -14,3 +14,16 @@ export async function getOwnOrganization(): Promise<Organization | null> {
 export function getApprovedOrganizations() {
   return getPublicOrganizations();
 }
+
+export async function updateOrganizationProfile(patch: { orgName?: string; phone?: string; orgDesc?: string }): Promise<void> {
+  const res = await fetch('/api/organization/profile', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || 'تعذر تحديث الملف.');
+  }
+}
+

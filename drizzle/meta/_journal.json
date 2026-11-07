@@ -15,6 +15,20 @@
       "when": 1792785945854,
       "tag": "0001_nervous_starbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793268919494,
+      "tag": "0002_majestic_rockslide",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793272726278,
+      "tag": "0003_parallel_dazzler",
+      "breakpoints": true
     }
   ]
 }

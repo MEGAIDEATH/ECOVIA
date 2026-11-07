@@ -24,6 +24,7 @@ export const cvSchema = z.object({
   email: optionalEmail,
   phone: z.string().trim(),
   edu: z.string().trim(),
+  city: z.string().trim(),
   years: z.string().trim(),
   exp: z.string().trim(),
   portfolio: optionalUrl,

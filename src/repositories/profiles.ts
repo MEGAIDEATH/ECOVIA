@@ -14,6 +14,7 @@ export function toSpecialist(row: SpecialistRow): Specialist {
     id: row.id,
     userId: row.userId,
     status: row.status,
+    rejectionReason: row.rejectionReason,
     fullName: row.fullName,
     nationalId: row.nationalId,
     email: row.email,
@@ -21,6 +22,7 @@ export function toSpecialist(row: SpecialistRow): Specialist {
     license: row.license,
     issueDate: row.issueDate,
     edu: row.edu,
+    city: row.city,
     years: row.years,
     exp: row.exp,
     portfolio: row.portfolio,
@@ -36,6 +38,7 @@ export function toOrganization(row: OrganizationRow): Organization {
     id: row.id,
     userId: row.userId,
     status: row.status,
+    rejectionReason: row.rejectionReason,
     orgName: row.orgName,
     crNumber: row.crNumber,
     phone: row.phone,
@@ -133,6 +136,7 @@ export interface SpecialistProfilePatch {
   email?: string | null;
   phone?: string;
   edu?: string | null;
+  city?: string | null;
   years?: string | null;
   exp?: string | null;
   portfolio?: string | null;
@@ -145,6 +149,11 @@ export interface SpecialistProfilePatch {
  * id, license and creation time are deliberately not patchable — the same
  * guarantee expressed by the affected-keys allowlist of the legacy rules.
  */
+export async function updateOrganizationProfile(userId: string, patch: { orgName?: string; phone?: string; orgDesc?: string }): Promise<void> {
+  const db = getDb();
+  await db.update(organizations).set({ ...patch, updatedAt: new Date() }).where(eq(organizations.userId, userId));
+}
+
 export async function updateSpecialistProfile(
   userId: string,
   patch: SpecialistProfilePatch,
@@ -155,6 +164,7 @@ export async function updateSpecialistProfile(
     .where(eq(specialists.userId, userId));
 }
 
+
 /** Approved specialists for the organization-facing directory. */
 export async function listApprovedSpecialists() {
   return getDb()
@@ -164,6 +174,8 @@ export async function listApprovedSpecialists() {
       status: specialists.status,
       fullName: specialists.fullName,
       edu: specialists.edu,
+      city: specialists.city,
+      years: specialists.years,
     })
     .from(specialists)
     .where(eq(specialists.status, 'approved'))
@@ -218,11 +230,27 @@ export async function listAccountsForAdmin() {
   const db = getDb();
   const [specialistRows, organizationRows] = await Promise.all([
     db
-      .select({ id: specialists.id, name: specialists.fullName, status: specialists.status })
+      .select({
+        id: specialists.id,
+        name: specialists.fullName,
+        status: specialists.status,
+        rejectionReason: specialists.rejectionReason,
+        license: specialists.license,
+        licenseDocId: specialists.licenseDocumentId,
+        createdAt: specialists.createdAt,
+      })
       .from(specialists)
       .orderBy(desc(specialists.createdAt)),
     db
-      .select({ id: organizations.id, name: organizations.orgName, status: organizations.status })
+      .select({
+        id: organizations.id,
+        name: organizations.orgName,
+        status: organizations.status,
+        rejectionReason: organizations.rejectionReason,
+        crNumber: organizations.crNumber,
+        crDocId: organizations.crDocumentId,
+        createdAt: organizations.createdAt,
+      })
       .from(organizations)
       .orderBy(desc(organizations.createdAt)),
   ]);

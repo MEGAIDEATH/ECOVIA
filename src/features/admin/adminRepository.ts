@@ -4,12 +4,20 @@ export interface AdminSpecialistRow {
   id: string;
   name: string;
   status: AccountStatus;
+  rejectionReason?: string | null;
+  license?: string;
+  licenseDocId?: string | null;
+  createdAt?: string | Date;
 }
 
 export interface AdminOrganizationRow {
   id: string;
   name: string;
   status: AccountStatus;
+  rejectionReason?: string | null;
+  crNumber?: string;
+  crDocId?: string | null;
+  createdAt?: string | Date;
 }
 
 export interface AdminAccounts {
@@ -83,3 +91,14 @@ export async function approveAccount(
     body: JSON.stringify({ collection: target, id }),
   });
 }
+export async function rejectAccount(
+  target: AdminAccountCollection,
+  id: string,
+  reason: string,
+): Promise<void> {
+  await request<{ ok: boolean }>('/api/admin/accounts/reject', {
+    method: 'POST',
+    body: JSON.stringify({ collection: target, id, reason }),
+  });
+}
+

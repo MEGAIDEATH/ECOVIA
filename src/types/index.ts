@@ -19,7 +19,7 @@ export interface SpecialistDirectoryEntry {
 export type UserRole = 'spec' | 'org';
 
 /** Approval status stored on specialist/organization accounts. */
-export type AccountStatus = 'pending' | 'approved';
+export type AccountStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Specialist {
   /** Profile id (`specialists.id`). */
@@ -27,6 +27,7 @@ export interface Specialist {
   /** Owning account id (`user.id`). */
   userId: string;
   status: AccountStatus;
+  rejectionReason?: string | null;
   fullName: string;
   nationalId: string;
   email: string | null;
@@ -34,7 +35,7 @@ export interface Specialist {
   license: string;
   /** Specialization (التخصص الدقيق). */
   edu?: string | null;
-  /** Experience years — legacy stored the raw input value (string). */
+  city?: string | null;
   years?: string | number | null;
   /** Detailed experience/projects description. */
   exp?: string | null;
@@ -54,6 +55,7 @@ export interface Organization {
   id: string;
   userId: string;
   status: AccountStatus;
+  rejectionReason?: string | null;
   orgName: string;
   crNumber: string;
   phone: string;
@@ -73,7 +75,7 @@ export type PublicSpecialist = Omit<Specialist, 'nationalId'> & {
  * (`chat_{orgUserId}_{specUserId}`) the server expects. */
 export type PublicSpecialistSummary = Pick<
   Specialist,
-  'id' | 'userId' | 'status' | 'fullName' | 'edu'
+  'id' | 'userId' | 'status' | 'fullName' | 'edu' | 'years' | 'city'
 >;
 
 export type ContractStatus = 'pending' | 'signed';
@@ -130,3 +132,23 @@ export interface OCRResult {
   issueDate?: string | null;
   crNumber?: string | null;
 }
+export type ServiceRequestStatus = 'pending' | 'accepted' | 'rejected' | 'in_progress' | 'completed';
+
+export interface ServiceRequest {
+  id: string;
+  organizationId: string;
+  specialistId?: string | null;
+  serviceCategory: string;
+  serviceName: string;
+  region: string;
+  city: string;
+  duration: string;
+  description?: string | null;
+  status: ServiceRequestStatus;
+  rejectionReason?: string | null;
+  conversationId?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  organizationName?: string;
+}
+

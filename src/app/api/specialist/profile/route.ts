@@ -36,6 +36,7 @@ export async function PATCH(request: NextRequest): Promise<Response> {
       email: parsed.data.email === '' ? null : parsed.data.email,
       phone: parsed.data.phone,
       edu: parsed.data.edu ?? null,
+      city: typeof body.city === 'string' ? body.city : undefined,
       years: parsed.data.years != null ? String(parsed.data.years) : null,
       exp: parsed.data.exp ?? null,
       portfolio: parsed.data.portfolio ?? null,

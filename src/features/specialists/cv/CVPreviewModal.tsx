@@ -1,4 +1,4 @@
- 
+'use client';
 
 import { Modal } from '@/components/ui/Modal';
 import { formatExperienceYears, maskNationalIdForOrganization } from '@/lib/utils/cv';
@@ -10,6 +10,7 @@ export interface CVPreviewData {
   email?: string | null;
   phone?: string | null;
   edu?: string | null;
+  city?: string | null;
   years?: string | number | null;
   license?: string | null;
   exp?: string | null;
@@ -79,6 +80,10 @@ export function CVPreviewModal({ open, onClose, data, asOrganization = false }: 
             <span className="font-medium font-mono text-slate-700">
               {data.license || 'لا يوجد'}
             </span>
+          </div>
+          <div className={CARD}>
+            <span className={LABEL}>المدينة</span>
+            <span className="font-medium text-slate-700">{data.city || '-'}</span>
           </div>
           <div className={CARD}>
             <span className={LABEL}>البريد الإلكتروني</span>

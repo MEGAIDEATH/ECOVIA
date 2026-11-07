@@ -6,6 +6,7 @@ export interface SpecialistProfilePatch {
   email?: string;
   phone?: string;
   edu?: string | null;
+  city?: string | null;
   years?: string | null;
   exp?: string | null;
   portfolio?: string | null;

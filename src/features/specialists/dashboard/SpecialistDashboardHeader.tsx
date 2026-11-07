@@ -1,4 +1,4 @@
- 
+'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -7,9 +7,11 @@ import { usePerformLogout } from '@/features/auth/usePerformLogout';
 
 const TABS = [
   { href: '/specialist', label: 'الرئيسية' },
+  { href: '/specialist/requests', label: 'الطلبات' },
+  { href: '/specialist/projects', label: 'المشاريع' },
   { href: '/specialist/cv', label: 'السيرة الذاتية (CV)' },
   { href: '/specialist/organizations', label: 'تقديم للمنشآت' },
-  { href: '/specialist/messages', label: 'الطلبات والتواصل', badgeId: 'spec-noti-badge' },
+  { href: '/specialist/messages', label: 'المراسلات', badgeId: 'spec-noti-badge' },
 ] as const;
 
 /** Specialist dashboard sticky header (branding + print + logout + tab pills). */

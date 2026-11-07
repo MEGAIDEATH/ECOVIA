@@ -1,4 +1,4 @@
- 
+'use client';
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -73,10 +73,6 @@ export function useDashboardGuard(requiredRole: UserRole): DashboardGuardState {
         if (destination.type === 'none') {
           showToast('لم يتم العثور على حساب مسجل', true);
           router.replace('/');
-          return;
-        }
-        if (destination.type === 'waiting') {
-          router.replace(`/waiting?role=${destination.role}`);
           return;
         }
         if (destination.role !== requiredRole) {

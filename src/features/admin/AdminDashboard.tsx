@@ -1,4 +1,4 @@
- 
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 
@@ -9,6 +9,7 @@ import {
   approveAccount,
   getAdminAccounts,
   isAdminAuthenticated,
+  rejectAccount,
   type AdminAccountCollection,
   type AdminAccounts,
 } from '@/features/admin/adminRepository';
@@ -33,6 +34,8 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [tab, setTab] = useState<AdminTab>('specialists');
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   const loadAccounts = useCallback(async () => {
     setLoading(true);
@@ -71,10 +74,25 @@ export function AdminDashboard() {
   const approve = async (collection: AdminAccountCollection, id: string) => {
     try {
       await approveAccount(collection, id);
-      showToast('تم التحديث بنجاح');
+      showToast('تم اعتماد الحساب');
       await loadAccounts();
     } catch (err) {
       console.error('[admin] approve failed:', err);
+      const message = err instanceof Error ? err.message : 'حدث خطأ';
+      showToast(message, true);
+    }
+  };
+
+
+  const reject = async (collection: AdminAccountCollection, id: string, reason: string) => {
+    try {
+      await rejectAccount(collection, id, reason);
+      showToast('تم رفض الحساب');
+      setRejectingId(null);
+      setRejectReason('');
+      await loadAccounts();
+    } catch (err) {
+      console.error('[admin] reject failed:', err);
       const message = err instanceof Error ? err.message : 'حدث خطأ';
       showToast(message, true);
     }
@@ -190,13 +208,32 @@ export function AdminDashboard() {
                       <td className="p-4">{row.status === 'approved' ? 'مفعل' : 'معلق'}</td>
                       <td className="p-4 text-center">
                         {row.status === 'pending' ? (
-                          <button
-                            type="button"
-                            onClick={() => void approve(tab, row.id)}
-                            className="bg-primary text-white px-2 py-1 rounded mx-1 hover:bg-[#006d44] transition-colors"
-                          >
-                            قبول
-                          </button>
+                          <>
+                            {'licenseDocId' in row && row.licenseDocId && (
+                              <a href={`/api/files/${row.licenseDocId}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs ml-2">
+                                عرض المستند
+                              </a>
+                            )}
+                            {'crDocId' in row && row.crDocId && (
+                              <a href={`/api/files/${row.crDocId}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs ml-2">
+                                عرض المستند
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => void approve(tab, row.id)}
+                              className="bg-primary text-white px-2 py-1 rounded mx-1 hover:bg-[#006d44] transition-colors"
+                            >
+                              اعتماد
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setRejectingId(row.id)}
+                              className="bg-red-600 text-white px-2 py-1 rounded mx-1 hover:bg-red-700 transition-colors"
+                            >
+                              رفض
+                            </button>
+                          </>
                         ) : (
                           '-'
                         )}
@@ -207,7 +244,35 @@ export function AdminDashboard() {
             </table>
           </div>
         </div>
+      {rejectingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold text-primary mb-4">رفض الحساب</h3>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="w-full border rounded-lg p-3 mb-4"
+              rows={4}
+              placeholder="سبب الرفض..."
+            />
+            <div className="flex gap-2 justify-end">
+              <button type="button" onClick={() => { setRejectingId(null); setRejectReason(''); }} className="px-4 py-2 border rounded-lg">إلغاء</button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!rejectReason.trim()) { showToast('سبب الرفض مطلوب', true); return; }
+                  void reject(tab, rejectingId, rejectReason.trim());
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg"
+              >
+                تأكيد الرفض
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </main>
+
   );
 }

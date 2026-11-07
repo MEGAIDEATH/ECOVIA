@@ -1,4 +1,4 @@
- 
+'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRef, useState } from 'react';
@@ -55,6 +55,7 @@ export function CVEditor() {
       email: specialist?.email ?? '',
       phone: specialist?.phone ?? '',
       edu: specialist?.edu ?? '',
+      city: specialist?.city ?? '',
       years: specialist?.years != null ? String(specialist.years) : '',
       exp: specialist?.exp ?? '',
       portfolio: specialist?.portfolio ?? '',
@@ -122,6 +123,7 @@ export function CVEditor() {
         email: values.email,
         phone: values.phone,
         edu: values.edu,
+        city: values.city,
         years: values.years,
         exp: values.exp,
         portfolio: values.portfolio,
@@ -289,6 +291,19 @@ export function CVEditor() {
               placeholder="مثال: 5"
             />
           </div>
+          <div>
+            <label htmlFor="cv_city" className={FIELD_LABEL}>
+              المدينة
+            </label>
+            <input
+              id="cv_city"
+              type="text"
+              {...register('city')}
+              className={EDIT_INPUT}
+              placeholder="أدخل المدينة"
+            />
+          </div>
+
         </div>
 
         <div className="space-y-4">

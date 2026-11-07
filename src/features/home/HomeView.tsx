@@ -1,4 +1,4 @@
- 
+'use client';
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -44,6 +44,13 @@ export function HomeView() {
           <span className="text-primary text-2xl font-bold tracking-tight">بيئيين</span>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/choose-role"
+            className="flex items-center gap-2 bg-white/80 hover:bg-white text-primary px-4 py-2 rounded-full font-bold shadow-md backdrop-blur-md transition-all border border-white/50 hover:scale-105"
+          >
+            <span className="material-symbols-outlined text-[18px]">person_add</span>
+            إنشاء حساب
+          </Link>
           <Link
             href="/login"
             className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-full font-bold shadow-md backdrop-blur-md transition-all border border-primary/50 hover:scale-105"

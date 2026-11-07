@@ -1,4 +1,4 @@
- 
+'use client';
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
@@ -49,9 +49,7 @@ export function useDashboardEntry() {
       }
 
       const base = destination.role === 'spec' ? '/specialist' : '/organization';
-      router.replace(
-        destination.type === 'dashboard' ? base : `/waiting?role=${destination.role}`,
-      );
+      router.replace(base);
     } catch (error) {
       console.error('[dashboard-entry] failed:', error);
       showToast('خطأ في الاتصال', true);

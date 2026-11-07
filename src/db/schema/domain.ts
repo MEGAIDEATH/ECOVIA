@@ -18,7 +18,7 @@ import {
 import { user } from './auth';
 
 /** Approval state of a specialist/organization account. */
-export const accountStatus = pgEnum('account_status', ['pending', 'approved']);
+export const accountStatus = pgEnum('account_status', ['pending', 'approved', 'rejected']);
 
 /** Which side of the marketplace a profile belongs to. */
 export const profileKind = pgEnum('profile_kind', ['specialist', 'organization']);
@@ -41,6 +41,7 @@ export const specialists = pgTable(
       .unique()
       .references(() => user.id, { onDelete: 'cascade' }),
     status: accountStatus('status').notNull().default('pending'),
+    rejectionReason: text('rejection_reason'),
     fullName: text('full_name').notNull(),
     nationalId: text('national_id').notNull(),
     email: text('email'),
@@ -49,6 +50,7 @@ export const specialists = pgTable(
     issueDate: text('issue_date'),
     /** CV fields (legacy `saveCVSpecialist`). */
     edu: text('edu'),
+    city: text('city'),
     years: text('years'),
     exp: text('exp'),
     portfolio: text('portfolio'),
@@ -70,6 +72,7 @@ export const organizations = pgTable(
       .unique()
       .references(() => user.id, { onDelete: 'cascade' }),
     status: accountStatus('status').notNull().default('pending'),
+    rejectionReason: text('rejection_reason'),
     orgName: text('org_name').notNull(),
     crNumber: text('cr_number').notNull(),
     phone: text('phone').notNull(),

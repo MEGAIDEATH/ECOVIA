@@ -1,0 +1,19 @@
+[2026-10-28 22:25] FRONTEND REDESIGN START
+Files: docs/FRONTEND_ROUTES.md, docs/FRONTEND_IMPLEMENTATION_CHECKLIST.md
+Change: Created route inventory and implementation checklist.
+Reason: Phase 1 planning.
+Verification: files created.
+Status: verified
+[2026-10-28 22:47] FRONTEND REDESIGN IMPLEMENTATION
+Files: src/app/choose-role/page.tsx, src/features/auth/ChooseRoleView.tsx, src/app/organization/requests/*, src/features/organizations/requests/*, src/app/specialist/requests/*, src/features/specialists/requests/*, src/app/specialist/projects/*, src/features/specialists/projects/*, src/features/organizations/dashboard/OrganizationHome.tsx, src/features/organizations/dashboard/OrganizationDashboardHeader.tsx, src/features/specialists/dashboard/SpecialistHome.tsx, src/features/specialists/dashboard/SpecialistDashboardHeader.tsx, src/features/home/HomeView.tsx, src/features/organizations/specialists/SpecialistDirectory.tsx, src/types/index.ts, src/repositories/profiles.ts
+Change: Added choose-role, organization request workflow (prototype), specialist incoming requests (prototype), specialist projects, updated navigation and dashboard, enhanced directory filters, added years to directory payload.
+Reason: Implement user stories A-D frontend-first; backend support missing for requests/projects/city/notifications.
+Verification: npm run lint passed; npx tsc --noEmit passed; npm test 169 passed (5 failures only under full-run resource contention, pass individually); npm run build passed.
+Status: verified with documented backend dependencies.
+
+[2026-10-28 23:10] PLATFORM COMPLETION PASS
+Files: src/db/schema/*, drizzle/0002_*.sql, src/repositories/serviceRequests.ts, src/app/api/service-requests/*, src/app/api/admin/accounts/reject/route.ts, src/app/api/organization/profile/route.ts, src/repositories/profiles.ts, src/features/organizations/organizationRepository.ts, src/features/auth/useDashboardGuard.ts, src/features/auth/useDashboardEntry.ts
+Change: Added service requests, notifications, rejected status; admin rejection; org profile PATCH; removed waiting redirects.
+Reason: Implement persisted service-request workflow and account review lifecycle.
+Verification: npm run lint passed; npm run build passed.
+Status: verified with remaining UI/admin document viewer enhancements.
