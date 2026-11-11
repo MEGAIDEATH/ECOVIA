@@ -64,7 +64,9 @@ describe('OtpVerification (demo flow)', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
-        if (url === '/api/session/otp' || url === '/api/session/phone-otp') return jsonResponse({ ok: true });
+        if (url === '/api/session/otp' || url === '/api/session/phone-otp') {
+          return jsonResponse({ ok: true, mode: 'demo', demoCode: '123456' });
+        }
         if (url === '/api/session/verify' || url === '/api/session/phone-verify') {
           const body = JSON.parse(String(init?.body ?? '{}')) as { code?: string };
           if (body.code === '123456') return jsonResponse({ ok: true });
@@ -134,9 +136,14 @@ describe('OtpVerification (demo flow)', () => {
     await waitFor(() => expect(routerMocks.replace).toHaveBeenCalledWith('/set-password?next=%2Fwaiting%3Frole%3Dorg'));
   });
 
-  it('shows the demo hint copy from the legacy screen', () => {
-    renderOtp('spec');
-    expect(screen.getByText('للتجربة: استخدم 123456')).toBeInTheDocument();
+  it('labels demo mode in Arabic and never claims a message was sent', async () => {
+    renderOtp('org');
+    expect(await screen.findByText('رمز تجريبي للاختبار فقط: 123456')).toBeInTheDocument();
+    expect(screen.getByText('وضع العرض التجريبي')).toBeInTheDocument();
+    expect(
+      screen.getByText('وضع العرض التجريبي: لم يتم إرسال أي رسالة نصية أو بريد إلكتروني.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/تم إرسال رمز تحقق/)).not.toBeInTheDocument();
     expect(screen.getByText('أدخل رمز التحقق')).toBeInTheDocument();
     expect(screen.getByText('رمز الدخول الآمن')).toBeInTheDocument();
   });
@@ -238,5 +245,16 @@ describe('OtpVerification (demo flow)', () => {
     );
     expect(consoleError).toHaveBeenCalled();
     expect(routerMocks.replace).not.toHaveBeenCalled();
+  });
+
+  it('shows no demo note or code when the server reports real delivery', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ ok: true, mode: 'real' })),
+    );
+    renderOtp('org');
+    expect(await screen.findByText(/تم إرسال رمز تحقق/)).toBeInTheDocument();
+    expect(screen.queryByText('وضع العرض التجريبي')).not.toBeInTheDocument();
+    expect(screen.queryByText(/رمز تجريبي/)).not.toBeInTheDocument();
   });
 });

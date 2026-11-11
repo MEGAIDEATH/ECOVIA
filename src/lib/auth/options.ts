@@ -4,7 +4,49 @@ import { phoneNumber } from 'better-auth/plugins';
 
 import { account, session, user, verification } from '../../db/schema';
 
-import { deliverOtp, deliverSmsOtp, developmentOtpCode, generateOtp, isProduction } from './otp';
+import { deliverOtp, deliverSmsOtp, demoOtpCode, generateOtp, isDemoIdentity } from './otp';
+
+const PHONE_OTP_EXPIRES_IN = 5 * 60;
+
+/** Origins of the current Vercel deployment (empty outside Vercel). */
+function vercelOrigins(): string[] {
+  return [process.env.VERCEL_BRANCH_URL, process.env.VERCEL_URL]
+    .filter((host): host is string => Boolean(host))
+    .map((host) => `https://${host}`);
+}
+
+interface VerificationAdapter {
+  findVerificationValue(identifier: string): Promise<{ expiresAt: Date } | null | undefined>;
+  deleteVerificationByIdentifier(identifier: string): Promise<unknown>;
+  createVerificationValue(data: {
+    identifier: string;
+    value: string;
+    expiresAt: Date;
+  }): Promise<unknown>;
+}
+
+/**
+ * Replaces the challenge Better Auth just stored for a demo phone number with
+ * the configured demo code (same identifier and expiry, attempts reset to 0).
+ * Returns the code that is now valid for the identity.
+ */
+async function applyDemoCodeForPhone(
+  phoneNumber: string,
+  identifier: string,
+  issuedCode: string,
+  ctx: unknown,
+): Promise<string> {
+  if (!isDemoIdentity(phoneNumber)) return issuedCode;
+  const adapter = (ctx as { context?: { internalAdapter?: VerificationAdapter } } | undefined)
+    ?.context?.internalAdapter;
+  if (!adapter) throw new Error('Demo OTP requires the Better Auth endpoint context.');
+  const code = demoOtpCode();
+  const existing = await adapter.findVerificationValue(identifier);
+  const expiresAt = existing?.expiresAt ?? new Date(Date.now() + PHONE_OTP_EXPIRES_IN * 1000);
+  await adapter.deleteVerificationByIdentifier(identifier);
+  await adapter.createVerificationValue({ identifier, value: `${code}:0`, expiresAt });
+  return code;
+}
 
 /** Drizzle schema mapping handed to the Better Auth adapter. */
 export const authSchema = { user, session, account, verification };
@@ -23,7 +65,10 @@ export const authSchema = { user, session, account, verification };
  */
 export const authOptions = {
   appName: 'ECOVIA',
-  baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
+  baseURL: process.env.BETTER_AUTH_URL ?? vercelOrigins()[0] ?? 'http://localhost:3000',
+  // Vercel Preview deployments get per-deployment / per-branch hostnames;
+  // trust exactly those (provided by Vercel, never by the client).
+  trustedOrigins: vercelOrigins(),
   secret: process.env.BETTER_AUTH_SECRET ?? 'ecovia-development-secret',
   emailAndPassword: {
     enabled: true,
@@ -67,27 +112,27 @@ export const authOptions = {
     }),
     phoneNumber({
       otpLength: 6,
-      expiresIn: 5 * 60,
+      expiresIn: PHONE_OTP_EXPIRES_IN,
       allowedAttempts: 5,
       requireVerification: true,
-      // In development every phone OTP is the configured DEV_OTP_CODE so the
-      // frontend hint, issuance, and verification all agree. Production keeps
-      // Better Auth's random code and the provider handles delivery.
-      sendOTP: async ({ phoneNumber: targetPhoneNumber, code }) => {
-        const otp = isProduction() ? code : developmentOtpCode();
+      // Better Auth stores a random code before calling `sendOTP`. For demo
+      // identities the stored challenge is swapped for the demo code, so the
+      // plugin's own verification (expiry, attempt limit, one-time
+      // consumption) still decides. There is deliberately no `verifyOTP`
+      // override: that would skip those checks.
+      sendOTP: async ({ phoneNumber: targetPhoneNumber, code }, ctx) => {
+        const otp = await applyDemoCodeForPhone(targetPhoneNumber, targetPhoneNumber, code, ctx);
         await deliverSmsOtp({ phoneNumber: targetPhoneNumber, otp });
       },
-      sendPasswordResetOTP: async ({ phoneNumber: targetPhoneNumber, code }) => {
-        const otp = isProduction() ? code : developmentOtpCode();
+      sendPasswordResetOTP: async ({ phoneNumber: targetPhoneNumber, code }, ctx) => {
+        const otp = await applyDemoCodeForPhone(
+          targetPhoneNumber,
+          `${targetPhoneNumber}-request-password-reset`,
+          code,
+          ctx,
+        );
         await deliverSmsOtp({ phoneNumber: targetPhoneNumber, otp });
       },
-      // Only override verification in development, where the code is fixed.
-      // Production uses Better Auth's stored/random-code verification.
-      ...(isProduction()
-        ? {}
-        : {
-            verifyOTP: async ({ code }) => code === developmentOtpCode(),
-          }),
       signUpOnVerification: {
         getTempEmail: (targetPhoneNumber) =>
           `${targetPhoneNumber.replace(/[^0-9+]/g, '')}@phone.ecovia.local`,

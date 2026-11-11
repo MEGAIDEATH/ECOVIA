@@ -29,9 +29,14 @@ export default defineConfig({
   webServer: {
     command: `npm run build && npm run start -- --port ${PORT}`,
     url: `http://localhost:${PORT}`,
-    // Re-enable the development OTP path (fixed demo code + visible hint) for
-    // this local production-build run; real deployments never set this.
-    env: { ...process.env, NEXT_PUBLIC_ALLOW_DEV_OTP: 'true' } as Record<string, string>,
+    // Local production-build run: enable the server-side demo OTP mode for
+    // every identity. `*` is rejected on Vercel/Netlify, so this cannot leak.
+    env: {
+      ...process.env,
+      OTP_MODE: 'demo',
+      OTP_DEMO_CODE: '123456',
+      OTP_DEMO_ALLOWLIST: '*',
+    } as Record<string, string>,
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,
   },

@@ -115,7 +115,7 @@ e2e/              Playwright spec files
 
 **Development OTP Config:**
 - `DEV_OTP_CODE=123456` (default) — used in development
-- `NEXT_PUBLIC_ALLOW_DEV_OTP=true` — enables dev OTP in E2E/production builds
+- `OTP_MODE=demo` + `OTP_DEMO_CODE` + `OTP_DEMO_ALLOWLIST` — server-side demo OTP for allowlisted identities (see README)
 - Production always uses real OTP delivery (throws if called)
 
 **Root Cause of 500:**

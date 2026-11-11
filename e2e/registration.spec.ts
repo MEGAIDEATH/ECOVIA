@@ -87,7 +87,7 @@ test.describe('specialist registration flow', () => {
 
     await expect(page).toHaveURL(/\/register\/specialist\/verify/);
     await expect(page.getByRole('heading', { name: 'أدخل رمز التحقق' })).toBeVisible();
-    await expect(page.getByText('للتجربة: استخدم 123456')).toBeVisible();
+    await expect(page.getByText('رمز تجريبي للاختبار فقط: 123456')).toBeVisible();
   });
 
   test('wrong demo OTP shows the Arabic error without registering', async ({ page }) => {
@@ -180,7 +180,7 @@ test.describe('organization registration flow', () => {
     await page.getByLabel('نبذة عن الجهة').fill('شركة متخصصة في الاستشارات البيئية.');
     await page.getByRole('button', { name: /المتابعة للتحقق/ }).click();
     await expect(page).toHaveURL(/\/register\/organization\/verify/);
-    await expect(page.getByText('للتجربة: استخدم 123456')).toBeVisible();
+    await expect(page.getByText('رمز تجريبي للاختبار فقط: 123456')).toBeVisible();
 
     const boxes = page.getByLabel(/^خانة الرمز /);
     for (const [index, digit] of Array.from('123456').entries()) {

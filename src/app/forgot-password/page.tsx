@@ -17,6 +17,7 @@ export default function ForgotPasswordPage() {
   const [channel, setChannel] = useState<Channel>("phone");
   const [identifier, setIdentifier] = useState("");
   const [otp, setOtp] = useState("");
+  const [demoMode, setDemoMode] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [step, setStep] = useState<"request" | "verify" | "reset" | "done">("request");
@@ -43,7 +44,9 @@ export default function ForgotPasswordPage() {
         showToast(data?.error ?? "تعذر إرسال الرمز.", true);
         return;
       }
-      showToast("تم إرسال رمز التحقق.");
+      const demo = data?.mode === "demo";
+      setDemoMode(demo);
+      showToast(demo ? "وضع العرض التجريبي: لم يتم إرسال أي رسالة." : "تم إرسال رمز التحقق.");
       setStep("verify");
       setCooldown(30);
     } finally {
@@ -95,7 +98,9 @@ export default function ForgotPasswordPage() {
 
   const subtitles = {
     request: "اختر وسيلة التحقق وسنرسل لك رمزًا لإعادة التعيين.",
-    verify: `أدخل الرمز المكون من 6 أرقام المرسل إلى ${channel === "phone" ? "جوالك" : "بريدك"}.`,
+    verify: demoMode
+      ? "وضع العرض التجريبي: لم يتم إرسال رسالة نصية أو بريد إلكتروني. أدخل رمز العرض التجريبي المكون من 6 أرقام."
+      : `أدخل الرمز المكون من 6 أرقام المرسل إلى ${channel === "phone" ? "جوالك" : "بريدك"}.`,
     reset: "اختر كلمة مرور جديدة لحسابك.",
     done: "تم تغيير كلمة المرور بنجاح.",
   } as const;

@@ -29,6 +29,15 @@ interface OtpVerificationProps {
 type OtpRequestState = 'sending' | 'sent' | 'failed';
 
 /**
+ * Delivery mode reported by the server for this identity. `demo` is decided
+ * server-side (allowlist); the client only displays what it is told.
+ */
+interface OtpDeliveryInfo {
+  mode: 'real' | 'demo';
+  demoCode?: string;
+}
+
+/**
  * OTP verification step:
  * 1. Requests a code with the server (/api/session/otp), which stores it in
  *    PostgreSQL through Better Auth (dev code is 123456)
@@ -40,6 +49,7 @@ export function OtpVerification({ role }: OtpVerificationProps) {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [otpState, setOtpState] = useState<OtpRequestState>('sending');
+  const [delivery, setDelivery] = useState<OtpDeliveryInfo>({ mode: 'real' });
   const { draft } = useRegistrationDraft();
   const { refresh } = useAuth();
   const { showToast } = useToast();
@@ -72,6 +82,15 @@ export function OtpVerification({ role }: OtpVerificationProps) {
     });
 
     if (res?.ok) {
+      const data = (await res.json().catch(() => null)) as Partial<OtpDeliveryInfo> | null;
+      setDelivery(
+        data?.mode === 'demo'
+          ? {
+              mode: 'demo',
+              demoCode: typeof data.demoCode === 'string' ? data.demoCode : undefined,
+            }
+          : { mode: 'real' },
+      );
       setOtpState('sent');
     } else {
       let message = 'تعذر إرسال الرمز، حاول مرة أخرى.';
@@ -209,8 +228,13 @@ export function OtpVerification({ role }: OtpVerificationProps) {
     }
   };
 
-  const showDevHint =
-    process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ALLOW_DEV_OTP === 'true';
+  const isDemo = otpState === 'sent' && delivery.mode === 'demo';
+  const target = role === 'spec' ? 'الجوال المسجل' : 'البريد الإلكتروني المسجل';
+  const subtitleText = isDemo
+    ? 'وضع العرض التجريبي: لم يتم إرسال أي رسالة نصية أو بريد إلكتروني.'
+    : otpState === 'sent'
+      ? `تم إرسال رمز تحقق (مكون من 6 أرقام) إلى ${target}.`
+      : 'أدخل رمز التحقق المكون من 6 أرقام.';
 
   return (
     <AuthShell
@@ -219,13 +243,24 @@ export function OtpVerification({ role }: OtpVerificationProps) {
       subtitle={
         <>
           <span className="mb-1 block text-sm font-bold text-secondary">رمز الدخول الآمن</span>
-          تم إرسال رمز تحقق (مكون من 6 أرقام) إلى الجوال المسجل.
+          {subtitleText}
         </>
       }
       icon="mark_email_unread"
     >
       <div className="mb-6 space-y-2 text-sm">
-        {showDevHint && <p className="badge badge-brand">للتجربة: استخدم 123456</p>}
+        {isDemo && (
+          <div role="note" className="alert alert-warning flex-col items-start gap-1">
+            <strong>وضع العرض التجريبي</strong>
+            <span>
+              هذه نسخة تجريبية للعرض. لا يتم إرسال رمز التحقق عبر خدمة الرسائل النصية أو البريد
+              الإلكتروني، وهذا الوضع متاح لحسابات العرض المعتمدة فقط.
+            </span>
+            {delivery.demoCode && (
+              <span className="badge badge-brand">رمز تجريبي للاختبار فقط: {delivery.demoCode}</span>
+            )}
+          </div>
+        )}
         {otpState === 'sending' && (
           <p role="status" className="text-muted">
             جاري إرسال الرمز...

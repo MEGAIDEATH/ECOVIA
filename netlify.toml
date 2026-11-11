@@ -6,7 +6,8 @@
   NODE_VERSION = "24"
 
 # Environment variables are configured in the Netlify UI:
-#   DATABASE_URL
+#   DATABASE_URL           (Neon pooled, -pooler host)
+#   DATABASE_URL_UNPOOLED  (Neon direct; only needed if migrations run in CI)
 #   BETTER_AUTH_SECRET
 #   BETTER_AUTH_URL
 #   ADMIN_EMAIL

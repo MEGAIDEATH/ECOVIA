@@ -1,8 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-import { asString, jsonError, mapError } from '@/lib/api/http';
+import { asString, jsonError, mapError, otpVerificationError } from '@/lib/api/http';
 import { getAuth } from '@/lib/auth';
+import { enforceOtpRateLimit } from '@/lib/auth/rateLimit';
 import { loadProfilesForUser } from '@/lib/auth/session';
 import { getUserByEmail } from '@/repositories/users';
 
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     if (!email || !email.includes('@')) return jsonError('البريد الإلكتروني غير صالح.', 400);
     if (!code || !/^\d{6}$/.test(code)) return jsonError('أدخل رمز التحقق المكون من 6 أرقام', 400);
 
+    await enforceOtpRateLimit('verify', email, request.headers);
     const { headers: authHeaders, response } = await getAuth().api.signInEmailOTP({
       body: { email, otp: code },
       returnHeaders: true,
@@ -48,12 +50,8 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
     return result;
   } catch (error) {
-    // Better Auth raises an API error (with a `status`) for an invalid or
-    // expired code — surface the same Arabic message the legacy flow showed
-    // for a wrong OTP instead of an internal error string.
-    if ((error as { status?: unknown }).status !== undefined) {
-      return jsonError('رمز التحقق غير صحيح!', 401);
-    }
-    return mapError(error, 'session/verify');
+    // Better Auth raises an API error (with a `status`) for an invalid,
+    // expired or exhausted code — surface Arabic messages, never internals.
+    return otpVerificationError(error) ?? mapError(error, 'session/verify');
   }
 }

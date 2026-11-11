@@ -1,8 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-import { asString, jsonError, mapError } from '@/lib/api/http';
+import { asString, jsonError, mapError, otpVerificationError } from '@/lib/api/http';
 import { getAuth } from '@/lib/auth';
+import { enforceOtpRateLimit } from '@/lib/auth/rateLimit';
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {
@@ -14,6 +15,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     if (!phoneNumber) return jsonError('رقم الجوال غير صالح.', 400);
     if (!code || !/^\d{6}$/.test(code)) return jsonError('أدخل رمز التحقق المكون من 6 أرقام', 400);
 
+    await enforceOtpRateLimit('verify', phoneNumber, request.headers);
     const { headers: authHeaders, response } = await getAuth().api.verifyPhoneNumber({
       body: { phoneNumber, code, disableSession: false },
       returnHeaders: true,
@@ -27,9 +29,6 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
     return result;
   } catch (error) {
-    if ((error as { status?: unknown }).status !== undefined) {
-      return jsonError('رمز التحقق غير صحيح!', 401);
-    }
-    return mapError(error, 'session/phone-verify');
+    return otpVerificationError(error) ?? mapError(error, 'session/phone-verify');
   }
 }

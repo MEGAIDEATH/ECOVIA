@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server';
 
-import { asString, jsonError, jsonOk, mapError, readJson } from '@/lib/api/http';
+import { asString, jsonError, jsonOk, mapError, otpVerificationError, readJson } from '@/lib/api/http';
 import { getAuth } from '@/lib/auth';
+import { enforceOtpRateLimit } from '@/lib/auth/rateLimit';
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {
@@ -14,6 +15,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const newPassword = asString(body.newPassword, 128);
     if (!identifier || !otp || !newPassword) return jsonError('بيانات غير مكتملة.', 400);
     if (newPassword.length < 8) return jsonError('كلمة المرور يجب أن تكون 8 أحرف على الأقل.', 400);
+    await enforceOtpRateLimit('verify', identifier, request.headers);
 
     if (channel === 'phone') {
       await getAuth().api.resetPasswordPhoneNumber({
@@ -32,6 +34,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     return jsonError('قناة غير مدعومة.', 400);
   } catch (error) {
-    return mapError(error, 'password/forgot/reset');
+    // RateLimitError has no `status`, so it falls through to mapError (429).
+    return otpVerificationError(error) ?? mapError(error, 'password/forgot/reset');
   }
 }

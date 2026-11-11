@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { attachDatabasePool } from '@vercel/functions';
 import { Pool } from 'pg';
 
 import * as schema from './schema';
@@ -39,12 +40,17 @@ export function isDatabaseConfigured(): boolean {
 function createPool(): Pool {
   // `sslmode=require` (Neon and most managed providers) is honoured by pg
   // directly from the connection string — no provider-specific branches here.
-  return new Pool({
+  // On Neon, DATABASE_URL should be the pooled (`-pooler`) connection string.
+  const created = new Pool({
     connectionString: getDatabaseUrl(),
     max: 10,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 10_000,
   });
+  // On Vercel Fluid compute this keeps the function instance alive long enough
+  // to close idle connections cleanly; it is a no-op outside Vercel.
+  attachDatabasePool(created);
+  return created;
 }
 
 export function getPool(): Pool {

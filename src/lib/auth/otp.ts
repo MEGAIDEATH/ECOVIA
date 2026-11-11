@@ -1,33 +1,169 @@
 /**
- * One-time code delivery for the sign-in / registration verification step.
+ * One-time code configuration and delivery for sign-in / registration.
  *
- * Development: a fixed, well-known code (the legacy demo code, `123456` by
- * default) is generated so the whole flow works without an external provider.
- * Production: a random 6-digit code is generated and MUST be delivered by the
- * configured provider — no development code is ever accepted in production.
+ * Two modes, configured ONLY through server-side variables (never
+ * `NEXT_PUBLIC_`):
+ *
+ * - `real` (default for any deployment): Better Auth generates a random code,
+ *   stores it hashed in PostgreSQL, and a real provider must deliver it. No
+ *   provider is configured yet, so delivery fails loudly instead of pretending.
+ * - `demo`: identities on a server-side allowlist (`OTP_DEMO_ALLOWLIST`) get the
+ *   configured demonstration code (`OTP_DEMO_CODE`). Nothing is sent. The code
+ *   is still stored in the `verification` table by Better Auth, so expiry,
+ *   attempt limits and one-time consumption work exactly as in real mode.
+ *   Identities that are NOT on the allowlist keep the real path.
+ *
+ * Environment rules:
+ * - Local (`NODE_ENV !== 'production'`, not on Vercel/Netlify): demo mode is
+ *   on by default with code `DEV_OTP_CODE` / `123456` for every identity.
+ * - Any deployment: demo mode requires `OTP_MODE=demo`, a six-digit
+ *   `OTP_DEMO_CODE` and an explicit allowlist (`*` is rejected).
+ * - Vercel Production (`VERCEL_ENV=production`): additionally requires
+ *   `OTP_DEMO_ALLOW_PRODUCTION=true`. Use it only with an isolated demo
+ *   database.
  */
-export function isProduction(): boolean {
-  // `next start` (used by the E2E webServer) always runs with
-  // NODE_ENV=production, so the dev-OTP path needs an explicit opt-in flag
-  // for local demo/E2E runs. Real deployments stay locked to production.
-  return (
-    process.env.NODE_ENV === 'production' &&
-    process.env.NEXT_PUBLIC_ALLOW_DEV_OTP !== 'true'
-  );
+
+export type OtpMode = 'real' | 'demo';
+
+export interface DemoOtpConfig {
+  /** True when demo mode is active for at least the allowlisted identities. */
+  active: boolean;
+  code: string;
+  /** `'*'` (local only) or normalized identities. */
+  allowlist: '*' | ReadonlySet<string>;
+  /** Why demo mode is off although `OTP_MODE=demo` was requested. */
+  disabledReason?: string;
 }
 
-/** Development-only code. Never used when NODE_ENV === 'production'. */
-export function developmentOtpCode(): string {
-  const configured = process.env.DEV_OTP_CODE;
-  return configured && /^\d{6}$/.test(configured) ? configured : '123456';
+type Env = Record<string, string | undefined>;
+
+/** Running on a hosting platform (as opposed to a developer machine / CI). */
+export function isDeployed(env: Env = process.env): boolean {
+  return Boolean(env.VERCEL || env.NETLIFY);
+}
+
+function isLocalDevelopment(env: Env): boolean {
+  return env.NODE_ENV !== 'production' && !isDeployed(env);
 }
 
 /**
- * Returns the code to generate, or `undefined` to let Better Auth generate a
- * cryptographically random code (the production path).
+ * Normalizes an email (lower-case) or a phone number (digits only, so
+ * `+966 51…`, `0512…` entries match what the form sends).
  */
-export function generateOtp(): string | undefined {
-  return isProduction() ? undefined : developmentOtpCode();
+export function normalizeIdentity(value: string): string {
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed.includes('@')) return trimmed;
+  return trimmed.replace(/\D/g, '');
+}
+
+export function resolveDemoOtpConfig(env: Env = process.env): DemoOtpConfig {
+  const local = isLocalDevelopment(env);
+  const requested = (env.OTP_MODE ?? (local ? 'demo' : 'real')).trim().toLowerCase();
+  const off = (disabledReason?: string): DemoOtpConfig => ({
+    active: false,
+    code: '',
+    allowlist: new Set(),
+    disabledReason,
+  });
+
+  if (requested !== 'demo') return off();
+
+  if (env.VERCEL_ENV === 'production' && env.OTP_DEMO_ALLOW_PRODUCTION !== 'true') {
+    return off('OTP_MODE=demo on Vercel Production also requires OTP_DEMO_ALLOW_PRODUCTION=true.');
+  }
+
+  const rawCode = (env.OTP_DEMO_CODE ?? env.DEV_OTP_CODE ?? '').trim();
+  const deployed = isDeployed(env);
+  let code: string;
+  if (/^\d{6}$/.test(rawCode)) code = rawCode;
+  else if (!deployed) code = '123456';
+  else return off('OTP_DEMO_CODE must be a six-digit code on deployments.');
+
+  const entries = (env.OTP_DEMO_ALLOWLIST ?? '')
+    .split(/[,;\n]+/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  if (entries.includes('*')) {
+    if (deployed) return off('OTP_DEMO_ALLOWLIST="*" is not allowed on deployments.');
+    return { active: true, code, allowlist: '*' };
+  }
+  if (entries.length === 0) {
+    if (local) return { active: true, code, allowlist: '*' };
+    return off('OTP_DEMO_ALLOWLIST is empty.');
+  }
+  return {
+    active: true,
+    code,
+    allowlist: new Set(entries.map(normalizeIdentity).filter(Boolean)),
+  };
+}
+
+let cached: DemoOtpConfig | null = null;
+let warned = false;
+
+export function demoOtpConfig(): DemoOtpConfig {
+  if (!cached) {
+    cached = resolveDemoOtpConfig();
+    if (cached.disabledReason && !warned) {
+      warned = true;
+      console.warn(`[auth:otp] demo mode disabled: ${cached.disabledReason}`);
+    }
+  }
+  return cached;
+}
+
+/** Test hook: forget the cached configuration. */
+export function resetOtpConfigForTests(): void {
+  cached = null;
+  warned = false;
+}
+
+/** True when this identity (email or phone) may use the demonstration code. */
+export function isDemoIdentity(identifier: string, config: DemoOtpConfig = demoOtpConfig()): boolean {
+  if (!config.active) return false;
+  if (config.allowlist === '*') return true;
+  const normalized = normalizeIdentity(identifier);
+  return normalized.length > 0 && config.allowlist.has(normalized);
+}
+
+export function demoOtpCode(): string {
+  return demoOtpConfig().code;
+}
+
+/** Mode that applies to this identity. */
+export function otpModeFor(identifier: string): OtpMode {
+  return isDemoIdentity(identifier) ? 'demo' : 'real';
+}
+
+/** Raised when a code would have to be sent but no provider is configured. */
+export class OtpDeliveryUnavailableError extends Error {
+  constructor() {
+    super('OTP delivery provider is not configured.');
+    this.name = 'OtpDeliveryUnavailableError';
+  }
+}
+
+/**
+ * Whether a code can actually reach this identity: demo identities always,
+ * everyone else only locally (where the code is written to the server log).
+ * Routes check this before asking Better Auth to issue a code.
+ */
+export function canIssueOtp(identifier: string): boolean {
+  return isDemoIdentity(identifier) || isLocalDevelopment(process.env);
+}
+
+/**
+ * Email codes: demo identities get the configured code; everyone else gets
+ * `undefined`, so Better Auth generates a cryptographically random code.
+ */
+export function generateOtp({ email }: { email: string }): string | undefined {
+  return isDemoIdentity(email) ? demoOtpCode() : undefined;
+}
+
+function mask(identifier: string): string {
+  const visible = identifier.slice(-3);
+  return `${'*'.repeat(Math.max(identifier.length - 3, 0))}${visible}`;
 }
 
 export interface OtpDelivery {
@@ -42,32 +178,31 @@ export interface SmsOtpDelivery {
 }
 
 /**
- * Delivers a code. Today the "provider" is the server log (development only);
- * swapping in SMTP/an SMS gateway later means changing only this function.
- * In development the code is also echoed to the log so the flow is testable.
+ * Delivers a code. There is no real provider yet: demo identities are skipped
+ * (nothing is sent, and the UI says so), local development logs the code, and
+ * anything else fails rather than silently claiming delivery. Adding SMTP / an
+ * SMS gateway later means changing only these two functions.
  */
 export async function deliverOtp({ email, otp, type }: OtpDelivery): Promise<void> {
-  if (isProduction()) {
-    // Production delivery is intentionally not implemented yet: the platform
-    // owner must configure a real provider before go-live. Failing loudly is
-    // safer than silently accepting development codes in production.
-    throw new Error(
-      'OTP delivery is not configured. Set up an email/SMS provider before running in production.',
-    );
+  if (isDemoIdentity(email)) {
+    console.info(`[auth:otp] demo mode: ${type} code for ${mask(email)} not sent (demo code).`);
+    return;
   }
-  console.info(`[auth:otp] ${type} code for ${email}: ${otp} (development only)`);
+  if (isLocalDevelopment(process.env)) {
+    console.info(`[auth:otp] ${type} code for ${email}: ${otp} (local development only)`);
+    return;
+  }
+  throw new OtpDeliveryUnavailableError();
 }
 
-/**
- * SMS delivery adapter. In development the code is logged; in production a real
- * provider must be configured. The function never reports delivery success when
- * only the development mock ran.
- */
 export async function deliverSmsOtp({ phoneNumber, otp }: SmsOtpDelivery): Promise<void> {
-  if (isProduction()) {
-    throw new Error(
-      'SMS delivery is not configured. Set up an SMS provider before running in production.',
-    );
+  if (isDemoIdentity(phoneNumber)) {
+    console.info(`[auth:sms] demo mode: code for ${mask(phoneNumber)} not sent (demo code).`);
+    return;
   }
-  console.info(`[auth:sms] code for ${phoneNumber}: ${otp} (development only)`);
+  if (isLocalDevelopment(process.env)) {
+    console.info(`[auth:sms] code for ${phoneNumber}: ${otp} (local development only)`);
+    return;
+  }
+  throw new OtpDeliveryUnavailableError();
 }

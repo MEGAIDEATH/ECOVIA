@@ -5,7 +5,7 @@
  * (singular table names, `text` ids, `timestamp with time zone` dates). Better
  * Auth owns these tables; application code only reads `user.id` / `user.role`.
  */
-import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
 /** `admin` is the only privileged role; profiles carry their own account type. */
 export const USER_ROLES = ['user', 'admin'] as const;
@@ -64,3 +64,14 @@ export const verification = pgTable('verification', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index('verification_identifier_idx').on(table.identifier)]);
+
+/**
+ * Durable fixed-window counters for OTP issuance/verification rate limits.
+ * Kept in PostgreSQL (not memory) because serverless instances do not share
+ * state. `key` is `<scope>:<sha256(identity or IP)>` — no raw identifiers.
+ */
+export const otpRateLimit = pgTable('otp_rate_limit', {
+  key: text('key').primaryKey(),
+  count: integer('count').notNull(),
+  windowStart: timestamp('window_start', { withTimezone: true }).notNull().defaultNow(),
+});

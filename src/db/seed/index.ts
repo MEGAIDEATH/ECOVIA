@@ -24,7 +24,8 @@ import { user } from '../schema';
 async function main(): Promise<void> {
   loadLocalEnv();
 
-  const connectionString = process.env.DATABASE_URL;
+  // Direct (unpooled) connection for migrations/admin work; falls back to DATABASE_URL.
+  const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
   if (!connectionString || connectionString.trim().length === 0) {
     throw new Error('DATABASE_URL is not configured. Copy .env.example to .env.local first.');
   }

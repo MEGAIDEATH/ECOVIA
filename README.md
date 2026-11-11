@@ -63,13 +63,17 @@ npm run db:migrate && npm run db:seed
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | yes | PostgreSQL connection string. **Server-only.** |
+| `DATABASE_URL` | yes | PostgreSQL connection string (Neon: pooled `-pooler` URL). **Server-only.** |
+| `DATABASE_URL_UNPOOLED` | migrations | Direct (non-pooled) URL used by `db:migrate`, `db:seed`, drizzle-kit. |
 | `BETTER_AUTH_SECRET` | yes | Session/token signing secret (≥32 chars, high entropy). |
 | `BETTER_AUTH_URL` | yes | Public origin used for auth cookies/callbacks. |
 | `ADMIN_EMAIL` | for seed | Administrator login created by `npm run db:seed`. |
 | `ADMIN_PASSWORD` | for seed | Administrator password. |
-| `DEV_OTP_CODE` | no | Development-only OTP (default `123456`); ignored in production. |
-| `NEXT_PUBLIC_ALLOW_DEV_OTP` | no | `true` only for local production-build/E2E runs. |
+| `OTP_MODE` | no | `real` (default on deployments) or `demo`. Server-only. |
+| `OTP_DEMO_CODE` | demo | Six-digit demonstration code. Server-only. |
+| `OTP_DEMO_ALLOWLIST` | demo | Comma-separated demo phones / `org_<CR>@ecovia.local` emails. `*` only works locally. |
+| `OTP_DEMO_ALLOW_PRODUCTION` | no | `true` to allow demo mode on Vercel Production (isolated demo DB only). |
+| `DEV_OTP_CODE` | no | Legacy local fallback for the demo code (default `123456`). |
 | `NEXT_PUBLIC_DEMO_SESSION_RESET` | no | Renders the «بدء جلسة تجريبية جديدة» control. |
 | `STORAGE_LOCAL_DIR` | no | Protected upload directory (default `.data/uploads`). |
 
