@@ -3,8 +3,9 @@
  * Uploads files to the server's protected document storage via /api/files.
  */
 
-const PROFILE_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
-const DOCUMENT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+// Matches the server limit (Vercel Functions cap request bodies at 4.5 MB).
+const PROFILE_MAX_BYTES = 4 * 1024 * 1024; // 4 MB
+const DOCUMENT_MAX_BYTES = 4 * 1024 * 1024; // 4 MB
 const PROFILE_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const SCANNABLE_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
@@ -37,7 +38,7 @@ function assertImage(file: File): void {
     throw new UploadValidationError('صيغة الملف غير مدعومة، اختر صورة JPG أو PNG.');
   }
   if (file.size > PROFILE_MAX_BYTES) {
-    throw new UploadValidationError('حجم الصورة يتجاوز 5 ميجابايت.');
+    throw new UploadValidationError('حجم الصورة يتجاوز 4 ميجابايت.');
   }
 }
 
@@ -46,7 +47,7 @@ function assertPdf(file: File): void {
     throw new UploadValidationError('الملف يجب أن يكون بصيغة PDF.');
   }
   if (file.size > DOCUMENT_MAX_BYTES) {
-    throw new UploadValidationError('حجم الملف يتجاوز 10 ميجابايت.');
+    throw new UploadValidationError('حجم الملف يتجاوز 4 ميجابايت.');
   }
 }
 
@@ -56,7 +57,7 @@ function assertScannableDocument(file: File): void {
     throw new UploadValidationError('صيغة الملف غير مدعومة، اختر صورة أو PDF.');
   }
   if (file.size > DOCUMENT_MAX_BYTES) {
-    throw new UploadValidationError('حجم الملف يتجاوز 10 ميجابايت.');
+    throw new UploadValidationError('حجم الملف يتجاوز 4 ميجابايت.');
   }
 }
 

@@ -75,7 +75,24 @@ npm run db:migrate && npm run db:seed
 | `OTP_DEMO_ALLOW_PRODUCTION` | no | `true` to allow demo mode on Vercel Production (isolated demo DB only). |
 | `DEV_OTP_CODE` | no | Legacy local fallback for the demo code (default `123456`). |
 | `NEXT_PUBLIC_DEMO_SESSION_RESET` | no | Renders the «بدء جلسة تجريبية جديدة» control. |
-| `STORAGE_LOCAL_DIR` | no | Protected upload directory (default `.data/uploads`). |
+| `STORAGE_S3_ENDPOINT` | on Vercel | Neon Object Storage branch endpoint (`AWS_ENDPOINT_URL_S3` locally). |
+| `STORAGE_S3_REGION` | on Vercel | Storage region, e.g. `ap-southeast-1`. |
+| `STORAGE_S3_ACCESS_KEY_ID` | on Vercel | Branch storage credential id. **Secret.** |
+| `STORAGE_S3_SECRET_ACCESS_KEY` | on Vercel | Branch storage credential secret. **Secret.** |
+| `STORAGE_BUCKET` | no | Bucket name (default `documents`). |
+| `STORAGE_LOCAL_DIR` | no | Local-only upload directory (default `.data/uploads`). Never used on Vercel. |
+
+### Environments
+
+| Environment | Neon branch | OTP mode | Storage |
+| --- | --- | --- | --- |
+| Local (`.env.local`, `neon checkout dev`) | `dev` | demo, every identity | `dev` bucket |
+| Vercel Preview | `preview` | demo, allowlist only | `preview` bucket |
+| Vercel Production (public demo) | `demo` | demo, allowlist only (`OTP_DEMO_ALLOW_PRODUCTION=true`) | `demo` bucket |
+| Real service launch | `production` | real (provider required) | `production` bucket |
+
+Uploads are limited to 4 MB (Vercel Functions cap request bodies at 4.5 MB); the
+file type is detected from the content, not from the browser-supplied MIME type.
 
 ---
 

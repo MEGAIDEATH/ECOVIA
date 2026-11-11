@@ -6,12 +6,23 @@ import { dirname, join, normalize, resolve, sep } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+
 /**
  * Provider-neutral document storage.
  *
- * `StorageProvider` is the seam: today it is implemented by the local
- * filesystem (development), and a company-controlled S3-compatible or object
- * storage backend can be added later without touching business logic.
+ * `StorageProvider` is the seam:
+ * - Neon Object Storage (S3-compatible, private bucket) whenever an S3
+ *   endpoint is configured. Required on deployments: Vercel functions have no
+ *   persistent filesystem. Each Neon branch has its own bucket endpoint, so the
+ *   demo branch's files never mix with production's.
+ * - The local filesystem for local development only.
  *
  * Protected uploads are NEVER written into `public/`: they live outside the
  * served directories and are only reachable through the authenticated
@@ -75,11 +86,121 @@ class LocalFileStorage implements StorageProvider {
   }
 }
 
+interface S3Settings {
+  endpoint: string;
+  region: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucket: string;
+}
+
+/**
+ * Vercel reserves the `AWS_*` variable names, so deployments use the
+ * `STORAGE_S3_*` names; locally the AWS-standard names written by
+ * `neon env pull` work too.
+ */
+function s3Settings(env: Record<string, string | undefined> = process.env): S3Settings | null {
+  const endpoint = env.STORAGE_S3_ENDPOINT || env.AWS_ENDPOINT_URL_S3;
+  const accessKeyId = env.STORAGE_S3_ACCESS_KEY_ID || env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = env.STORAGE_S3_SECRET_ACCESS_KEY || env.AWS_SECRET_ACCESS_KEY;
+  if (!endpoint || !accessKeyId || !secretAccessKey) return null;
+  return {
+    endpoint,
+    accessKeyId,
+    secretAccessKey,
+    region: env.STORAGE_S3_REGION || env.AWS_REGION || 'ap-southeast-1',
+    bucket: env.STORAGE_BUCKET || 'documents',
+  };
+}
+
+export class StorageConfigError extends Error {
+  constructor() {
+    super('Object storage is not configured (STORAGE_S3_* variables are missing).');
+    this.name = 'StorageConfigError';
+  }
+}
+
+class S3ObjectStorage implements StorageProvider {
+  private readonly client: S3Client;
+  private readonly bucket: string;
+
+  constructor(settings: S3Settings) {
+    this.bucket = settings.bucket;
+    this.client = new S3Client({
+      endpoint: settings.endpoint,
+      region: settings.region,
+      credentials: {
+        accessKeyId: settings.accessKeyId,
+        secretAccessKey: settings.secretAccessKey,
+      },
+      // Neon Object Storage requires path-style addressing.
+      forcePathStyle: true,
+    });
+  }
+
+  async put(key: string, data: Buffer, contentType: string): Promise<void> {
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: data,
+        ContentType: contentType,
+        ContentLength: data.length,
+      }),
+    );
+  }
+
+  async get(key: string): Promise<{ stream: ReadableStream<Uint8Array>; size: number }> {
+    const result = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+    if (!result.Body) throw new Error('Empty object body.');
+    return {
+      stream: result.Body.transformToWebStream() as ReadableStream<Uint8Array>,
+      size: Number(result.ContentLength ?? 0),
+    };
+  }
+
+  async delete(key: string): Promise<void> {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+  }
+
+  async exists(key: string): Promise<boolean> {
+    try {
+      await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
+      return true;
+    } catch (error) {
+      const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
+      if (status === 404) return false;
+      throw error;
+    }
+  }
+}
+
 let provider: StorageProvider | null = null;
 
+/** Running on a hosting platform (no persistent local filesystem). */
+function isDeployed(): boolean {
+  return Boolean(process.env.VERCEL || process.env.NETLIFY);
+}
+
 export function getStorage(): StorageProvider {
-  if (!provider) provider = new LocalFileStorage();
+  if (provider) return provider;
+  const settings = s3Settings();
+  if (settings) {
+    provider = new S3ObjectStorage(settings);
+  } else if (isDeployed()) {
+    // Never fall back to the ephemeral filesystem on a deployment: files
+    // would silently disappear.
+    throw new StorageConfigError();
+  } else {
+    provider = new LocalFileStorage();
+  }
   return provider;
+}
+
+/** Name of the active backend, for diagnostics (never includes secrets). */
+export function storageBackendName(): 's3' | 'local' | 'unconfigured' {
+  if (s3Settings()) return 's3';
+  return isDeployed() ? 'unconfigured' : 'local';
 }
 
 /** Builds a collision-free object key, namespaced per owner and purpose. */

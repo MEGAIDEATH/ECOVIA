@@ -6,6 +6,7 @@ import { ApplicationError } from '@/repositories/applications';
 import { ForbiddenError, UnauthorizedError } from '@/lib/auth/session';
 import { OtpDeliveryUnavailableError } from '@/lib/auth/otp';
 import { RateLimitError } from '@/lib/auth/rateLimit';
+import { StorageConfigError } from '@/lib/storage';
 
 /** JSON error response helper (Arabic messages, explicit status). */
 export function jsonError(message: string, status: number): Response {
@@ -29,6 +30,10 @@ export function mapError(error: unknown, context: string): Response {
   if (error instanceof RateLimitError) return jsonError(error.message, 429);
   if (error instanceof OtpDeliveryUnavailableError) {
     return jsonError(OTP_UNAVAILABLE_MESSAGE, 503);
+  }
+  if (error instanceof StorageConfigError) {
+    console.error(`[${context}] object storage is not configured.`);
+    return jsonError('خدمة تخزين الملفات غير مهيأة حالياً.', 503);
   }
   if (error instanceof DatabaseConfigError) {
     console.error(`[${context}] DATABASE_URL is not configured.`);

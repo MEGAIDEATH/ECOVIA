@@ -51,6 +51,9 @@ export async function GET(
         'Content-Type': doc.contentType,
         'Content-Length': String(file.size),
         'Cache-Control': 'private, max-age=3600',
+        // Stored type was detected server-side; never let the browser sniff.
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Disposition': 'inline',
       },
     });
   } catch (error) {
