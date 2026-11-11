@@ -1,0 +1,232 @@
+/* ==========================================================================
+   Shared component classes — the visual language every page reuses.
+   Plain classes (not React wrappers) so they compose with <Link>, <button>,
+   <label> and react-hook-form `register()` without prop plumbing.
+   Utilities still win over these (they live in the components layer).
+   ========================================================================== */
+
+@utility container-brand {
+  width: min(var(--container-content), calc(100% - 56px));
+  margin-inline: auto;
+  @media (width < 48rem) {
+    width: min(var(--container-content), calc(100% - 32px));
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  /* ---- Buttons ---------------------------------------------------------- */
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-btn border border-transparent px-5 py-2 text-sm font-bold leading-tight no-underline;
+    transition:
+      transform 0.2s var(--ease-brand),
+      background-color 0.2s,
+      border-color 0.2s,
+      box-shadow 0.2s,
+      color 0.2s;
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white shadow-[0_7px_16px_rgba(15,61,54,0.15)];
+  }
+  .btn-primary:hover:not(:disabled) {
+    @apply bg-primary-hover;
+  }
+
+  .btn-secondary {
+    @apply border-line-strong bg-white text-primary;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    @apply border-secondary/50 bg-wash;
+  }
+
+  .btn-soft {
+    @apply bg-accent-soft text-primary;
+  }
+  .btn-soft:hover:not(:disabled) {
+    @apply bg-mist;
+  }
+
+  .btn-ghost {
+    @apply text-primary;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    @apply bg-surface-container-low;
+  }
+
+  .btn-danger {
+    @apply bg-danger text-white;
+  }
+  .btn-danger:hover:not(:disabled) {
+    @apply bg-danger-hover;
+  }
+
+  .btn-danger-outline {
+    @apply border-danger/30 bg-white text-danger;
+  }
+  .btn-danger-outline:hover:not(:disabled) {
+    @apply bg-danger-soft;
+  }
+
+  .btn-sm {
+    @apply min-h-9 rounded-control px-3 py-1.5 text-xs;
+  }
+  .btn-lg {
+    @apply min-h-[50px] px-[26px] text-base;
+  }
+  .btn-block {
+    @apply w-full;
+  }
+  .btn-icon {
+    @apply size-10 min-h-0 rounded-full p-0;
+  }
+
+  /* ---- Form fields ------------------------------------------------------ */
+  .field-label {
+    @apply mb-1.5 block text-sm font-bold text-on-surface;
+  }
+  .field-required {
+    @apply ms-0.5 text-danger;
+  }
+  .field-input {
+    @apply block min-h-12 w-full rounded-control border border-outline-variant bg-white px-4 py-2.5 text-[15px] text-on-surface outline-none placeholder:text-muted/70;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s,
+      background-color 0.2s;
+  }
+  .field-input:hover:not(:disabled):not(:read-only) {
+    @apply border-line-strong;
+  }
+  .field-input:focus {
+    @apply border-secondary ring-3 ring-sage/35;
+  }
+  .field-input[aria-invalid='true'] {
+    @apply border-danger ring-danger/15;
+  }
+  .field-input:disabled,
+  .field-input:read-only {
+    @apply cursor-default border-transparent bg-surface-container-low text-muted;
+  }
+  textarea.field-input {
+    @apply min-h-0 resize-y leading-relaxed;
+  }
+  .field-hint {
+    @apply mt-1.5 text-xs leading-relaxed text-muted;
+  }
+  .field-error {
+    @apply mt-1.5 text-xs font-bold text-danger;
+  }
+
+  /* ---- Surfaces --------------------------------------------------------- */
+  .card {
+    @apply rounded-card border border-line bg-white shadow-card;
+  }
+  .card-interactive {
+    transition:
+      transform 0.25s var(--ease-brand),
+      border-color 0.25s,
+      box-shadow 0.25s;
+  }
+  .card-interactive:hover {
+    @apply -translate-y-0.5 border-line-strong shadow-float;
+  }
+
+  /* Rounded square holding a stroke icon (landing "round-icon"). */
+  .icon-tile {
+    @apply inline-grid size-11 shrink-0 place-items-center rounded-[14px] bg-accent-soft text-secondary;
+  }
+  .icon-tile-lg {
+    @apply size-14 rounded-[17px];
+  }
+
+  /* ---- Typography helpers ---------------------------------------------- */
+  .kicker {
+    @apply inline-block text-base leading-[1.7] font-bold text-secondary;
+  }
+
+  /* ---- Badges ----------------------------------------------------------- */
+  .badge {
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-transparent px-2.5 py-0.5 text-xs leading-5 font-bold;
+  }
+  .badge-neutral {
+    @apply bg-surface-container-low text-on-surface-variant;
+  }
+  .badge-brand {
+    @apply bg-accent-soft text-primary;
+  }
+  .badge-success {
+    @apply bg-success-soft text-success;
+  }
+  .badge-warning {
+    @apply bg-warning-soft text-warning;
+  }
+  .badge-danger {
+    @apply bg-danger-soft text-danger;
+  }
+  .badge-info {
+    @apply bg-info-soft text-info;
+  }
+
+  /* ---- Alerts ----------------------------------------------------------- */
+  .alert {
+    @apply flex items-start gap-2 rounded-card border px-4 py-3 text-sm leading-relaxed;
+  }
+  .alert-success {
+    @apply border-success/20 bg-success-soft text-success;
+  }
+  .alert-warning {
+    @apply border-warning/20 bg-warning-soft text-warning;
+  }
+  .alert-danger {
+    @apply border-danger/20 bg-danger-soft text-danger;
+  }
+  .alert-info {
+    @apply border-info/20 bg-info-soft text-info;
+  }
+
+  /* ---- Data tables (admin) --------------------------------------------- */
+  .data-table {
+    @apply w-full border-collapse text-start text-sm;
+  }
+  .data-table th {
+    @apply border-b border-line bg-wash px-4 py-3 text-start text-xs font-bold text-on-surface-variant;
+  }
+  .data-table td {
+    @apply border-b border-line px-4 py-3.5 align-middle;
+  }
+  .data-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .data-table tbody tr:hover td {
+    @apply bg-wash/60;
+  }
+
+  /* ---- Toast (enter/leave transition driven by ToastProvider) ----------- */
+  .custom-toast {
+    transition:
+      transform 0.3s var(--ease-brand),
+      opacity 0.3s ease;
+    transform: translate(-50%, -20px);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .custom-toast.show {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

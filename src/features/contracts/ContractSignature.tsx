@@ -46,13 +46,13 @@ export function ContractSignature({ messageId }: ContractSignatureProps) {
         disabled={signing}
         aria-label="اسمك"
         placeholder="اسمك"
-        className="w-full px-2 py-1 border rounded text-center text-sm outline-none focus:border-primary disabled:bg-surface-container-low"
+        className="field-input min-h-9 px-2 py-1 text-center text-sm"
       />
       <button
         type="button"
         onClick={() => void confirmSignature()}
         disabled={signing}
-        className="bg-primary text-white text-xs py-1 rounded font-bold hover:bg-[#006d44] transition-colors disabled:opacity-70"
+        className="btn btn-primary btn-sm"
       >
         {signing ? 'جاري...' : 'توقيع'}
       </button>

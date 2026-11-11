@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { AuthShell } from '@/components/layout/AuthShell';
+import { Field, describedBy } from '@/components/ui/Field';
 import { useToast } from '@/components/ui/Toast';
 import {
   organizationRegistrationSchema,
@@ -14,11 +16,7 @@ import { ScanCancelledError, scanDocument } from '@/features/ocr/scanDocument';
 import { getCrLookupService } from '@/features/organizations/crLookupService';
 
 import { DocumentUploadCard } from './DocumentUploadCard';
-import { RegistrationHeader } from './RegistrationHeader';
 import { useRegistrationDraft } from './RegistrationProvider';
-
-const INPUT_CLASSES =
-  'w-full px-4 py-3 bg-surface-container-low rounded-xl border-2 border-transparent focus:border-primary focus:bg-white transition-all outline-none';
 
 /** Organization registration (legacy `view-org-step1`). */
 export function OrganizationRegistrationForm() {
@@ -111,138 +109,93 @@ export function OrganizationRegistrationForm() {
   });
 
   return (
-    <main className="flex flex-col min-h-screen relative p-6 bg-surface">
-      <RegistrationHeader backHref="/" title="تسجيل جهة" subtitle="بيانات المنشأة" />
+    <AuthShell backHref="/choose-role" title="تسجيل جهة" subtitle="بيانات المنشأة" width="md">
+      <form noValidate onSubmit={onSubmit} className="space-y-5">
+        <DocumentUploadCard
+          inputId="org_file_upload"
+          icon="storefront"
+          title="إرفاق السجل التجاري"
+          description="سنقوم باستخراج رقم السجل تلقائياً"
+          scanning={scanning}
+          scanningMessage="جاري استخراج السجل..."
+          onFile={(file) => void handleScan(file)}
+          attachedFileName={draft.crFile?.name ?? null}
+        />
 
-      <div className="flex-1 flex justify-center items-start mt-4">
-        <form
-          noValidate
-          onSubmit={onSubmit}
-          className="w-full max-w-md bg-white p-6 rounded-3xl shadow-sm border border-outline-variant/30 relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -z-10 pointer-events-none" />
-
-          <DocumentUploadCard
-            inputId="org_file_upload"
-            icon="storefront"
-            title="إرفاق السجل التجاري"
-            description="سنقوم باستخراج رقم السجل تلقائياً"
-            scanning={scanning}
-            scanningMessage="جاري استخراج السجل..."
-            onFile={(file) => void handleScan(file)}
-            attachedFileName={draft.crFile?.name ?? null}
-            className="mb-6 p-6"
-            titleClassName="text-primary font-bold text-sm mb-1"
-            descriptionClassName="text-[11px] text-secondary"
-          />
-
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="cr_number" className="block text-sm font-bold text-on-surface mb-1">
-                رقم السجل التجاري
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="cr_number"
-                  type="text"
-                  {...register('crNumber')}
-                  aria-invalid={Boolean(errors.crNumber)}
-                  className={`${INPUT_CLASSES} flex-1`}
-                  placeholder="10XXXXXXXX"
-                />
-                <button
-                  type="button"
-                  onClick={() => void fetchCrData()}
-                  disabled={fetchingCr}
-                  className="bg-primary/10 text-primary px-4 rounded-xl font-bold hover:bg-primary/20 transition-colors flex items-center gap-1 border border-primary/20 whitespace-nowrap disabled:opacity-70"
-                >
-                  <span
-                    className={`material-symbols-outlined text-lg ${fetchingCr ? 'animate-spin' : ''}`}
-                  >
-                    sync
-                  </span>{' '}
-                  جلب
-                </button>
-              </div>
-              {errors.crNumber && (
-                <p role="alert" className="mt-1 text-xs font-bold text-red-500">
-                  {errors.crNumber.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="org_name" className="block text-sm font-bold text-on-surface mb-1">
-                اسم المنشأة
-              </label>
-              <input
-                id="org_name"
-                type="text"
-                readOnly
-                {...register('orgName')}
-                aria-invalid={Boolean(errors.orgName)}
-                className={`w-full px-4 py-3 rounded-xl border-2 border-transparent outline-none ${
-                  nameFetched
-                    ? 'bg-white'
-                    : 'bg-surface-container-low cursor-not-allowed text-secondary'
-                }`}
-                placeholder="يتم جلبه تلقائياً"
-              />
-              {errors.orgName && (
-                <p role="alert" className="mt-1 text-xs font-bold text-red-500">
-                  {errors.orgName.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="org_phone" className="block text-sm font-bold text-on-surface mb-1">
-                رقم التواصل
-              </label>
-              <input
-                id="org_phone"
-                type="number"
-                dir="ltr"
-                {...register('phone')}
-                aria-invalid={Boolean(errors.phone)}
-                className={`${INPUT_CLASSES} text-left`}
-                placeholder="05XXXXXXXX"
-              />
-              {errors.phone && (
-                <p role="alert" className="mt-1 text-xs font-bold text-red-500">
-                  {errors.phone.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="org_desc" className="block text-sm font-bold text-on-surface mb-1">
-                نبذة عن الجهة
-              </label>
-              <textarea
-                id="org_desc"
-                rows={2}
-                {...register('orgDesc')}
-                aria-invalid={Boolean(errors.orgDesc)}
-                className={`${INPUT_CLASSES} resize-none`}
-                placeholder="اكتب نبذة مختصرة عن نشاط الجهة..."
-              />
-              {errors.orgDesc && (
-                <p role="alert" className="mt-1 text-xs font-bold text-red-500">
-                  {errors.orgDesc.message}
-                </p>
-              )}
-            </div>
+        <Field id="cr_number" label="رقم السجل التجاري" error={errors.crNumber?.message}>
+          <div className="flex gap-2">
+            <input
+              id="cr_number"
+              type="text"
+              dir="ltr"
+              {...register('crNumber')}
+              aria-invalid={Boolean(errors.crNumber)}
+              aria-describedby={describedBy('cr_number', { error: errors.crNumber })}
+              className="field-input flex-1 text-left"
+              placeholder="10XXXXXXXX"
+            />
+            <button
+              type="button"
+              onClick={() => void fetchCrData()}
+              disabled={fetchingCr}
+              className="btn btn-soft min-h-12 shrink-0"
+            >
+              <span aria-hidden="true" className={`material-symbols-outlined text-lg ${fetchingCr ? 'animate-spin' : ''}`}>
+                sync
+              </span>
+              جلب
+            </button>
           </div>
+        </Field>
 
-          <button
-            type="submit"
-            className="w-full mt-8 py-3.5 bg-primary text-white font-bold rounded-xl hover:bg-[#006d44] transition-colors shadow-md flex justify-center items-center gap-2"
-          >
-            المتابعة للتحقق <span className="material-symbols-outlined">arrow_back</span>
-          </button>
-        </form>
-      </div>
-    </main>
+        <Field
+          id="org_name"
+          label="اسم المنشأة"
+          error={errors.orgName?.message}
+          hint={nameFetched ? undefined : 'يتم جلبه تلقائياً من السجل التجاري.'}
+        >
+          <input
+            id="org_name"
+            type="text"
+            readOnly
+            {...register('orgName')}
+            aria-invalid={Boolean(errors.orgName)}
+            aria-describedby={describedBy('org_name', { error: errors.orgName, hint: !nameFetched })}
+            className={`field-input ${nameFetched ? '!bg-white !text-on-surface' : 'cursor-not-allowed'}`}
+            placeholder="يتم جلبه تلقائياً"
+          />
+        </Field>
+
+        <Field id="org_phone" label="رقم التواصل" error={errors.phone?.message}>
+          <input
+            id="org_phone"
+            type="number"
+            dir="ltr"
+            {...register('phone')}
+            aria-invalid={Boolean(errors.phone)}
+            aria-describedby={describedBy('org_phone', { error: errors.phone })}
+            className="field-input text-left"
+            placeholder="05XXXXXXXX"
+          />
+        </Field>
+
+        <Field id="org_desc" label="نبذة عن الجهة" error={errors.orgDesc?.message}>
+          <textarea
+            id="org_desc"
+            rows={3}
+            {...register('orgDesc')}
+            aria-invalid={Boolean(errors.orgDesc)}
+            aria-describedby={describedBy('org_desc', { error: errors.orgDesc })}
+            className="field-input"
+            placeholder="اكتب نبذة مختصرة عن نشاط الجهة..."
+          />
+        </Field>
+
+        <button type="submit" className="btn btn-primary btn-block btn-lg mt-2">
+          المتابعة للتحقق
+          <span aria-hidden="true" className="material-symbols-outlined">arrow_back</span>
+        </button>
+      </form>
+    </AuthShell>
   );
 }

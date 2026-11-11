@@ -11,6 +11,7 @@ const adminRepoMock = vi.hoisted(() => ({
   approveAccount: vi.fn(),
   getAdminAccounts: vi.fn(),
   isAdminAuthenticated: vi.fn(),
+  rejectAccount: vi.fn(),
 }));
 vi.mock('@/features/admin/adminRepository', () => adminRepoMock);
 vi.mock('@/features/auth/usePerformLogout', () => ({
@@ -33,6 +34,7 @@ describe('AdminDashboard', () => {
     adminRepoMock.approveAccount.mockReset();
     adminRepoMock.getAdminAccounts.mockReset();
     adminRepoMock.isAdminAuthenticated.mockReset();
+    adminRepoMock.rejectAccount.mockReset();
   });
 
   it('shows the login panel when there is no admin session', async () => {
@@ -68,7 +70,7 @@ describe('AdminDashboard', () => {
     renderDashboard();
 
     expect(await screen.findByText('خالد سعيد')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'قبول' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'اعتماد' })).toBeInTheDocument();
     expect(screen.queryByText('تعذر تحميل البيانات، حاول مرة أخرى.')).not.toBeInTheDocument();
   });
 });

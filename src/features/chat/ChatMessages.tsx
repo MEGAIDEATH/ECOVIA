@@ -27,24 +27,24 @@ export function ChatMessages({ messages, loading, error, currentUid, role }: Cha
 
   if (loading) {
     return (
-      <div ref={containerRef} className="flex-1 overflow-y-auto p-6 bg-surface/50 relative">
-        <LoadingState message="جاري الفتح..." className="text-center text-xs text-gray-400 my-4" />
+      <div ref={containerRef} className="relative flex-1 overflow-y-auto bg-surface p-4 md:p-6">
+        <LoadingState message="جاري الفتح..." />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div ref={containerRef} className="flex-1 overflow-y-auto p-6 bg-surface/50 relative">
-        <p className="text-center text-xs text-red-500 my-4">تعذر تحميل الرسائل.</p>
+      <div ref={containerRef} className="relative flex-1 overflow-y-auto bg-surface p-4 md:p-6">
+        <p role="alert" className="my-4 text-center text-sm text-danger">تعذر تحميل الرسائل.</p>
       </div>
     );
   }
 
   if (messages.length === 0) {
     return (
-      <div ref={containerRef} className="flex-1 overflow-y-auto p-6 bg-surface/50 relative">
-        <p className="text-center text-xs text-gray-400 my-4">لا توجد رسائل.</p>
+      <div ref={containerRef} className="relative flex-1 overflow-y-auto bg-surface p-4 md:p-6">
+        <p className="my-4 text-center text-sm text-muted">لا توجد رسائل.</p>
       </div>
     );
   }
@@ -52,7 +52,7 @@ export function ChatMessages({ messages, loading, error, currentUid, role }: Cha
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto p-6 bg-surface/50 relative"
+      className="relative flex-1 overflow-y-auto bg-surface p-4 md:p-6"
       aria-live="polite"
     >
       {messages.map((message) => (

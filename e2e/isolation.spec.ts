@@ -48,6 +48,9 @@ test.describe('public flow isolation', () => {
     await page.goto('/');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
+    // Landing → sign-up → account-type choice → registration.
+    await page.getByRole('banner').getByRole('link', { name: 'إنشاء حساب' }).click();
+    await expect(page).toHaveURL(/\/choose-role/);
     await page.getByRole('link', { name: /دخول كأخصائي/ }).click();
     await expect(page).toHaveURL(/\/register\/specialist/);
     await expect(page.getByText('ارفع المستند الشخصي والترخيص')).toBeVisible();
@@ -74,6 +77,9 @@ test.describe('public flow isolation', () => {
     await page.goto('/');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
+    // Landing → sign-up → account-type choice → registration.
+    await page.getByRole('banner').getByRole('link', { name: 'إنشاء حساب' }).click();
+    await expect(page).toHaveURL(/\/choose-role/);
     await page.getByRole('link', { name: /دخول كجهة/ }).click();
     await expect(page).toHaveURL(/\/register\/organization/);
 

@@ -3,6 +3,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { getApprovedSpecialists } from '@/features/specialists/specialistRepository';
 import type { PublicSpecialistSummary } from '@/types';
@@ -86,7 +87,8 @@ export function SpecialistDirectory({ onViewCv, onContact }: SpecialistDirectory
 
   return (
     <div className="fade-up">
-      <div className="mb-6 bg-white p-4 rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-3">
+      <PageHeader title="دليل الكفاءات" description="أخصائيون بيئيون معتمدون — ابحث بالتخصص أو الاسم أو المدينة." />
+      <div className="card mb-6 flex flex-col gap-3 p-4">
         <div className="flex gap-2 flex-col md:flex-row">
           <div className="relative flex-1">
             <label htmlFor="org-search-input" className="sr-only">ابحث بالتخصص أو الاسم</label>
@@ -96,9 +98,9 @@ export function SpecialistDirectory({ onViewCv, onContact }: SpecialistDirectory
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="ابحث بالتخصص أو الاسم..."
-              className="w-full px-4 py-3 pl-10 bg-surface-container-low rounded-xl border border-transparent focus:border-primary outline-none transition-all text-sm"
+              className="field-input pr-11"
             />
-            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-secondary">search</span>
+            <span aria-hidden="true" className="material-symbols-outlined pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted">search</span>
           </div>
           <div className="md:w-56">
             <label htmlFor="years-filter" className="sr-only">فلترة حسب سنوات الخبرة</label>
@@ -106,7 +108,7 @@ export function SpecialistDirectory({ onViewCv, onContact }: SpecialistDirectory
               id="years-filter"
               value={yearsFilter}
               onChange={(event) => setYearsFilter(event.target.value)}
-              className="w-full px-4 py-3 bg-surface-container-low rounded-xl border border-transparent focus:border-primary outline-none transition-all text-sm"
+              className="field-input"
             >
               {YEAR_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -121,23 +123,23 @@ export function SpecialistDirectory({ onViewCv, onContact }: SpecialistDirectory
               value={cityFilter}
               onChange={(event) => setCityFilter(event.target.value)}
               placeholder="المدينة..."
-              className="w-full px-4 py-3 bg-surface-container-low rounded-xl border border-transparent focus:border-primary outline-none transition-all text-sm"
+              className="field-input"
             />
           </div>
         </div>
-        <div className="flex items-center justify-between text-xs text-secondary">
+        <div className="flex items-center justify-between text-xs text-muted">
           <span>{hasFilters ? 'تم تطبيق الفلاتر' : 'لا توجد فلاتر نشطة'}</span>
           {hasFilters && (
-            <button type="button" onClick={clearFilters} className="text-primary font-bold hover:underline">مسح الفلاتر</button>
+            <button type="button" onClick={clearFilters} className="btn btn-ghost btn-sm">مسح الفلاتر</button>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {loading && <LoadingState message="جاري التحميل..." className="col-span-full text-center p-4" />}
-        {error && !loading && <ErrorState className="col-span-full text-center p-4" />}
+        {loading && <div className="col-span-full"><LoadingState /></div>}
+        {error && !loading && <div className="col-span-full"><ErrorState /></div>}
         {!loading && !error && filtered.length === 0 && (
-          <EmptyState message={hasFilters ? 'لا توجد نتائج مطابقة' : 'لا يوجد كفاءات معتمدة'} className="col-span-full text-center text-slate-500 p-4" />
+          <div className="card col-span-full"><EmptyState message={hasFilters ? 'لا توجد نتائج مطابقة' : 'لا يوجد كفاءات معتمدة'} /></div>
         )}
         {!loading && !error && filtered.map((spec) => (
           <SpecialistDirectoryCard key={spec.id} specialist={spec} onViewCv={() => onViewCv(spec)} onContact={() => onContact(spec)} />

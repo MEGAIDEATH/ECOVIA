@@ -1,8 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 
+import { AuthShell } from '@/components/layout/AuthShell';
+import { Field } from '@/components/ui/Field';
+import { LoadingButton } from '@/components/ui/LoadingButton';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useDashboardEntry } from '@/features/auth/useDashboardEntry';
 import { safeRedirectPath } from '@/lib/utils/url';
@@ -72,62 +76,65 @@ function LoginPageContent() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4 rounded-2xl border bg-white p-6 shadow">
-        <h1 className="text-xl font-bold text-on-surface">تسجيل الدخول</h1>
-        <div className="space-y-2">
-          <label htmlFor="identifier" className="block text-sm font-bold">
-            البريد الإلكتروني أو رقم الجوال
-          </label>
+    <AuthShell
+      title="تسجيل الدخول"
+      subtitle="مرحبًا بعودتك إلى إيكوفيا."
+      footer={
+        <>
+          ليس لديك حساب؟{' '}
+          <Link href="/choose-role" className="font-bold text-secondary hover:text-primary">
+            إنشاء حساب
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Field id="identifier" label="البريد الإلكتروني أو رقم الجوال">
           <input
             id="identifier"
             type="text"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
-            className="w-full rounded-xl border px-4 py-3"
+            className="field-input"
             autoComplete="username"
             required
           />
-        </div>
-        <div className="space-y-2">
-          <label htmlFor="password" className="block text-sm font-bold">
-            كلمة المرور
-          </label>
+        </Field>
+        <Field id="password" label="كلمة المرور">
           <div className="relative">
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border px-4 py-3"
+              className="field-input pl-20"
               autoComplete="current-password"
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-secondary"
+              aria-pressed={showPassword}
+              aria-controls="password"
+              className="btn btn-ghost btn-sm absolute top-1/2 left-1.5 -translate-y-1/2"
             >
               {showPassword ? 'إخفاء' : 'إظهار'}
             </button>
           </div>
-        </div>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-xl bg-primary py-3 font-bold text-white disabled:opacity-60"
-        >
-          {submitting ? 'جاري الدخول...' : 'دخول'}
-        </button>
-        <div className="text-center">
-          <a href="/forgot-password" className="text-sm text-primary underline">
+        </Field>
+        <div className="flex justify-end">
+          <Link href="/forgot-password" className="text-sm font-semibold text-secondary hover:text-primary">
             نسيت كلمة المرور؟
-          </a>
+          </Link>
         </div>
+        <LoadingButton type="submit" loading={submitting} loadingLabel="جاري الدخول..." showSpinner className="btn btn-primary btn-block btn-lg">
+          دخول
+        </LoadingButton>
       </form>
-    </main>
+    </AuthShell>
   );
 }
+
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>

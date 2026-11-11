@@ -20,8 +20,8 @@ export function SpecialistMessages() {
       inputPlaceholder="اكتب رسالتك هنا..."
       headerIcon="corporate_fare"
       renderHeaderActions={() => (
-        <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 flex-shrink-0">
-          <span className="material-symbols-outlined text-[14px]">lock</span> قناة مشفرة
+        <span className="badge badge-success shrink-0">
+          <span aria-hidden="true" className="material-symbols-outlined text-[14px]">lock</span> قناة مشفرة
         </span>
       )}
     />

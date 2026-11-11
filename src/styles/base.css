@@ -1,0 +1,139 @@
+/* ==========================================================================
+   Element defaults. Kept deliberately small: anything component-shaped
+   lives in components.css, anything page-shaped in a CSS module.
+   ========================================================================== */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+    font-family: var(--font-sans);
+    line-height: 1.7; /* comfortable Arabic line height */
+  }
+
+  button,
+  input,
+  select,
+  textarea,
+  summary {
+    font-family: inherit;
+  }
+
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  summary {
+    cursor: pointer;
+  }
+
+  /* One visible, consistent keyboard focus indicator for the whole app. */
+  :where(a, button, summary, [role='button'], [role='tab'], [tabindex]):focus-visible {
+    outline: 3px solid var(--color-sage);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background: var(--color-sage);
+    color: var(--color-forest);
+  }
+
+  /* Number inputs (IDs, phones) never show spinners. */
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+}
+
+/* Material Symbols (loaded in the root layout). */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  line-height: 1;
+  user-select: none;
+}
+
+/* Subtle entrance used by dashboard pages; disabled for reduced motion. */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.fade-up {
+  animation: fadeUp 0.45s var(--ease-brand) both;
+}
+
+/* Scan line used by the OCR overlay. */
+@keyframes scan {
+  0%,
+  100% {
+    top: 0%;
+  }
+  50% {
+    top: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  .fade-up {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---- Printing (see src/lib/print.ts) ------------------------------------ */
+.print-only,
+#print-root {
+  display: none;
+}
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  body.printing > :not(#print-root) {
+    display: none !important;
+  }
+  #print-root {
+    display: block;
+    color: var(--color-ink);
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #print-root .print-only {
+    display: block;
+  }
+  #print-root .print-hidden {
+    display: none !important;
+  }
+  #print-root .card,
+  #print-root [class*='shadow'] {
+    box-shadow: none !important;
+  }
+  #print-root section,
+  #print-root li {
+    break-inside: avoid;
+  }
+}

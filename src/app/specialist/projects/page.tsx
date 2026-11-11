@@ -1,5 +1,6 @@
-import { SpecialistProjects } from '@/features/specialists/projects/SpecialistProjects';
+import { redirect } from 'next/navigation';
 
-export default function Page() {
-  return <SpecialistProjects />;
+/** Legacy route ("المشاريع") — the engagements now live under الخدمات. */
+export default function LegacyProjectsPage() {
+  redirect('/specialist/services');
 }

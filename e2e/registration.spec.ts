@@ -121,14 +121,17 @@ test.describe('specialist registration flow', () => {
   test('completes signup with the demo OTP and persists a pending specialist', async ({
     page,
   }) => {
-    // A fresh e-mail per run: `user.email` is unique, so reusing one would make
-    // the second run collide with the account created by the first.
+    // Fresh identifiers per run: `user.phone_number` is unique, so a fixed phone
+    // would sign back into the account (and status) left by an earlier run.
+    const suffix = `${Date.now()}`.slice(-8);
+    const phone = `05${suffix}`;
+    const nationalId = `1${suffix}9`;
     await page.goto('/register/specialist');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
     await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
-    await page.getByLabel('رقم الهوية').fill('1098765432');
-    await page.getByLabel('رقم الجوال').fill('0512345678');
+    await page.getByLabel('رقم الهوية').fill(nationalId);
+    await page.getByLabel('رقم الجوال').fill(phone);
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
     await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2024-99999');
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
@@ -146,10 +149,10 @@ test.describe('specialist registration flow', () => {
     // The account must exist in PostgreSQL as `pending` — approval stays an
     // admin-only operation.
     await expect
-      .poll(async () => (await findSpecialistByPhone('0512345678'))?.status, { timeout: 15_000 })
+      .poll(async () => (await findSpecialistByPhone(phone))?.status, { timeout: 15_000 })
       .toBe('pending');
 
-    const row = await findSpecialistByPhone('0512345678');
+    const row = await findSpecialistByPhone(phone);
     expect(row?.full_name).toBe('خالد سعيد عبدالله');
   });
 });

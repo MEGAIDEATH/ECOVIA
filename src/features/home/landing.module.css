@@ -1,0 +1,605 @@
+/* ==========================================================================
+   Landing page artwork + interaction states, ported from
+   docs/ECOVIA_Project/index.html. Layout, spacing and typography are Tailwind
+   utilities in the components; only what utilities cannot express (pseudo
+   elements, keyframes, generated artwork, stateful selectors) lives here.
+   Colors come from src/styles/tokens.css where a token exists; the remaining
+   literals are artwork gradients from the original illustration.
+   ========================================================================== */
+
+/* ---- Page frame ------------------------------------------------------- */
+.landing {
+  background: var(--color-canvas);
+  line-height: 1.85;
+}
+
+:global(html):has(.landing) {
+  scroll-behavior: smooth;
+  scroll-padding-top: 110px;
+}
+
+.landing section {
+  scroll-margin-top: 50px;
+}
+
+@media (width < 48rem) {
+  :global(html):has(.landing) {
+    scroll-padding-top: 150px;
+  }
+}
+
+/* ---- Scroll progress (grows from the right edge, RTL) ------------------- */
+.progress {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 50;
+  height: 3px;
+  background: var(--color-green);
+  transform: scaleX(0);
+  transform-origin: right;
+  will-change: transform;
+}
+
+/* ---- Header navigation underline -------------------------------------- */
+.navLink {
+  position: relative;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.22s;
+}
+.navLink:hover,
+.navLink:focus-visible {
+  color: var(--color-green);
+}
+.navLink::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  left: 100%;
+  bottom: -9px;
+  height: 2px;
+  background: var(--color-green);
+  transition: left 0.25s var(--ease-brand);
+}
+.navLink:hover::after,
+.navLink:focus-visible::after {
+  left: 0;
+}
+
+/* ---- Hero ------------------------------------------------------------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 82px 0 110px;
+  background:
+    radial-gradient(circle at 8% 9%, rgba(143, 191, 175, 0.17) 0, transparent 32%),
+    linear-gradient(150deg, #fcfdfa 10%, #f6f9f5 86%);
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 40px;
+  right: -330px;
+  width: 520px;
+  height: 520px;
+  border: 1px solid rgba(46, 125, 115, 0.09);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.visualPanel {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  height: 550px;
+  overflow: hidden;
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 68% 31%, rgba(143, 191, 175, 0.5), transparent 30%),
+    radial-gradient(circle at 12% 82%, #235c4a, transparent 46%),
+    linear-gradient(140deg, #0c302e, #11514a 60%, #347b67);
+  box-shadow: 0 35px 65px rgba(15, 61, 54, 0.2);
+}
+/* Film-grain texture over the panel. */
+.visualPanel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.73' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.halo {
+  position: absolute;
+  top: 14%;
+  left: 8%;
+  width: 82%;
+  height: 82%;
+  border: 1px solid rgba(223, 243, 221, 0.19);
+  border-radius: 50%;
+}
+.halo2 {
+  transform: scale(0.79);
+}
+.halo3 {
+  transform: scale(0.53);
+}
+
+.ecoOrb {
+  position: absolute;
+  top: 20%;
+  left: 17%;
+  width: 66%;
+  height: 62%;
+  overflow: hidden;
+  border-radius: 49% 51% 48% 52%;
+  background: radial-gradient(circle at 35% 24%, #d2e2cd, #85b89b 47%, #276e5e 73%, #0b3a36 98%);
+  box-shadow:
+    inset -17px -19px 34px rgba(1, 27, 25, 0.4),
+    inset 10px 14px 35px rgba(255, 255, 245, 0.43),
+    0 35px 72px rgba(0, 0, 0, 0.28);
+  animation: float 8s ease-in-out infinite;
+}
+.ecoOrb::before {
+  content: '';
+  position: absolute;
+  inset: 12% 15%;
+  border: 1px solid rgba(245, 251, 241, 0.32);
+  border-radius: 100% 2% 100% 4%;
+  background: linear-gradient(130deg, transparent 42%, rgba(255, 255, 255, 0.19) 43%, transparent 45%);
+  opacity: 0.7;
+  transform: rotate(-37deg);
+}
+
+.orbBranch {
+  position: absolute;
+  right: -5%;
+  bottom: -15%;
+  width: 78%;
+  height: 69%;
+  transform: rotate(-27deg);
+}
+.orbBranch path {
+  fill: #104b42;
+  opacity: 0.88;
+  stroke: #6aab8e;
+  stroke-width: 1.2;
+}
+.orbBranch path:nth-child(2) {
+  fill: #226d55;
+}
+.orbBranch path:nth-child(3) {
+  fill: #387d5f;
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-13px) rotate(3deg);
+  }
+}
+
+/* Draggable stakeholder cards orbiting the orb. */
+.orbitLabel {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  color: #eff7ed;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform;
+  transition:
+    transform 0.34s var(--ease-brand),
+    background 0.3s,
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+.orbitLabel svg {
+  flex: none;
+  width: 23px;
+  height: 23px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+.orbitLabel:hover,
+.orbitLabel[aria-pressed='true'] {
+  border-color: rgba(255, 255, 255, 0.63);
+  background: rgba(248, 255, 248, 0.19);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.16);
+}
+.orbitLabel:focus-visible {
+  outline: 2px solid #e9f5e8;
+  outline-offset: 3px;
+}
+.orbitLabel[data-dragging='true'] {
+  z-index: 9;
+  cursor: grabbing;
+  transition: none;
+}
+.one {
+  top: 13%;
+  right: 8%;
+}
+.two {
+  top: 49%;
+  left: 6%;
+}
+.three {
+  right: 12%;
+  bottom: 9%;
+}
+
+.playHint {
+  position: absolute;
+  bottom: -22px;
+  width: 100%;
+  margin: 0;
+  color: #789489;
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ---- Target audiences (role tabs) ------------------------------------- */
+.rolesSection {
+  padding: 110px 0;
+  background: linear-gradient(180deg, #edf4ee, #f4f7f1);
+}
+
+.roleTabs {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  gap: 5px;
+  margin-top: 28px;
+  padding: 6px;
+  overflow: hidden;
+  border: 1px solid #dce7df;
+  border-radius: 14px;
+  background: #fff;
+  touch-action: pan-y;
+}
+.roleSlider {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  z-index: 0;
+  border-radius: 10px;
+  background: var(--color-forest);
+  box-shadow: 0 5px 12px rgba(15, 61, 54, 0.1);
+  transition:
+    left 0.46s var(--ease-brand),
+    width 0.46s var(--ease-brand);
+}
+.roleTab {
+  position: relative;
+  z-index: 1;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #587064;
+  font-size: 16px;
+  font-weight: 700;
+  transition: color 0.24s;
+}
+.roleTab[aria-selected='true'] {
+  color: #fff;
+}
+/* Before the slider has been measured (pre-hydration). */
+.roleTabs:not([data-ready]) .roleSlider {
+  opacity: 0;
+}
+.roleTabs:not([data-ready]) .roleTab[aria-selected='true'] {
+  background: var(--color-forest);
+}
+
+.roleStage {
+  position: relative;
+  min-height: 355px;
+  cursor: grab;
+  touch-action: pan-y;
+}
+.roleStage:active {
+  cursor: grabbing;
+}
+
+.rolePanel {
+  min-height: 355px;
+  padding: 40px;
+  border: 1px solid #e5ede7;
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: var(--shadow-raised);
+}
+.rolePanel[hidden] {
+  display: none;
+}
+.rolePanel[data-entering='true'] {
+  animation: roleSlide 0.43s var(--ease-brand) both;
+}
+
+@keyframes roleSlide {
+  from {
+    opacity: 0.78;
+    transform: translateX(var(--slide-from, 18px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.roleFeature {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  color: #40584c;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.8;
+}
+.roleFeature::before {
+  content: '✓';
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: #dff0e5;
+  color: #236447;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+}
+
+/* ---- Environmental community ------------------------------------------ */
+.communityChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border: 1px solid rgba(224, 252, 235, 0.25);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #def2e4;
+  font-size: 15px;
+  transition:
+    background 0.25s,
+    transform 0.25s,
+    border-color 0.25s;
+}
+.communityChip:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-3px);
+}
+.communityChip[aria-pressed='true'] {
+  border-color: #dcebe0;
+  background: #dcebe0;
+  color: var(--color-forest);
+}
+.communityChip:focus-visible {
+  outline-color: #e9f5e8;
+}
+
+.communityPreview {
+  max-width: 440px;
+  min-height: 97px;
+  margin-top: 26px;
+  padding-top: 17px;
+  border-top: 1px solid rgba(223, 239, 228, 0.18);
+}
+.previewEnter {
+  animation: roleSlide 0.36s var(--ease-brand) both;
+}
+
+.communityArt {
+  position: relative;
+  min-height: 420px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 67%, rgba(218, 224, 191, 0.75), transparent 34%),
+    linear-gradient(150deg, #a9c8b0, #e5e4d6 68%, #c5d3b8);
+}
+.communityArt::before {
+  content: '';
+  position: absolute;
+  bottom: -420px;
+  left: -80px;
+  width: 620px;
+  height: 620px;
+  border-radius: 49%;
+  background: #2d765f;
+  box-shadow: 0 -20px 0 rgba(46, 125, 115, 0.18);
+}
+.communityArt::after {
+  content: '';
+  position: absolute;
+  top: -294px;
+  right: -150px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: var(--color-sand);
+  box-shadow: 0 0 0 60px rgba(255, 255, 255, 0.11);
+}
+.artLeaf {
+  position: absolute;
+  right: 32%;
+  bottom: -38px;
+  z-index: 2;
+  width: 175px;
+  height: 310px;
+  border-radius: 100% 5% 95% 6%;
+  background: linear-gradient(150deg, #165c4d, #61a58c);
+  box-shadow:
+    inset 8px 8px 20px rgba(255, 255, 255, 0.24),
+    0 14px 26px rgba(13, 71, 54, 0.14);
+  transform: rotate(-35deg);
+}
+.leafTwo {
+  right: 2%;
+  bottom: -88px;
+  width: 150px;
+  height: 270px;
+  background: linear-gradient(140deg, #86b59c, #225c4c);
+  transform: rotate(27deg);
+}
+.leafThree {
+  right: 68%;
+  bottom: -70px;
+  width: 135px;
+  height: 245px;
+  background: linear-gradient(140deg, #2c876e, #c5ddc6);
+  transform: rotate(-78deg);
+}
+.artCaption {
+  position: absolute;
+  top: 40px;
+  right: 38px;
+  z-index: 3;
+  padding: 10px 17px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(10px);
+  color: #245f50;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* ---- FAQ (native <details>) ------------------------------------------- */
+.faqItem {
+  transition: border-color 0.2s;
+}
+.faqItem[open] {
+  border-color: #b6d2c3;
+}
+.faqItem summary {
+  list-style: none;
+}
+.faqItem summary::-webkit-details-marker {
+  display: none;
+}
+.faqItem summary::after {
+  content: '+';
+  flex: none;
+  color: #4b876d;
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  transition: transform 0.2s;
+}
+.faqItem[open] summary::after {
+  transform: rotate(45deg);
+}
+
+/* ---- Scroll reveal ------------------------------------------------------
+   Hidden only when scripting is on and motion is welcome, so content is
+   never lost without JS or for reduced-motion users. */
+.reveal {
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s ease;
+}
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .reveal:not([data-revealed='true']) {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+/* ---- Responsive ------------------------------------------------------- */
+@media (width < 64rem) {
+  .visualPanel {
+    height: 460px;
+  }
+  .roleStage {
+    min-height: 370px;
+  }
+}
+
+@media (width < 48rem) {
+  .hero {
+    padding: 58px 0 90px;
+  }
+  .visualPanel {
+    height: 430px;
+  }
+  .rolesSection {
+    padding: 75px 0;
+  }
+  .roleStage {
+    min-height: 420px;
+  }
+  .rolePanel {
+    min-height: auto;
+    padding: 28px;
+  }
+  .communityArt {
+    min-height: 310px;
+  }
+  .playHint {
+    bottom: -18px;
+  }
+}
+
+@media (width < 27.5rem) {
+  .visualPanel {
+    height: 385px;
+    border-radius: 24px;
+  }
+  .orbitLabel {
+    gap: 6px;
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+  .orbitLabel svg {
+    width: 18px;
+    height: 18px;
+  }
+  .one {
+    right: 3%;
+  }
+  .two {
+    left: 2%;
+  }
+  .three {
+    bottom: 8%;
+  }
+  .roleStage {
+    min-height: 445px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ecoOrb,
+  .rolePanel[data-entering='true'],
+  .previewEnter {
+    animation: none;
+  }
+  .orbitLabel,
+  .roleSlider,
+  .communityChip,
+  .reveal {
+    transition: none;
+  }
+}

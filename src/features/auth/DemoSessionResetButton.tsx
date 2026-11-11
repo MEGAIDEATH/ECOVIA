@@ -15,7 +15,11 @@ import { startFreshDemoSession } from './demoSession';
  * deleted. Renders
  * nothing unless `NEXT_PUBLIC_DEMO_SESSION_RESET=true` (never in production).
  */
-export function DemoSessionResetButton() {
+export function DemoSessionResetButton({
+  className = 'text-xs text-muted hover:text-primary transition-colors inline-flex items-center gap-1 disabled:opacity-70',
+}: {
+  className?: string;
+}) {
   const [starting, setStarting] = useState(false);
 
   if (!DEMO_SESSION_RESET_ENABLED) return null;
@@ -36,9 +40,9 @@ export function DemoSessionResetButton() {
       data-testid="demo-session-reset"
       onClick={() => void handleStart()}
       disabled={starting}
-      className="text-xs text-primary/60 hover:text-primary transition-colors flex items-center gap-1 disabled:opacity-70"
+      className={className}
     >
-      <span className="material-symbols-outlined text-[14px]">restart_alt</span>
+      <span aria-hidden="true" className="material-symbols-outlined text-[14px]">restart_alt</span>
       {starting ? 'جاري بدء جلسة جديدة...' : 'بدء جلسة تجريبية جديدة'}
     </button>
   );

@@ -5,7 +5,7 @@
  * (singular table names, `text` ids, `timestamp with time zone` dates). Better
  * Auth owns these tables; application code only reads `user.id` / `user.role`.
  */
-import { boolean, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
 /** `admin` is the only privileged role; profiles carry their own account type. */
 export const USER_ROLES = ['user', 'admin'] as const;
@@ -36,7 +36,7 @@ export const session = pgTable('session', {
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-});
+}, (table) => [index('session_user_id_idx').on(table.userId)]);
 
 export const account = pgTable('account', {
   id: text('id').primaryKey(),
@@ -54,7 +54,7 @@ export const account = pgTable('account', {
   password: text('password'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index('account_user_id_idx').on(table.userId)]);
 
 export const verification = pgTable('verification', {
   id: text('id').primaryKey(),
@@ -63,4 +63,4 @@ export const verification = pgTable('verification', {
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index('verification_identifier_idx').on(table.identifier)]);

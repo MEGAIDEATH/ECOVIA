@@ -33,7 +33,7 @@ export const cvSchema = z.object({
 export type CvValues = z.infer<typeof cvSchema>;
 
 export const contractSchema = z.object({
-  title: z.string().trim().min(1, 'اسم المشروع / المهمة مطلوب'),
+  title: z.string().trim().min(1, 'اسم الخدمة / المهمة مطلوب'),
   duration: z.string().trim().min(1, 'المدة المتوقعة مطلوبة'),
   value: z.string().trim().min(1, 'القيمة (ريال) مطلوبة'),
   orgSig: z.string().trim().min(1, 'توقيع الجهة (الاسم) مطلوب'),

@@ -1,37 +1,64 @@
-'use client';
-
 import Link from 'next/link';
 
+import { AuthShell } from '@/components/layout/AuthShell';
+
+const ROLES = [
+  {
+    href: '/register/specialist',
+    icon: 'person',
+    title: 'أخصائي بيئي',
+    body: 'للمتخصصين في المجال البيئي: ملف مهني، طلبات المنشآت، والتعاقدات.',
+    cta: 'دخول كأخصائي',
+  },
+  {
+    href: '/register/organization',
+    icon: 'domain',
+    title: 'منشأة / جهة',
+    body: 'للشركات والمؤسسات: طلب الخدمات البيئية والوصول إلى الأخصائيين المؤهلين.',
+    cta: 'دخول كجهة',
+  },
+] as const;
+
+/** Account-type choice before registration. */
 export function ChooseRoleView() {
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-surface">
-      <div className="w-full max-w-2xl">
-        <h1 className="text-2xl font-bold text-primary text-center mb-2">إنشاء حساب</h1>
-        <p className="text-secondary text-center mb-8">اختر نوع الحساب للمتابعة</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link
-            href="/register/specialist"
-            className="bg-white rounded-2xl border border-outline-variant/30 p-6 text-center hover:border-primary transition-colors"
-          >
-            <span className="material-symbols-outlined text-primary text-4xl mb-2 block">person</span>
-            <h2 className="font-bold text-on-surface mb-1">أخصائي بيئي</h2>
-            <p className="text-sm text-secondary">للمتخصصين في المجال البيئي</p>
+    <AuthShell
+      title="إنشاء حساب"
+      subtitle="اختر نوع الحساب للمتابعة."
+      width="lg"
+      footer={
+        <>
+          لديك حساب؟{' '}
+          <Link href="/login" className="font-bold text-secondary hover:text-primary">
+            تسجيل الدخول
           </Link>
-          <Link
-            href="/register/organization"
-            className="bg-white rounded-2xl border border-outline-variant/30 p-6 text-center hover:border-primary transition-colors"
-          >
-            <span className="material-symbols-outlined text-primary text-4xl mb-2 block">domain</span>
-            <h2 className="font-bold text-on-surface mb-1">منشأة / جهة</h2>
-            <p className="text-sm text-secondary">للشركات والمؤسسات</p>
-          </Link>
-        </div>
-        <div className="text-center mt-6">
-          <Link href="/login" className="text-primary font-bold hover:underline">
-            لديك حساب؟ تسجيل الدخول
-          </Link>
-        </div>
-      </div>
-    </main>
+        </>
+      }
+    >
+      <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {ROLES.map((role) => (
+          <li key={role.href}>
+            <Link
+              href={role.href}
+              className="card card-interactive group flex h-full flex-col p-6 no-underline"
+            >
+              <span className="icon-tile icon-tile-lg mb-4">
+                <span aria-hidden="true" className="material-symbols-outlined text-[28px]">
+                  {role.icon}
+                </span>
+              </span>
+              <h2 className="text-lg font-bold text-forest">{role.title}</h2>
+              <p className="mt-1 mb-5 text-[15px] leading-relaxed text-muted">{role.body}</p>
+              <span className="mt-auto inline-flex items-center gap-1 text-sm font-bold text-secondary group-hover:text-primary">
+                {role.cta}
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                  arrow_back
+                </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </AuthShell>
   );
 }

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 type SplashPhase = 'visible' | 'fading' | 'hidden';
 
 /**
- * Animated splash screen — identical timing to the legacy inline script:
+ * Brand splash screen — same timing contract as the legacy inline script:
  * hides on window `load`, with a 2.5s fallback, fading out over 700ms.
  */
 export function SplashScreen() {
@@ -34,16 +34,21 @@ export function SplashScreen() {
     <div
       data-testid="splash-screen"
       aria-hidden={phase === 'fading'}
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center editorial-gradient transition-opacity duration-700 ${
-        phase === 'fading' ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[radial-gradient(circle_at_68%_31%,rgba(143,191,175,.35),transparent_35%),linear-gradient(140deg,#0c302e,#11514a_60%,#347b67)] transition-opacity duration-700 ${
+        phase === 'fading' ? 'pointer-events-none opacity-0' : 'opacity-100'
       }`}
     >
-      <div className="relative z-10 flex flex-col items-center">
-        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl mb-6 animate-bounce">
-          <span className="material-symbols-outlined text-primary text-6xl">eco</span>
+      <div className="flex flex-col items-center">
+        <div className="mb-6 grid size-24 place-items-center rounded-full bg-white shadow-dialog motion-safe:animate-pulse">
+          <img src="/assets/ecovia-logo.png" alt="" width={207} height={198} className="size-16 object-contain" />
         </div>
-        <h1 className="text-white text-4xl font-bold tracking-tight mb-2">منصة بيئيين</h1>
-        <p className="text-primary-fixed text-sm font-medium">جاري التحميل...</p>
+        <p lang="en" className="font-latin text-3xl font-extrabold tracking-[.12em] text-white">
+          ECOVIA
+        </p>
+        <p className="mb-3 text-sm tracking-[.15em] text-on-dark-muted">إيكوفيا</p>
+        <p role="status" className="text-xs text-on-dark-muted/80">
+          جاري التحميل...
+        </p>
       </div>
     </div>
   );

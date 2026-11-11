@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
 import { SplashScreen } from '@/components/layout/SplashScreen';
@@ -8,24 +8,35 @@ import { AuthProvider } from '@/features/auth/AuthProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'منصة بيئيين - النظام المتكامل',
+  title: {
+    default: 'إيكوفيا | الخدمات البيئية والوعي المجتمعي',
+    template: '%s | إيكوفيا',
+  },
   description:
-    'منصة بيئيين تربط الأخصائيين البيئيين بالمنشآت المعتمدة لإدارة المشاريع والعقود والتواصل الآمن.',
+    'إيكوفيا منصة سعودية تربط المنشآت بالأخصائيين البيئيين وتجمع الخدمات المهنية والتوعية البيئية في مكان واحد.',
+  icons: { icon: '/assets/ecovia-logo.png' },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0F3D36',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ar" dir="rtl">
-      <body className="text-on-surface antialiased overflow-x-hidden min-h-screen relative">
-        {/* Legacy font loading (IBM Plex Sans Arabic, Manrope, Material Symbols) */}
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap"
         />
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         />
+      </head>
+      <body className="min-h-screen overflow-x-hidden antialiased">
         <SplashScreen />
         <ToastProvider>
           <AuthProvider>{children}</AuthProvider>

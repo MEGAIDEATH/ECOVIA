@@ -86,25 +86,24 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         <div
           key={toast.id}
           role="alert"
-          className={`custom-toast fixed top-6 left-1/2 z-[9999] shadow-2xl rounded-xl p-4 flex items-center gap-3 w-11/12 max-w-md border-l-4 ${
+          className={`custom-toast fixed top-6 left-1/2 z-[9999] flex w-11/12 max-w-md items-center gap-3 rounded-card border border-s-4 bg-white p-4 shadow-dialog ${
             visible ? 'show' : ''
-          } ${toast.isError ? 'bg-red-50 border-red-500' : 'bg-surface border-primary'}`}
+          } ${toast.isError ? 'border-danger/25 border-s-danger' : 'border-line border-s-secondary'}`}
         >
           <span
-            className={`material-symbols-outlined text-2xl ${
-              toast.isError ? 'text-red-500' : 'text-primary'
-            }`}
+            aria-hidden="true"
+            className={`material-symbols-outlined text-2xl ${toast.isError ? 'text-danger' : 'text-secondary'}`}
           >
             {toast.isError ? 'error' : 'check_circle'}
           </span>
-          <p className="text-on-surface font-semibold text-sm flex-1">{toast.message}</p>
+          <p className="flex-1 text-sm font-semibold text-on-surface">{toast.message}</p>
           <button
             type="button"
             onClick={hideToast}
             aria-label="إغلاق الإشعار"
-            className="text-secondary hover:text-primary transition-colors"
+            className="btn btn-ghost btn-icon size-8 text-muted"
           >
-            <span className="material-symbols-outlined text-lg">close</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-lg">close</span>
           </button>
         </div>
       )}

@@ -8,14 +8,26 @@ interface SpecialistDirectoryCardProps {
 
 export function SpecialistDirectoryCard({ specialist, onViewCv, onContact }: SpecialistDirectoryCardProps) {
   return (
-    <div className="org-card-spec bg-white p-6 rounded-2xl border flex flex-col h-full shadow-sm">
-      <h4 className="font-bold text-slate-800 text-lg mb-1">{specialist.fullName || 'أخصائي'}</h4>
-      <p className="text-sm text-slate-500 mb-2">{specialist.edu || 'لم يحدد التخصص'}</p>
-      {specialist.city && <p className="text-xs text-slate-400 mb-4">{specialist.city}</p>}
-      <div className="mt-auto flex gap-2">
-        <button type="button" onClick={onViewCv} className="flex-1 py-2 bg-slate-100 font-bold rounded-lg hover:bg-slate-200 text-xs text-slate-800 transition-colors">الملف</button>
-        <button type="button" onClick={onContact} className="flex-[2] py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 text-xs transition-colors">تواصل</button>
+    <article className="card card-interactive flex h-full flex-col p-5">
+      <div className="mb-4 flex items-start gap-3">
+        <span className="icon-tile shrink-0">
+          <span aria-hidden="true" className="material-symbols-outlined text-[22px]">person</span>
+        </span>
+        <div className="min-w-0">
+          <h3 className="truncate font-bold text-forest">{specialist.fullName || 'أخصائي'}</h3>
+          <p className="text-sm text-muted">{specialist.edu || 'لم يحدد التخصص'}</p>
+          {specialist.city && (
+            <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted">
+              <span aria-hidden="true" className="material-symbols-outlined text-[14px]">location_on</span>
+              {specialist.city}
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+      <div className="mt-auto flex gap-2">
+        <button type="button" onClick={onViewCv} className="btn btn-secondary btn-sm flex-1">الملف</button>
+        <button type="button" onClick={onContact} className="btn btn-primary btn-sm flex-[2]">تواصل</button>
+      </div>
+    </article>
   );
 }
