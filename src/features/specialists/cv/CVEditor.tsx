@@ -17,6 +17,9 @@ import {
 
 import { useSpecialistDashboard } from '../dashboard/SpecialistDashboardProvider';
 import { updateSpecialistProfile } from '../specialistRepository';
+import { printElement } from '@/lib/print';
+
+import { CVDocument } from './CVDocument';
 import { CVPreviewModal } from './CVPreviewModal';
 
 /** Specialist CV editor (legacy `scontent-cv`). */
@@ -42,6 +45,7 @@ export function CVEditor() {
 
   const picInputRef = useRef<HTMLInputElement>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
+  const printRef = useRef<HTMLElement>(null);
 
   const {
     register,
@@ -150,24 +154,29 @@ export function CVEditor() {
     license: specialist?.license ?? '',
   });
 
-  const EDIT_INPUT =
-    'w-full px-3 py-2 bg-surface rounded-lg border border-outline-variant focus:border-primary outline-none transition-all';
-  const READONLY_INPUT =
-    'w-full px-3 py-2 bg-surface-container-low rounded-lg border border-transparent outline-none text-secondary';
-  const FIELD_LABEL = 'block text-xs font-bold text-secondary mb-1';
+  const EDIT_INPUT = 'field-input';
+  const READONLY_INPUT = 'field-input';
+  const FIELD_LABEL = 'field-label';
 
   return (
-    <div className="fade-up bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-outline-variant/30 relative">
-      <div className="flex justify-between items-center mb-6 border-b pb-4">
-        <h3 className="text-xl font-bold text-primary flex items-center gap-2">
-          <span className="material-symbols-outlined text-2xl">person_book</span> السيرة الذاتية
+    <div className="fade-up card relative p-5 md:p-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
+        <h2 className="flex items-center gap-2 text-xl font-bold text-forest">
+          <span aria-hidden="true" className="material-symbols-outlined text-2xl text-secondary">person_book</span> السيرة الذاتية
           الرقمية
-        </h3>
-        <div className="flex gap-2">
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => printRef.current && printElement(printRef.current)}
+            className="btn btn-secondary"
+          >
+            <span aria-hidden="true" className="material-symbols-outlined text-[18px]">print</span> طباعة السيرة
+          </button>
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="px-4 py-2 bg-surface-container-high text-on-surface font-bold rounded-xl hover:bg-outline-variant transition-colors flex items-center gap-1 text-sm shadow-sm border border-outline-variant/50"
+            className="btn btn-secondary"
           >
             <span className="material-symbols-outlined text-[18px]">visibility</span> استعراض
           </button>
@@ -175,7 +184,7 @@ export function CVEditor() {
             type="button"
             onClick={() => void onSubmit()}
             disabled={saving}
-            className="px-4 py-2 bg-primary text-white font-bold rounded-xl hover:bg-[#006d44] transition-colors flex items-center gap-1 text-sm shadow-md disabled:opacity-70"
+            className="btn btn-primary"
           >
             {saving ? (
               <Spinner className="w-4 h-4 border-2 border-white/70 border-t-white" />
@@ -194,12 +203,12 @@ export function CVEditor() {
               type="button"
               onClick={() => picInputRef.current?.click()}
               aria-label="تغيير الصورة الشخصية"
-              className="relative w-20 h-20 rounded-full bg-surface-container-high flex items-center justify-center border-2 border-primary/20 overflow-hidden cursor-pointer hover:border-primary transition-colors"
+              className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-sage bg-accent-soft transition-colors hover:border-secondary"
             >
               {picPreview ? (
-                <img src={picPreview} alt="Profile" className="w-full h-full object-cover" />
+                <img src={picPreview} alt="الصورة الشخصية" className="size-full object-cover" />
               ) : (
-                <span className="material-symbols-outlined text-3xl text-secondary">
+                <span className="material-symbols-outlined text-3xl text-muted">
                   add_a_photo
                 </span>
               )}
@@ -222,8 +231,8 @@ export function CVEditor() {
               }}
             />
             <div>
-              <p className="text-sm font-bold text-primary">الصورة الشخصية (اختياري)</p>
-              <p className="text-xs text-secondary mt-1">اضغط للتعديل (JPG/PNG)</p>
+              <p className="text-sm font-bold text-forest">الصورة الشخصية (اختياري)</p>
+              <p className="text-xs text-muted mt-1">اضغط للتعديل (JPG/PNG)</p>
             </div>
           </div>
 
@@ -233,7 +242,7 @@ export function CVEditor() {
             </label>
             <input id="cv_name" type="text" {...register('fullName')} className={EDIT_INPUT} />
             {errors.fullName && (
-              <p role="alert" className="mt-1 text-xs font-bold text-red-500">
+              <p role="alert" className="field-error">
                 {errors.fullName.message}
               </p>
             )}
@@ -320,7 +329,7 @@ export function CVEditor() {
               className={`${EDIT_INPUT} text-left`}
             />
             {errors.email && (
-              <p role="alert" className="mt-1 text-xs font-bold text-red-500">
+              <p role="alert" className="field-error">
                 {errors.email.message}
               </p>
             )}
@@ -366,21 +375,22 @@ export function CVEditor() {
               placeholder="https://linkedin.com/in/..."
             />
             {errors.portfolio && (
-              <p role="alert" className="mt-1 text-xs font-bold text-red-500">
+              <p role="alert" className="field-error">
                 {errors.portfolio.message}
               </p>
             )}
           </div>
 
           <div className="mt-2">
-            <label className="block text-xs font-bold text-secondary mb-2">
+            <p id="resume-label" className="field-label">
               إرفاق ملف السيرة الذاتية (PDF)
-            </label>
+            </p>
             <button
               type="button"
               onClick={() => resumeInputRef.current?.click()}
               disabled={resumeUploading}
-              className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg border-2 border-dashed border-outline-variant hover:border-primary transition-colors flex items-center justify-center gap-2 text-sm text-primary font-bold disabled:opacity-70"
+              aria-describedby="resume-label"
+              className="btn btn-block min-h-12 border-2 border-dashed border-sage bg-wash text-forest hover:border-secondary hover:bg-accent-soft"
             >
               {resumeUploading ? (
                 <Spinner className="w-4 h-4 border-2" />
@@ -401,12 +411,17 @@ export function CVEditor() {
                 event.target.value = '';
               }}
             />
-            <div className="mt-2 text-xs text-center text-secondary">
-              {resumeName && <span className="text-primary font-bold">تم إرفاق: {resumeName}</span>}
+            <div className="mt-2 text-xs text-center text-muted">
+              {resumeName && <span className="font-bold text-success">تم إرفاق: {resumeName}</span>}
             </div>
           </div>
         </div>
       </form>
+
+      {/* Printable representation of the current CV (never shown on screen). */}
+      <div className="print-only" aria-hidden="true">
+        <CVDocument ref={printRef} data={buildPreviewData()} />
+      </div>
 
       <CVPreviewModal
         open={previewOpen}

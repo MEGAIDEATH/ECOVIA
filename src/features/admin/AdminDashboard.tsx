@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { Spinner } from '@/components/ui/Spinner';
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
+import { FullPageSpinner } from '@/components/layout/FullPageSpinner';
+import { Field } from '@/components/ui/Field';
+import { Modal } from '@/components/ui/Modal';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import { useToast } from '@/components/ui/Toast';
 import {
   adminLogout,
@@ -14,17 +18,18 @@ import {
   type AdminAccounts,
 } from '@/features/admin/adminRepository';
 import { usePerformLogout } from '@/features/auth/usePerformLogout';
+import { ACCOUNT_STATUS, presentStatus } from '@/lib/status';
 
 import { AdminLoginPanel } from './AdminLoginPanel';
 
 type AdminTab = 'specialists' | 'organizations';
 
-const ACTIVE_TAB =
-  'flex items-center gap-2 w-full text-right px-4 py-3 rounded-xl bg-slate-800 text-white font-bold transition-colors';
-const INACTIVE_TAB =
-  'flex items-center gap-2 w-full text-right px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-100 font-bold transition-colors';
+const TABS: ReadonlyArray<{ id: AdminTab; label: string; icon: string; domId: string }> = [
+  { id: 'specialists', label: 'اعتماد الأخصائيين', icon: 'group', domId: 'atab-spec' },
+  { id: 'organizations', label: 'اعتماد المنشآت', icon: 'domain', domId: 'atab-org' },
+];
 
-/** Admin dashboard (legacy `view-admin`) — slate interface, approval tables. */
+/** Admin dashboard — dense approval tables on the shared ECOVIA chrome. */
 export function AdminDashboard() {
   const { showToast } = useToast();
   const performLogout = usePerformLogout();
@@ -48,13 +53,6 @@ export function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    console.info('[ADMIN] AdminDashboard mounted');
-    return () => {
-      console.info('[ADMIN] AdminDashboard unmounted');
-    };
   }, []);
 
   useEffect(() => {
@@ -83,7 +81,6 @@ export function AdminDashboard() {
     }
   };
 
-
   const reject = async (collection: AdminAccountCollection, id: string, reason: string) => {
     try {
       await rejectAccount(collection, id, reason);
@@ -98,6 +95,20 @@ export function AdminDashboard() {
     }
   };
 
+  const closeReject = () => {
+    setRejectingId(null);
+    setRejectReason('');
+  };
+
+  const confirmReject = () => {
+    if (!rejectingId) return;
+    if (!rejectReason.trim()) {
+      showToast('سبب الرفض مطلوب', true);
+      return;
+    }
+    void reject(tab, rejectingId, rejectReason.trim());
+  };
+
   const handleLogout = () => {
     void adminLogout().catch(() => undefined);
     performLogout();
@@ -106,13 +117,7 @@ export function AdminDashboard() {
   // Only block the screen while the session is unknown. Once authenticated the
   // shell renders immediately and the table shows its own inline loading/error
   // state, so a slow accounts request can never hide the whole dashboard.
-  if (authed === null) {
-    return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <Spinner className="w-12 h-12 border-4" />
-      </div>
-    );
-  }
+  if (authed === null) return <FullPageSpinner />;
 
   if (!authed) {
     return (
@@ -127,152 +132,181 @@ export function AdminDashboard() {
 
   const rows = tab === 'specialists' ? accounts?.specialists ?? [] : accounts?.organizations ?? [];
   const nameKey = tab === 'specialists' ? 'الاسم' : 'اسم المنشأة';
+  const pendingCount = (list: { status: string }[] | undefined) =>
+    list?.filter((row) => row.status === 'pending').length ?? 0;
+  const counts: Record<AdminTab, number> = {
+    specialists: pendingCount(accounts?.specialists),
+    organizations: pendingCount(accounts?.organizations),
+  };
 
   return (
-    <main className="flex flex-col min-h-screen bg-surface">
-      <header className="bg-slate-800 text-white p-6 rounded-b-3xl shadow-lg flex justify-between items-center sticky top-0 z-30">
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <span className="material-symbols-outlined text-3xl">admin_panel_settings</span> بوابة
-          الإدارة والتحكم
-        </h1>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-          aria-label="تسجيل خروج"
-        >
-          <span className="material-symbols-outlined text-white">power_settings_new</span>
-        </button>
-      </header>
+    <div className="flex min-h-screen flex-col bg-surface">
+      <DashboardHeader
+        title="بوابة الإدارة والتحكم"
+        subtitle="مراجعة واعتماد الحسابات"
+        icon="admin_panel_settings"
+        homeHref="/admin"
+        onLogout={handleLogout}
+      />
 
-      <div className="flex-1 flex p-6 gap-6 w-full max-w-7xl mx-auto flex-col md:flex-row">
-        <div className="w-full md:w-64 bg-white rounded-2xl shadow-sm border p-4 h-fit flex flex-col gap-2">
-          <button
-            id="atab-spec"
-            type="button"
-            onClick={() => setTab('specialists')}
-            className={tab === 'specialists' ? ACTIVE_TAB : INACTIVE_TAB}
-          >
-            <span className="material-symbols-outlined">group</span> اعتماد الأخصائيين
-          </button>
-          <button
-            id="atab-org"
-            type="button"
-            onClick={() => setTab('organizations')}
-            className={tab === 'organizations' ? ACTIVE_TAB : INACTIVE_TAB}
-          >
-            <span className="material-symbols-outlined">domain</span> اعتماد المنشآت
-          </button>
-        </div>
+      <main className="container-brand flex flex-1 flex-col gap-6 py-8 md:flex-row md:py-10">
+        <nav aria-label="أقسام الإدارة" className="card flex h-fit flex-row gap-1 p-2 md:w-64 md:flex-col">
+          {TABS.map((item) => {
+            const active = tab === item.id;
+            return (
+              <button
+                key={item.id}
+                id={item.domId}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setTab(item.id)}
+                className={`flex flex-1 items-center gap-2 rounded-control px-3 py-2.5 text-start text-sm font-bold transition-colors md:flex-none ${
+                  active ? 'bg-forest text-white' : 'text-on-surface-variant hover:bg-wash'
+                }`}
+              >
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+                  {item.icon}
+                </span>
+                <span className="flex-1">{item.label}</span>
+                {counts[item.id] > 0 && (
+                  <span
+                    className={`badge ${active ? 'bg-white/20 text-white' : 'badge-warning'}`}
+                    aria-label={`${counts[item.id]} بانتظار الاعتماد`}
+                  >
+                    {counts[item.id]}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
 
-        <div className="flex-1 bg-white rounded-2xl shadow-sm border p-6 overflow-hidden">
-          <div className="overflow-x-auto">
-            <h2 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">
+        <section className="card min-w-0 flex-1 overflow-hidden" aria-labelledby="admin-table-title">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <h2 id="admin-table-title" className="text-base font-bold text-forest">
               {tab === 'specialists' ? 'جدول الأخصائيين المسجلين' : 'جدول المنشآت المسجلة'}
             </h2>
-            <table className="w-full text-sm text-right">
-              <thead className="bg-slate-50 text-slate-600 border-b">
+            <button
+              type="button"
+              onClick={() => void loadAccounts()}
+              disabled={loading}
+              className="btn btn-ghost btn-sm"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                refresh
+              </span>
+              تحديث
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="data-table min-w-[560px]">
+              <thead>
                 <tr>
-                  <th className="p-4 font-bold">{nameKey}</th>
-                  <th className="p-4 font-bold">الحالة</th>
-                  <th className="p-4 font-bold text-center">الإجراء</th>
+                  <th scope="col">{nameKey}</th>
+                  <th scope="col">الحالة</th>
+                  <th scope="col" className="!text-center">
+                    الإجراء
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan={3} className="p-4 text-center">
+                    <td colSpan={3} className="text-center text-muted">
                       جاري...
                     </td>
                   </tr>
                 )}
                 {error && !loading && (
                   <tr>
-                    <td colSpan={3} className="p-4 text-center text-red-500">
+                    <td colSpan={3} className="text-center font-semibold text-danger">
                       تعذر تحميل البيانات، حاول مرة أخرى.
                     </td>
                   </tr>
                 )}
                 {!loading && !error && rows.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="p-4 text-center text-slate-500">
+                    <td colSpan={3} className="text-center text-muted">
                       لا توجد بيانات.
                     </td>
                   </tr>
                 )}
                 {!loading &&
                   !error &&
-                  rows.map((row) => (
-                    <tr key={row.id} className="border-b">
-                      <td className="p-4">{row.name || '-'}</td>
-                      <td className="p-4">{row.status === 'approved' ? 'مفعل' : 'معلق'}</td>
-                      <td className="p-4 text-center">
-                        {row.status === 'pending' ? (
-                          <>
-                            {'licenseDocId' in row && row.licenseDocId && (
-                              <a href={`/api/files/${row.licenseDocId}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs ml-2">
-                                عرض المستند
-                              </a>
-                            )}
-                            {'crDocId' in row && row.crDocId && (
-                              <a href={`/api/files/${row.crDocId}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs ml-2">
-                                عرض المستند
-                              </a>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => void approve(tab, row.id)}
-                              className="bg-primary text-white px-2 py-1 rounded mx-1 hover:bg-[#006d44] transition-colors"
-                            >
-                              اعتماد
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setRejectingId(row.id)}
-                              className="bg-red-600 text-white px-2 py-1 rounded mx-1 hover:bg-red-700 transition-colors"
-                            >
-                              رفض
-                            </button>
-                          </>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  rows.map((row) => {
+                    const status = presentStatus(ACCOUNT_STATUS, row.status);
+                    const docId =
+                      ('licenseDocId' in row && row.licenseDocId) || ('crDocId' in row && row.crDocId) || null;
+                    return (
+                      <tr key={row.id}>
+                        <td className="font-semibold text-on-surface">{row.name || '-'}</td>
+                        <td>
+                          <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+                        </td>
+                        <td>
+                          {row.status === 'pending' ? (
+                            <div className="flex flex-wrap items-center justify-center gap-2">
+                              {docId && (
+                                <a
+                                  href={`/api/files/${docId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn btn-ghost btn-sm"
+                                >
+                                  <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
+                                    description
+                                  </span>
+                                  عرض المستند
+                                </a>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => void approve(tab, row.id)}
+                                className="btn btn-primary btn-sm"
+                              >
+                                اعتماد
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setRejectingId(row.id)}
+                                className="btn btn-danger-outline btn-sm"
+                              >
+                                رفض
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="block text-center text-muted">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
-        </div>
-      {rejectingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-primary mb-4">رفض الحساب</h3>
-            <textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              className="w-full border rounded-lg p-3 mb-4"
-              rows={4}
-              placeholder="سبب الرفض..."
-            />
-            <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => { setRejectingId(null); setRejectReason(''); }} className="px-4 py-2 border rounded-lg">إلغاء</button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!rejectReason.trim()) { showToast('سبب الرفض مطلوب', true); return; }
-                  void reject(tab, rejectingId, rejectReason.trim());
-                }}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg"
-              >
-                تأكيد الرفض
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      </div>
-    </main>
+        </section>
+      </main>
 
+      <Modal open={rejectingId !== null} onClose={closeReject} title="رفض الحساب" icon="block" panelClassName="max-w-md">
+        <Field id="reject-reason" label="سبب الرفض" required>
+          <textarea
+            id="reject-reason"
+            value={rejectReason}
+            onChange={(event) => setRejectReason(event.target.value)}
+            className="field-input"
+            rows={4}
+            placeholder="سبب الرفض..."
+          />
+        </Field>
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" onClick={closeReject} className="btn btn-secondary">
+            إلغاء
+          </button>
+          <button type="button" onClick={confirmReject} className="btn btn-danger">
+            تأكيد الرفض
+          </button>
+        </div>
+      </Modal>
+    </div>
   );
 }

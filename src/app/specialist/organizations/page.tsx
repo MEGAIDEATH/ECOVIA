@@ -1,5 +1,6 @@
-import { SpecialistOrganizations } from '@/features/specialists/organizations/SpecialistOrganizations';
+import { redirect } from 'next/navigation';
 
-export default function SpecialistOrganizationsPage() {
-  return <SpecialistOrganizations />;
+/** "تقديم للمنشآت" was removed; keep old links working. */
+export default function LegacyOrganizationsPage() {
+  redirect('/specialist');
 }

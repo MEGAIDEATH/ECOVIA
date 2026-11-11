@@ -23,32 +23,33 @@ export function ContractMessage({ message, role }: ContractMessageProps) {
   return (
     <div className="flex justify-center mb-4 w-full">
       <div
-        className={`bg-white border-2 ${signed ? 'border-green-400' : 'border-primary'} shadow-lg rounded-3xl p-6 w-[95%] relative`}
+        className={`relative w-[95%] rounded-panel border-2 bg-white p-5 shadow-float md:p-6 ${signed ? 'border-success/40' : 'border-secondary/40'}`}
       >
-        <div className="flex justify-between items-center mb-4 border-b pb-3">
-          <h4 className={`font-bold ${signed ? 'text-green-700' : 'text-primary'} text-lg`}>
+        <div className="mb-4 flex items-center justify-between gap-3 border-b border-line pb-3">
+          <h4 className={`flex items-center gap-2 text-lg font-bold ${signed ? 'text-success' : 'text-forest'}`}>
+            <span aria-hidden="true" className="material-symbols-outlined">contract</span>
             وثيقة عقد
           </h4>
           <ContractStatusBadge signed={signed} />
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-center text-sm">
-          <div className="bg-slate-50 p-3 rounded-xl border flex flex-col items-center justify-center">
-            <p className="text-secondary font-bold text-xs mb-1">المنشأة</p>
-            <p className="font-[Manrope] text-lg text-primary font-bold break-words">
+          <div className="flex flex-col items-center justify-center rounded-control border border-line bg-wash p-3">
+            <p className="text-muted font-bold text-xs mb-1">المنشأة</p>
+            <p className="font-latin text-lg font-bold break-words text-forest">
               {contract.orgSig}
             </p>
           </div>
-          <div className="bg-slate-50 p-3 rounded-xl border flex flex-col items-center justify-center min-h-[80px]">
-            <p className="text-secondary font-bold text-xs mb-1">الأخصائي</p>
+          <div className="flex min-h-[80px] flex-col items-center justify-center rounded-control border border-line bg-wash p-3">
+            <p className="text-muted font-bold text-xs mb-1">الأخصائي</p>
             {signed ? (
-              <p className="font-[Manrope] text-lg text-green-700 font-bold break-words">
+              <p className="font-latin text-lg font-bold break-words text-success">
                 {contract.specSig}
               </p>
             ) : role === 'spec' ? (
               <ContractSignature messageId={message.id} />
             ) : (
-              <p className="text-sm text-orange-500 mt-2 font-bold animate-pulse">
+              <p className="mt-2 text-sm font-bold text-warning motion-safe:animate-pulse">
                 بانتظار الأخصائي...
               </p>
             )}

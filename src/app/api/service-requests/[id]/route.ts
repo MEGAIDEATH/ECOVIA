@@ -5,7 +5,7 @@ import { requireUser } from '@/lib/auth/session';
 import { getDb } from '@/db';
 import { organizations, specialists } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { getServiceRequestById } from '@/repositories/serviceRequests';
+import { getServiceRequestById, hasSpecialistDeclined } from '@/repositories/serviceRequests';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
@@ -21,6 +21,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const isEligibleSpec = spec[0] && spec[0].status === 'approved' && sr.status === 'pending';
     if (!isOwnerOrg && !isAssignedSpec && !isEligibleSpec) {
       return jsonError('غير مصرح.', 403);
+    }
+    // Viewer-specific flag: has this specialist personally declined it?
+    if (spec[0] && !isOwnerOrg && sr.status === 'pending' && (await hasSpecialistDeclined(sr.id, spec[0].id))) {
+      return jsonOk({ ...sr, declinedByMe: true });
     }
     return jsonOk(sr);
   } catch (error) {

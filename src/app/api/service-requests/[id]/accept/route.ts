@@ -5,7 +5,7 @@ import { requireUser } from '@/lib/auth/session';
 import { getDb } from '@/db';
 import { organizations, specialists } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { acceptServiceRequest, getServiceRequestById } from '@/repositories/serviceRequests';
+import { acceptServiceRequest, getServiceRequestById, setServiceRequestConversation } from '@/repositories/serviceRequests';
 import { resolveConversation } from '@/repositories/chat';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
@@ -26,10 +26,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         `chat_${orgRows[0].userId}_${user.id}`,
         user.id,
       );
-      await (await import('@/repositories/serviceRequests')).setServiceRequestConversation(id, conv.id);
+      await setServiceRequestConversation(id, conv.id);
       accepted.conversationId = conv.id;
     }
-    return jsonOk(accepted);
+    return jsonOk({ ...accepted, organizationName: sr.organizationName, specialistName: specRows[0].fullName });
   } catch (error) {
     return mapError(error, 'service-requests:accept');
   }

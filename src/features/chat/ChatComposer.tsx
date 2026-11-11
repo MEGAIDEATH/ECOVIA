@@ -38,7 +38,7 @@ export function ChatComposer({ chatId, senderId, placeholder }: ChatComposerProp
   return (
     <form
       onSubmit={handleSubmit}
-      className="p-3 bg-white border-t border-outline-variant/50 flex gap-2"
+      className="flex gap-2 border-t border-line bg-white p-3"
     >
       <label htmlFor="chat-input" className="sr-only">
         نص الرسالة
@@ -50,15 +50,15 @@ export function ChatComposer({ chatId, senderId, placeholder }: ChatComposerProp
         onChange={(event) => setText(event.target.value)}
         disabled={sending}
         placeholder={placeholder}
-        className="flex-1 px-4 py-3 bg-surface-container-low rounded-full border border-transparent focus:border-primary outline-none transition-all text-sm"
+        className="field-input flex-1 rounded-full"
       />
       <button
         type="submit"
         disabled={sending || text.trim().length === 0}
         aria-label="إرسال"
-        className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center hover:bg-[#006d44] transition-colors shadow-sm disabled:opacity-60"
+        className="btn btn-primary btn-icon size-12 shrink-0"
       >
-        <span className="material-symbols-outlined">send</span>
+        <span aria-hidden="true" className="material-symbols-outlined rotate-180">send</span>
       </button>
     </form>
   );

@@ -5,10 +5,11 @@ import { requireUser } from '@/lib/auth/session';
 import { getDb } from '@/db';
 import { organizations, specialists } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { formatDuration, isSaudiRegion, parseCost, parseDuration } from '@/lib/serviceRequests';
 import {
   createServiceRequest,
   listServiceRequestsForOrganization,
-  listAvailableServiceRequestsForSpecialist,
+  listServiceRequestsForSpecialist,
 } from '@/repositories/serviceRequests';
 
 export async function GET(request: NextRequest): Promise<Response> {
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     }
     const spec = await db.select().from(specialists).where(eq(specialists.userId, user.id)).limit(1);
     if (spec[0] && spec[0].status === 'approved') {
-      const list = await listAvailableServiceRequestsForSpecialist();
+      const list = await listServiceRequestsForSpecialist(spec[0].id);
       return jsonOk(list);
     }
     return jsonError('غير مصرح.', 403);
@@ -40,23 +41,26 @@ export async function POST(request: NextRequest): Promise<Response> {
       return jsonError('غير مصرح.', 403);
     }
     const body = await readJson(request);
-    const serviceCategory = asString(body?.serviceCategory);
-    const serviceName = asString(body?.serviceName);
-    const region = asString(body?.region);
-    const city = asString(body?.city);
-    const duration = asString(body?.duration);
-    const description = typeof body?.description === 'string' ? body.description : null;
-    if (!serviceCategory || !serviceName || !region || !city || !duration) {
-      return jsonError('الحقول المطلوبة غير مكتملة.', 400);
-    }
+    const serviceName = asString(body?.serviceName, 200)?.trim();
+    const cost = parseCost(body?.cost);
+    const duration = parseDuration(body?.durationValue, body?.durationUnit);
+    const region = asString(body?.region, 100)?.trim();
+    if (!serviceName) return jsonError('اسم الخدمة مطلوب.', 400);
+    if (cost === null) return jsonError('تكلفة الخدمة يجب أن تكون مبلغًا صحيحًا غير سالب.', 400);
+    if (!duration) return jsonError('المدة المطلوبة غير صالحة.', 400);
+    if (!isSaudiRegion(region)) return jsonError('اختر منطقة صحيحة من القائمة.', 400);
+    const optional = (value: unknown, max: number) => asString(value, max)?.trim() || null;
     const created = await createServiceRequest({
       organizationId: orgRows[0].id,
-      serviceCategory,
       serviceName,
+      cost,
+      durationValue: duration.value,
+      durationUnit: duration.unit,
+      durationLabel: formatDuration(duration.value, duration.unit),
       region,
-      city,
-      duration,
-      description,
+      city: optional(body?.city, 100),
+      serviceCategory: optional(body?.serviceCategory, 200),
+      description: optional(body?.description, 5000),
     });
     return jsonOk(created, 201);
   } catch (error) {

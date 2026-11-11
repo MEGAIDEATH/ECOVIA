@@ -22,10 +22,20 @@ export function safeExternalUrl(value: string | null | undefined): string | null
   return isSafeExternalUrl(value) ? (value as string) : null;
 }
 
-/** Safe image sources: ordinary http(s) URLs plus legacy raster image data URLs. */
+/**
+ * The app's own protected document route (`/api/files/{uuid}`). Same-origin
+ * and authorization-checked server-side, so it is safe to render as a source.
+ */
+const PROTECTED_FILE_URL = /^\/api\/files\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isProtectedFileUrl(value: string | null | undefined): boolean {
+  return Boolean(value && PROTECTED_FILE_URL.test(value));
+}
+
+/** Safe image sources: http(s), the protected file route, legacy raster data URLs. */
 export function safeImageUrl(value: string | null | undefined): string | null {
   if (!value) return null;
-  if (isSafeExternalUrl(value)) return value as string;
+  if (isSafeExternalUrl(value) || isProtectedFileUrl(value)) return value as string;
   return /^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(value) ? value : null;
 }
 
@@ -52,9 +62,9 @@ export function safeRedirectPath(value: string | null | undefined): string | nul
   }
 }
 
-/** Safe download sources: http(s) or a legacy PDF data URL, never scriptable data. */
+/** Safe download sources: http(s), the protected file route or a legacy PDF data URL. */
 export function safeDownloadUrl(value: string | null | undefined): string | null {
   if (!value) return null;
-  if (isSafeExternalUrl(value)) return value as string;
+  if (isSafeExternalUrl(value) || isProtectedFileUrl(value)) return value as string;
   return /^data:application\/pdf;base64,[a-z0-9+/=]+$/i.test(value) ? value : null;
 }

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
+import { AuthShell } from '@/components/layout/AuthShell';
 import { LoadingButton } from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/Toast';
 import { otpSchema } from '@/lib/validation/registration';
@@ -18,7 +19,6 @@ import { documentIdFromUrl } from '@/lib/utils/cv';
 import type { UserRole } from '@/types';
 
 import { OtpInput, OTP_LENGTH } from './OtpInput';
-import { RegistrationHeader } from './RegistrationHeader';
 import { useRegistrationDraft } from './RegistrationProvider';
 
 interface OtpVerificationProps {
@@ -209,61 +209,61 @@ export function OtpVerification({ role }: OtpVerificationProps) {
     }
   };
 
-  return (
-    <main className="flex flex-col min-h-screen relative p-6 bg-surface">
-      <RegistrationHeader backHref={backHref} title="التحقق" subtitle="رمز الدخول الآمن" />
+  const showDevHint =
+    process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ALLOW_DEV_OTP === 'true';
 
-      <div className="flex-1 flex flex-col justify-center items-center">
-        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-6 shadow-sm border border-primary/20">
-          <span className="material-symbols-outlined text-4xl">mark_email_unread</span>
-        </div>
-        <h3 className="text-xl font-bold text-on-surface mb-2">أدخل رمز التحقق</h3>
-        <p className="text-secondary text-sm mb-8 text-center max-w-xs leading-relaxed">
-          تم إرسال رمز تحقق (مكون من 6 أرقام) إلى الجوال المسجل. <br />
-          {(process.env.NODE_ENV !== 'production' ||
-            process.env.NEXT_PUBLIC_ALLOW_DEV_OTP === 'true') && (
-            <span className="text-primary font-bold text-xs mt-1 inline-block">
-              للتجربة: استخدم 123456
-            </span>
-          )}
-          {otpState === 'sending' && (
-            <span className="text-secondary/70 text-xs mt-2 block">جاري إرسال الرمز...</span>
-          )}
-          {otpState === 'failed' && (
+  return (
+    <AuthShell
+      backHref={backHref}
+      title="أدخل رمز التحقق"
+      subtitle={
+        <>
+          <span className="mb-1 block text-sm font-bold text-secondary">رمز الدخول الآمن</span>
+          تم إرسال رمز تحقق (مكون من 6 أرقام) إلى الجوال المسجل.
+        </>
+      }
+      icon="mark_email_unread"
+    >
+      <div className="mb-6 space-y-2 text-sm">
+        {showDevHint && <p className="badge badge-brand">للتجربة: استخدم 123456</p>}
+        {otpState === 'sending' && (
+          <p role="status" className="text-muted">
+            جاري إرسال الرمز...
+          </p>
+        )}
+        {otpState === 'failed' && (
+          <div className="alert alert-danger items-center justify-between">
+            <span>تعذر إرسال الرمز.</span>
             <button
               type="button"
               onClick={() => {
                 setOtpState('sending');
                 void sendOtp();
               }}
-              className="text-primary font-bold text-xs mt-2 underline"
+              className="btn btn-danger-outline btn-sm"
             >
-              تعذر إرسال الرمز — إعادة المحاولة
+              إعادة المحاولة
             </button>
-          )}
-        </p>
-
-        {role === 'spec' && !draft.phone && (
-          <p className="text-xs text-red-500 mb-4">رقم الجوال مطلوب لإتمام التسجيل.</p>
+          </div>
         )}
-        <form
-          className="w-full max-w-sm flex flex-col items-center"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void submit();
-          }}
-        >
-          <OtpInput value={code} onChange={setCode} disabled={loading} />
-          <LoadingButton
-            type="submit"
-            loading={loading}
-            loadingLabel="جاري..."
-            className="w-full py-3.5 bg-primary text-white font-bold rounded-xl hover:bg-[#006d44] transition-colors shadow-md"
-          >
-            تأكيد الدخول
-          </LoadingButton>
-        </form>
+        {role === 'spec' && !draft.phone && (
+          <p className="field-error">
+            رقم الجوال مطلوب لإتمام التسجيل.
+          </p>
+        )}
       </div>
-    </main>
+      <form
+        className="flex flex-col items-center"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit();
+        }}
+      >
+        <OtpInput value={code} onChange={setCode} disabled={loading} />
+        <LoadingButton type="submit" loading={loading} loadingLabel="جاري..." showSpinner className="btn btn-primary btn-block btn-lg">
+          تأكيد الدخول
+        </LoadingButton>
+      </form>
+    </AuthShell>
   );
 }

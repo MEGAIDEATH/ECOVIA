@@ -38,6 +38,25 @@ describe('useConversations', () => {
     unmount();
   });
 
+  it('shows the counterpart display name for each side when the server provides it', async () => {
+    const named = {
+      ...conversation('chat_org-1_spec-1'),
+      organizationName: 'شركة الأثر',
+      specialistName: 'نورة العنزي',
+    };
+    fetchConversationsMock.mockResolvedValue([named]);
+
+    const spec = renderHook(() => useConversations('spec-1', 'spec'));
+    await waitFor(() => expect(spec.result.current.conversations).toHaveLength(1));
+    expect(spec.result.current.conversations[0].otherName).toBe('شركة الأثر');
+    spec.unmount();
+
+    const org = renderHook(() => useConversations('org-1', 'org'));
+    await waitFor(() => expect(org.result.current.conversations).toHaveLength(1));
+    expect(org.result.current.conversations[0].otherName).toBe('نورة العنزي');
+    org.unmount();
+  });
+
   it('resolves the counterpart on the organization side of the chat key', async () => {
     fetchConversationsMock.mockResolvedValue([conversation('chat_org-1_spec-1')]);
 

@@ -20,18 +20,18 @@ describe('contractSchema', () => {
 
 describe('cvSchema', () => {
   it('accepts empty optional CV data (legacy had no required fields)', () => {
-    const empty = { fullName: '', email: '', phone: '', edu: '', years: '', exp: '', portfolio: '' };
+    const empty = { fullName: '', email: '', phone: '', edu: '', city: '', years: '', exp: '', portfolio: '' };
     expect(cvSchema.safeParse(empty).success).toBe(true);
   });
 
   it('rejects malformed email when provided', () => {
-    const base = { fullName: 'خالد', email: '', phone: '', edu: '', years: '', exp: '', portfolio: '' };
+    const base = { fullName: 'خالد', email: '', phone: '', edu: '', city: '', years: '', exp: '', portfolio: '' };
     expect(cvSchema.safeParse({ ...base, email: 'bad-email' }).success).toBe(false);
     expect(cvSchema.safeParse({ ...base, email: 'a@b.co' }).success).toBe(true);
   });
 
   it('rejects malformed portfolio URL when provided', () => {
-    const base = { fullName: 'خالد', email: '', phone: '', edu: '', years: '', exp: '', portfolio: '' };
+    const base = { fullName: 'خالد', email: '', phone: '', edu: '', city: '', years: '', exp: '', portfolio: '' };
     expect(cvSchema.safeParse({ ...base, portfolio: 'linkedin' }).success).toBe(false);
     expect(cvSchema.safeParse({ ...base, portfolio: 'https://linkedin.com/in/x' }).success).toBe(
       true,

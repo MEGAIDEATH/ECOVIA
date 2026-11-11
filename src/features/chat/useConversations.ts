@@ -39,7 +39,8 @@ export const useConversations = (
           return {
             ...c,
             otherId,
-            otherName: 'محادثة',
+            // Each side sees the counterpart's name; generic label as fallback.
+            otherName: (role === 'spec' ? c.organizationName : c.specialistName) || 'محادثة',
           };
         });
         setConversations(mapped);

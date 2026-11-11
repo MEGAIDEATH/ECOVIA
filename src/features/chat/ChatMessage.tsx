@@ -11,8 +11,8 @@ interface ChatMessageProps {
 
 /**
  * One chat entry: contract messages render the contract card, regular
- * messages render role-specific bubbles (legacy `chat-bubble-me/other` for
- * specialists, blue/white bubbles for organizations).
+ * messages render brand bubbles (own messages forest, others white) —
+ * identical for both workspaces.
  */
 export function ChatMessage({ message, currentUid, role }: ChatMessageProps) {
   if (message.isContract) {
@@ -21,16 +21,13 @@ export function ChatMessage({ message, currentUid, role }: ChatMessageProps) {
 
   const isMe = message.senderUserId === currentUid;
 
+  // RTL: own messages sit on the left with their tail at the bottom-left.
   const bubbleClass = isMe
-    ? role === 'spec'
-      ? 'chat-bubble-me'
-      : 'bg-blue-600 text-white rounded-br-none rounded-t-2xl rounded-bl-2xl'
-    : role === 'spec'
-      ? 'chat-bubble-other'
-      : 'bg-white border text-slate-800 rounded-bl-none rounded-t-2xl rounded-br-2xl';
+    ? 'bg-forest text-white rounded-2xl rounded-bl-sm'
+    : 'bg-white border border-line text-on-surface rounded-2xl rounded-br-sm';
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-2`}>
+    <div className={`mb-2 flex ${isMe ? 'justify-end' : 'justify-start'}`}>
       <div
         className={`${bubbleClass} px-4 py-2.5 max-w-[85%] text-sm font-medium leading-relaxed break-words`}
       >

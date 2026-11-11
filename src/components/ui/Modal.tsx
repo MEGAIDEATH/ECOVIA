@@ -10,25 +10,24 @@ interface ModalProps {
   title: string;
   /** Material Symbols icon name shown next to the title. */
   icon: string;
-  /** Panel classes — legacy modal sizes/backgrounds are passed per modal. */
+  /** Extra panel classes — usually just a max width (default `max-w-2xl`). */
   panelClassName?: string;
-  /** Header classes — some legacy headers use a border, others extra margin. */
+  /** Extra header classes (spacing / divider). */
   headerClassName?: string;
   children: ReactNode;
 }
 
 /**
  * Accessible reusable modal: Escape to close, focus moved into the dialog and
- * restored on close, ARIA dialog semantics, and scroll locking — while keeping
- * the legacy backdrop/panel look.
+ * restored on close, ARIA dialog semantics, and scroll locking.
  */
 export function Modal({
   open,
   onClose,
   title,
   icon,
-  panelClassName = 'bg-surface rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden p-6 relative',
-  headerClassName = 'flex justify-between items-center mb-4 border-b pb-3',
+  panelClassName = 'max-w-2xl',
+  headerClassName = 'mb-5 border-b border-line pb-4',
   children,
 }: ModalProps) {
   const titleId = useId();
@@ -83,29 +82,32 @@ export function Modal({
   if (!open || typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] items-center justify-center bg-black/60 p-4 backdrop-blur-sm flex">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/55 p-4 backdrop-blur-[2px]">
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`${panelClassName} outline-none`}
+        className={`relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-dialog bg-white p-6 shadow-dialog outline-none ${panelClassName}`}
       >
-        <div className={headerClassName}>
+        <div className={`flex items-center justify-between gap-3 ${headerClassName}`}>
           <h3
             id={titleId}
-            className="text-xl font-bold text-primary flex items-center gap-2"
+            className="flex items-center gap-2 text-lg font-bold text-forest"
           >
-            <span className="material-symbols-outlined">{icon}</span> {title}
+            <span aria-hidden="true" className="icon-tile size-9 rounded-xl">
+              <span className="material-symbols-outlined text-[20px]">{icon}</span>
+            </span>
+            {title}
           </h3>
           <button
             type="button"
             onClick={onClose}
             aria-label="إغلاق النافذة"
-            className="w-8 h-8 rounded-full bg-surface-container-low hover:bg-surface-container-high flex items-center justify-center"
+            className="btn btn-ghost btn-icon size-9 shrink-0"
           >
-            <span className="material-symbols-outlined">close</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
         {children}

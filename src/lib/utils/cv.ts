@@ -35,3 +35,34 @@ export function maskNationalIdForOrganization(nationalId: string): string {
 export function formatExperienceYears(years?: string | number | null): string {
   return years ? `${years} سنوات خبرة` : 'مبتدئ';
 }
+
+/** Specialist profile → the shape the CV views render (document ids → protected URLs). */
+export function toCvPreviewData(profile: {
+  fullName?: string | null;
+  nationalId?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  edu?: string | null;
+  city?: string | null;
+  years?: string | number | null;
+  license?: string | null;
+  exp?: string | null;
+  portfolio?: string | null;
+  profilePicId?: string | null;
+  resumeFileId?: string | null;
+}) {
+  return {
+    fullName: profile.fullName,
+    nationalId: profile.nationalId,
+    email: profile.email,
+    phone: profile.phone,
+    edu: profile.edu,
+    city: profile.city,
+    years: profile.years,
+    license: profile.license,
+    exp: profile.exp,
+    portfolio: profile.portfolio,
+    profilePic: fileUrl(profile.profilePicId),
+    resumeFile: fileUrl(profile.resumeFileId),
+  };
+}

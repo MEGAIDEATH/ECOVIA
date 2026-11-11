@@ -43,8 +43,10 @@ function toClientConversation(
   row: ConversationRow,
   organizationUserId: string,
   specialistUserId: string,
+  names: { organizationName?: string; specialistName?: string } = {},
 ): Conversation {
   return {
+    ...names,
     chatId: buildChatId(organizationUserId, specialistUserId),
     participants: [organizationUserId, specialistUserId],
     lastMessage: row.lastMessage,
@@ -136,24 +138,25 @@ export async function listConversationsForUser(userId: string): Promise<Conversa
   const specProfileIds = [...new Set(rows.map((row) => row.specialistId))];
   const [orgProfiles, specProfiles] = await Promise.all([
     db
-      .select({ id: organizations.id, userId: organizations.userId })
+      .select({ id: organizations.id, userId: organizations.userId, name: organizations.orgName })
       .from(organizations)
       .where(inArray(organizations.id, orgProfileIds)),
     db
-      .select({ id: specialists.id, userId: specialists.userId })
+      .select({ id: specialists.id, userId: specialists.userId, name: specialists.fullName })
       .from(specialists)
       .where(inArray(specialists.id, specProfileIds)),
   ]);
-  const orgUserById = new Map(orgProfiles.map((row) => [row.id, row.userId]));
-  const specUserById = new Map(specProfiles.map((row) => [row.id, row.userId]));
+  const orgById = new Map(orgProfiles.map((row) => [row.id, row]));
+  const specById = new Map(specProfiles.map((row) => [row.id, row]));
 
-  return rows.map((row) =>
-    toClientConversation(
-      row,
-      orgUserById.get(row.organizationId) ?? '',
-      specUserById.get(row.specialistId) ?? '',
-    ),
-  );
+  return rows.map((row) => {
+    const org = orgById.get(row.organizationId);
+    const spec = specById.get(row.specialistId);
+    return toClientConversation(row, org?.userId ?? '', spec?.userId ?? '', {
+      organizationName: org?.name || undefined,
+      specialistName: spec?.name || undefined,
+    });
+  });
 }
 
 type MessageRow = typeof messages.$inferSelect;

@@ -15,12 +15,12 @@ export function ChatListItem({ conversation, active, onSelect }: ChatListItemPro
       type="button"
       onClick={() => onSelect(conversation.chatId)}
       aria-current={active ? 'true' : undefined}
-      className={`w-full text-right p-3 bg-white border rounded-xl cursor-pointer hover:border-primary shadow-sm mb-2 transition-colors ${
-        active ? 'border-primary' : ''
+      className={`w-full rounded-control border p-3 text-start transition-colors ${
+        active ? 'border-secondary/40 bg-accent-soft' : 'border-transparent bg-white hover:border-line hover:bg-wash'
       }`}
     >
-      <div className="font-bold text-primary text-sm">{conversation.otherName}</div>
-      <div className="text-xs text-secondary truncate">
+      <div className="text-sm font-bold text-forest">{conversation.otherName}</div>
+      <div className="text-xs text-muted truncate">
         {conversation.lastMessageIsContract ? '📄 عقد' : conversation.lastMessage || ''}
       </div>
     </button>

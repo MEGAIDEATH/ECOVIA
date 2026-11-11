@@ -1,0 +1,86 @@
+/* ==========================================================================
+   ECOVIA design tokens — the single source of truth.
+   Extracted from the approved landing page (docs/ECOVIA_Project/index.html)
+   and docs/DESIGN.md. Every Tailwind utility (bg-forest, text-muted,
+   rounded-card, shadow-float…) and every CSS variable (var(--color-forest))
+   in the app resolves from here. `static` guarantees the variables are
+   always emitted so CSS modules can use them too.
+   ========================================================================== */
+@theme static {
+  /* ---- Brand palette ---------------------------------------------------- */
+  --color-forest: #0f3d36;
+  --color-green: #2e7d73;
+  --color-sage: #8fbfaf;
+  --color-mist: #e6efea;
+  --color-cloud: #f5f7f6;
+  --color-ink: #1a2421;
+  --color-sand: #d9d1c0;
+  --color-stone: #a7ada7;
+  /* Deep footer / dark-panel tone used by the landing page. */
+  --color-pine: #0e2c2b;
+
+  /* ---- Semantic: brand roles ------------------------------------------- */
+  --color-primary: #0f3d36;          /* forest: primary actions, headings */
+  --color-primary-hover: #17514a;
+  --color-secondary: #2e7d73;        /* green: accents, links, active states */
+  --color-accent-soft: #eaf3ec;      /* soft tile / note background */
+  --color-on-dark: #f6fcf5;          /* text on forest / pine */
+  --color-on-dark-muted: #bce6d0;    /* kicker / secondary text on forest */
+
+  /* ---- Semantic: surfaces ---------------------------------------------- */
+  --color-canvas: #fbfcfa;           /* landing page body */
+  --color-surface: #f5f7f6;          /* app background (cloud) */
+  --color-wash: #f4f8f5;             /* alternating section / subtle fill */
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eff4f1;
+  --color-surface-container-high: #e3ebe6;
+
+  /* ---- Semantic: text --------------------------------------------------- */
+  --color-on-surface: #1a2421;       /* ink: primary text */
+  --color-on-surface-variant: #445950; /* strong secondary text, nav */
+  --color-muted: #5b6d65;            /* descriptions — 5.4:1 on white */
+
+  /* ---- Semantic: lines -------------------------------------------------- */
+  --color-line: #e3ebe5;             /* card borders, dividers */
+  --color-line-strong: #cbdcd2;      /* hover / emphasized borders */
+  --color-outline: #a7ada7;          /* stone */
+  --color-outline-variant: #c9d6ce;
+
+  /* ---- Semantic: status (functional exceptions to the brand palette) ---- */
+  --color-success: #166534;
+  --color-success-soft: #e8f5ec;
+  --color-warning: #92400e;
+  --color-warning-soft: #fdf3e3;
+  --color-danger: #b42318;
+  --color-danger-hover: #912018;
+  --color-danger-soft: #fdeceb;
+  --color-info: #175cd3;
+  --color-info-soft: #eaf1fd;
+
+  /* ---- Typography ------------------------------------------------------- */
+  --font-sans: "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif;
+  --font-latin: "Manrope", Arial, sans-serif;
+
+  /* ---- Breakpoints (adds a small-phone step to Tailwind's defaults) ----- */
+  --breakpoint-xs: 27.5rem; /* 440px */
+
+  /* ---- Radii ------------------------------------------------------------ */
+  --radius-control: 10px;   /* inputs, small buttons */
+  --radius-btn: 12px;       /* buttons */
+  --radius-card: 16px;      /* cards, list rows */
+  --radius-dialog: 20px;    /* modals */
+  --radius-panel: 24px;     /* large feature cards */
+
+  /* ---- Elevation -------------------------------------------------------- */
+  --shadow-card: 0 2px 8px rgba(15, 61, 54, 0.06);
+  --shadow-float: 0 14px 44px rgba(15, 61, 54, 0.08);
+  --shadow-raised: 0 20px 45px rgba(17, 48, 37, 0.07);
+  --shadow-dialog: 0 24px 65px rgba(15, 61, 54, 0.18);
+
+  /* ---- Motion ----------------------------------------------------------- */
+  --ease-brand: cubic-bezier(0.22, 0.7, 0.19, 1);
+
+  /* ---- Layout ----------------------------------------------------------- */
+  --container-content: 1180px;  /* max-w-content */
+  --spacing-header: 94px;
+}

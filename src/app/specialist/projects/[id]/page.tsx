@@ -1,5 +1,6 @@
-import { SpecialistProjectDetail } from '@/features/specialists/projects/SpecialistProjectDetail';
+import { redirect } from 'next/navigation';
 
-export default function Page() {
-  return <SpecialistProjectDetail />;
+/** Legacy project detail ids were application ids; send users to الخدمات. */
+export default function LegacyProjectDetailPage() {
+  redirect('/specialist/services');
 }

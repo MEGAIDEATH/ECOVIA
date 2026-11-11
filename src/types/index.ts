@@ -108,6 +108,9 @@ export interface Conversation {
   lastMessage: string;
   lastMessageAt?: string | null;
   lastMessageIsContract?: boolean;
+  /** Display names of both participants (each side shows the other's). */
+  organizationName?: string;
+  specialistName?: string;
 }
 
 export type ApplicationStatus = 'submitted';
@@ -132,17 +135,32 @@ export interface OCRResult {
   issueDate?: string | null;
   crNumber?: string | null;
 }
-export type ServiceRequestStatus = 'pending' | 'accepted' | 'rejected' | 'in_progress' | 'completed';
+export type ServiceRequestStatus =
+  | 'pending'
+  | 'accepted'
+  | 'rejected'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled';
 
+export type ServiceDurationUnit = 'day' | 'week' | 'month';
+
+/** A general service request published by an organization. */
 export interface ServiceRequest {
   id: string;
   organizationId: string;
+  /** Specialist who took the request (set on accept). */
   specialistId?: string | null;
-  serviceCategory: string;
   serviceName: string;
-  region: string;
-  city: string;
+  /** Cost in SAR; null only on requests created before costs existed. */
+  cost?: number | null;
+  durationValue?: number | null;
+  durationUnit?: ServiceDurationUnit | null;
+  /** Display label for the duration (always present). */
   duration: string;
+  region: string;
+  serviceCategory?: string | null;
+  city?: string | null;
   description?: string | null;
   status: ServiceRequestStatus;
   rejectionReason?: string | null;
@@ -150,5 +168,9 @@ export interface ServiceRequest {
   createdAt?: string | null;
   updatedAt?: string | null;
   organizationName?: string;
+  /** Name of the specialist who took the request (organization view). */
+  specialistName?: string;
+  /** Specialist view only: this specialist declined it (stays open for others). */
+  declinedByMe?: boolean;
 }
 

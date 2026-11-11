@@ -1,8 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { AuthShell } from "@/components/layout/AuthShell";
+import { Field } from "@/components/ui/Field";
+import { LoadingButton } from "@/components/ui/LoadingButton";
 import { useToast } from "@/components/ui/Toast";
 
 type Channel = "phone" | "email";
@@ -18,6 +22,13 @@ export default function ForgotPasswordPage() {
   const [step, setStep] = useState<"request" | "verify" | "reset" | "done">("request");
   const [submitting, setSubmitting] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+
+  // Resend cooldown ticks down once per second; cleared on unmount.
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown((value) => value - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
 
   async function requestOtp() {
     setSubmitting(true);
@@ -35,15 +46,6 @@ export default function ForgotPasswordPage() {
       showToast("تم إرسال رمز التحقق.");
       setStep("verify");
       setCooldown(30);
-      const timer = setInterval(() => {
-        setCooldown((v) => {
-          if (v <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return v - 1;
-        });
-      }, 1000);
     } finally {
       setSubmitting(false);
     }
@@ -91,55 +93,105 @@ export default function ForgotPasswordPage() {
     }
   }
 
-  return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-4 rounded-2xl border bg-white p-6 shadow">
-        <h1 className="text-xl font-bold text-on-surface">استعادة كلمة المرور</h1>
+  const subtitles = {
+    request: "اختر وسيلة التحقق وسنرسل لك رمزًا لإعادة التعيين.",
+    verify: `أدخل الرمز المكون من 6 أرقام المرسل إلى ${channel === "phone" ? "جوالك" : "بريدك"}.`,
+    reset: "اختر كلمة مرور جديدة لحسابك.",
+    done: "تم تغيير كلمة المرور بنجاح.",
+  } as const;
 
+  return (
+    <AuthShell
+      title="استعادة كلمة المرور"
+      subtitle={subtitles[step]}
+      icon={step === "done" ? "task_alt" : "lock_reset"}
+      footer={
+        <Link href="/login" className="font-bold text-secondary hover:text-primary">
+          العودة لتسجيل الدخول
+        </Link>
+      }
+    >
+      <div className="space-y-5">
         {step === "request" && (
           <>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setChannel("phone")} className={`flex-1 rounded-xl border py-2 font-bold ${channel === "phone" ? "bg-primary text-white" : ""}`}>رقم الجوال</button>
-              <button type="button" onClick={() => setChannel("email")} className={`flex-1 rounded-xl border py-2 font-bold ${channel === "email" ? "bg-primary text-white" : ""}`}>البريد الإلكتروني</button>
+            <div role="radiogroup" aria-label="وسيلة التحقق" className="grid grid-cols-2 gap-1 rounded-btn border border-line bg-wash p-1">
+              {(["phone", "email"] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={channel === value}
+                  onClick={() => setChannel(value)}
+                  className={`rounded-control py-2.5 text-sm font-bold transition-colors ${
+                    channel === value ? "bg-forest text-white shadow-card" : "text-on-surface-variant hover:bg-white"
+                  }`}
+                >
+                  {value === "phone" ? "رقم الجوال" : "البريد الإلكتروني"}
+                </button>
+              ))}
             </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-bold">{channel === "phone" ? "رقم الجوال المسجل" : "البريد الإلكتروني المسجل"}</label>
-              <input type={channel === "phone" ? "tel" : "email"} value={identifier} onChange={(e) => setIdentifier(e.target.value)} className="w-full rounded-xl border px-4 py-3" required />
-            </div>
-            <button type="button" disabled={submitting} onClick={() => void requestOtp()} className="w-full rounded-xl bg-primary py-3 font-bold text-white disabled:opacity-60">{submitting ? "جاري الإرسال..." : "إرسال الرمز"}</button>
+            <Field id="reset-identifier" label={channel === "phone" ? "رقم الجوال المسجل" : "البريد الإلكتروني المسجل"} required>
+              <input
+                id="reset-identifier"
+                type={channel === "phone" ? "tel" : "email"}
+                dir="ltr"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                className="field-input text-left"
+                autoComplete={channel === "phone" ? "tel" : "email"}
+                required
+              />
+            </Field>
+            <LoadingButton loading={submitting} loadingLabel="جاري الإرسال..." showSpinner onClick={() => void requestOtp()} className="btn btn-primary btn-block btn-lg">
+              إرسال الرمز
+            </LoadingButton>
           </>
         )}
 
         {step === "verify" && (
           <>
-            <p className="text-sm text-secondary">أدخل الرمز المكون من 6 أرقام.</p>
-            <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} className="w-full rounded-xl border px-4 py-3" maxLength={6} />
-            <button type="button" onClick={() => verifyOtp()} className="w-full rounded-xl bg-primary py-3 font-bold text-white">متابعة</button>
-            <button type="button" disabled={cooldown > 0 || submitting} onClick={() => void requestOtp()} className="w-full rounded-xl border py-2 font-bold disabled:opacity-60">{cooldown > 0 ? `إعادة الإرسال (${cooldown})` : "إعادة إرسال الرمز"}</button>
+            <Field id="reset-otp" label="رمز التحقق">
+              <input
+                id="reset-otp"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                dir="ltr"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                className="field-input text-center text-xl tracking-[.5em]"
+                maxLength={6}
+              />
+            </Field>
+            <button type="button" onClick={() => verifyOtp()} className="btn btn-primary btn-block btn-lg">
+              متابعة
+            </button>
+            <button type="button" disabled={cooldown > 0 || submitting} onClick={() => void requestOtp()} className="btn btn-secondary btn-block">
+              {cooldown > 0 ? `إعادة الإرسال (${cooldown})` : "إعادة إرسال الرمز"}
+            </button>
           </>
         )}
 
         {step === "reset" && (
           <>
-            <div className="space-y-2">
-              <label className="block text-sm font-bold">كلمة المرور الجديدة</label>
-              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full rounded-xl border px-4 py-3" minLength={8} />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-bold">تأكيد كلمة المرور</label>
-              <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="w-full rounded-xl border px-4 py-3" minLength={8} />
-            </div>
-            <button type="button" disabled={submitting} onClick={() => void resetPassword()} className="w-full rounded-xl bg-primary py-3 font-bold text-white disabled:opacity-60">{submitting ? "جاري الحفظ..." : "إعادة تعيين كلمة المرور"}</button>
+            <Field id="new-password" label="كلمة المرور الجديدة" hint="8 أحرف على الأقل.">
+              <input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="field-input" minLength={8} autoComplete="new-password" aria-describedby="new-password-hint" />
+            </Field>
+            <Field id="confirm-password" label="تأكيد كلمة المرور">
+              <input id="confirm-password" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="field-input" minLength={8} autoComplete="new-password" />
+            </Field>
+            <LoadingButton loading={submitting} loadingLabel="جاري الحفظ..." showSpinner onClick={() => void resetPassword()} className="btn btn-primary btn-block btn-lg">
+              إعادة تعيين كلمة المرور
+            </LoadingButton>
           </>
         )}
 
         {step === "done" && (
-          <>
-            <p className="text-sm text-secondary">تم تغيير كلمة المرور بنجاح.</p>
-            <button type="button" onClick={() => router.push("/login")} className="w-full rounded-xl bg-primary py-3 font-bold text-white">العودة لتسجيل الدخول</button>
-          </>
+          <button type="button" onClick={() => router.push("/login")} className="btn btn-primary btn-block btn-lg">
+            العودة لتسجيل الدخول
+          </button>
         )}
       </div>
-    </main>
+    </AuthShell>
   );
 }

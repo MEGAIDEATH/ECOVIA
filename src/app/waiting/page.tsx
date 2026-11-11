@@ -4,6 +4,8 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
+import { FullPageSpinner } from '@/components/layout/FullPageSpinner';
+import { AuthShell } from '@/components/layout/AuthShell';
 import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { resolveDestination } from '@/features/auth/dashboardRouting';
@@ -94,60 +96,42 @@ function WaitingContent() {
     };
   }, []);
 
-  if (loading || (!role && !user && !loading)) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-surface">
-        <Spinner className="w-12 h-12 border-4" />
-      </main>
-    );
-  }
+  if (loading || (!role && !user && !loading)) return <FullPageSpinner />;
 
   return (
-    <main className="flex flex-col min-h-screen relative p-6 bg-surface items-center justify-center">
-      <div className="text-center max-w-md bg-white p-8 rounded-3xl shadow-lg border border-outline-variant/30 flex flex-col items-center">
-        <Spinner className="w-24 h-24 border-4 mb-6" />
-        <h2 className="text-2xl font-bold text-primary mb-3">جاري التحقق من الاعتماد</h2>
-        <p className="text-secondary text-sm leading-relaxed mb-6 font-medium bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/30">
-          حسابك قيد المراجعة حالياً من قبل الإدارة لمطابقة التراخيص والسجلات.
-          <br />
-          سيتم تفعيل الحساب فور الاعتماد.
-        </p>
-        <p className="text-xs text-secondary/70">
-          يرجى الانتظار، سيتم تحويلك تلقائياً عند الموافقة...
-        </p>
-
-        <button
-          type="button"
-          onClick={performLogout}
-          className="mt-8 text-sm text-red-500 font-bold hover:underline flex items-center justify-center gap-1"
-        >
-          <span className="material-symbols-outlined text-[16px]">logout</span> تسجيل خروج مؤقت
+    <AuthShell
+      title="جاري التحقق من الاعتماد"
+      subtitle="حسابك قيد المراجعة حالياً من قبل الإدارة لمطابقة التراخيص والسجلات."
+      icon="pending_actions"
+    >
+      <div className="flex flex-col items-center gap-5 text-center">
+        <div className="alert alert-info w-full text-start">
+          <Spinner className="mt-0.5 size-5 shrink-0 border-2" />
+          <p>سيتم تفعيل الحساب فور الاعتماد، وسيتم تحويلك تلقائياً عند الموافقة.</p>
+        </div>
+        <button type="button" onClick={performLogout} className="btn btn-danger-outline">
+          <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+            logout
+          </span>
+          تسجيل خروج مؤقت
         </button>
         <button
           type="button"
           onClick={() => setAdminOpen(true)}
-          className="mt-4 text-xs text-primary/40 hover:text-primary transition-colors"
+          className="text-xs text-muted underline-offset-4 hover:text-primary hover:underline"
         >
           [تجربة: الدخول كمدير للاعتماد]
         </button>
       </div>
 
-      {adminOpen && (
-        <AdminLoginModal open onClose={() => setAdminOpen(false)} />
-      )}
-    </main>
+      {adminOpen && <AdminLoginModal open onClose={() => setAdminOpen(false)} />}
+    </AuthShell>
   );
 }
 
 export default function WaitingPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-surface">
-          <Spinner className="w-12 h-12 border-4" />
-        </div>
-      }
-    >
+    <Suspense fallback={<FullPageSpinner />}>
       <WaitingContent />
     </Suspense>
   );

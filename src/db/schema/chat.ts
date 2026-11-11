@@ -41,7 +41,7 @@ export const conversations = pgTable(
     unique('conversations_pair_key').on(table.organizationId, table.specialistId),
     index('conversations_last_message_idx').on(table.lastMessageAt.desc()),
     index('conversations_specialist_idx').on(table.specialistId),
-    index('conversations_organization_idx').on(table.organizationId),
+    // organization_id lookups use the leading column of conversations_pair_key.
   ],
 );
 
@@ -84,5 +84,8 @@ export const contracts = pgTable(
     status: contractStatus('status').notNull().default('pending'),
     signedAt: timestamp('signed_at', { withTimezone: true }),
   },
-  (table) => [index('contracts_status_idx').on(table.status)],
+  (table) => [
+    index('contracts_status_idx').on(table.status),
+    index('contracts_conversation_idx').on(table.conversationId),
+  ],
 );

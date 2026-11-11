@@ -3,6 +3,9 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { AuthShell } from '@/components/layout/AuthShell';
+import { Field } from '@/components/ui/Field';
+import { LoadingButton } from '@/components/ui/LoadingButton';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
 
@@ -40,48 +43,40 @@ export default function SetPasswordForm() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4 rounded-2xl border bg-white p-6 shadow">
-        <h1 className="text-xl font-bold text-on-surface">إعداد كلمة المرور</h1>
-        <p className="text-sm text-secondary">
-          أدخل كلمة مرور جديدة لحسابك. يجب أن تكون 8 أحرف على الأقل.
-        </p>
-        <div className="space-y-2">
-          <label htmlFor="password" className="block text-sm font-bold">
-            كلمة المرور الجديدة
-          </label>
+    <AuthShell
+      title="إعداد كلمة المرور"
+      subtitle="أدخل كلمة مرور جديدة لحسابك. يجب أن تكون 8 أحرف على الأقل."
+      icon="password"
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Field id="password" label="كلمة المرور الجديدة" required>
           <input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl border px-4 py-3"
+            className="field-input"
             minLength={8}
+            autoComplete="new-password"
             required
           />
-        </div>
-        <div className="space-y-2">
-          <label htmlFor="confirm" className="block text-sm font-bold">
-            تأكيد كلمة المرور
-          </label>
+        </Field>
+        <Field id="confirm" label="تأكيد كلمة المرور" required>
           <input
             id="confirm"
             type="password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            className="w-full rounded-xl border px-4 py-3"
+            className="field-input"
             minLength={8}
+            autoComplete="new-password"
             required
           />
-        </div>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-xl bg-primary py-3 font-bold text-white disabled:opacity-60"
-        >
-          {submitting ? 'جاري الحفظ...' : 'حفظ كلمة المرور'}
-        </button>
+        </Field>
+        <LoadingButton type="submit" loading={submitting} loadingLabel="جاري الحفظ..." showSpinner className="btn btn-primary btn-block btn-lg">
+          حفظ كلمة المرور
+        </LoadingButton>
       </form>
-    </main>
+    </AuthShell>
   );
 }

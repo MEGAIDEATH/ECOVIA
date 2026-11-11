@@ -17,17 +17,17 @@ interface ChatListProps {
 /** Conversation list pane (legacy: "الطلبات والمحادثات" / "المحادثات النشطة"). */
 export function ChatList({ title, icon, conversations, loading, error, activeChatId, onSelect }: ChatListProps) {
   return (
-    <div className="w-full md:w-1/3 bg-surface-container-lowest rounded-3xl shadow-sm border border-outline-variant flex flex-col overflow-hidden h-[40vh] md:h-full">
-      <div className="bg-surface-container-low p-4 border-b border-outline-variant/50">
-        <h3 className="font-bold text-primary flex items-center gap-2">
-          <span className="material-symbols-outlined text-[20px]">{icon}</span> {title}
+    <div className="card flex h-[40vh] w-full flex-col overflow-hidden md:h-full md:w-1/3">
+      <div className="border-b border-line bg-wash px-4 py-3.5">
+        <h3 className="flex items-center gap-2 font-bold text-forest">
+          <span aria-hidden="true" className="material-symbols-outlined text-[20px] text-secondary">{icon}</span> {title}
         </h3>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 space-y-2 overflow-y-auto p-3">
         {loading && <LoadingState message="جاري التحميل..." />}
         {error && !loading && <ErrorState />}
         {!loading && !error && conversations.length === 0 && (
-          <EmptyState message="لا توجد محادثات نشطة" className="text-center p-4 text-secondary text-sm" />
+          <EmptyState message="لا توجد محادثات نشطة" />
         )}
         {!loading &&
           !error &&

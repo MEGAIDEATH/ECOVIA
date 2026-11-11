@@ -37,4 +37,14 @@ describe('safeExternalUrl', () => {
     expect(safeImageUrl('javascript:alert(1)')).toBeNull();
     expect(safeDownloadUrl('javascript:alert(1)')).toBeNull();
   });
+
+  it('accepts only the exact protected file route (uuid) as an internal source', () => {
+    const id = '0f3d3600-2e7d-4733-8fbf-af0000000001';
+    expect(safeImageUrl(`/api/files/${id}`)).toBe(`/api/files/${id}`);
+    expect(safeDownloadUrl(`/api/files/${id}`)).toBe(`/api/files/${id}`);
+    expect(safeDownloadUrl('/api/files/../admin')).toBeNull();
+    expect(safeDownloadUrl(`/api/files/${id}/x`)).toBeNull();
+    expect(safeImageUrl('/etc/passwd')).toBeNull();
+    expect(safeDownloadUrl('//evil.example/api/files/x')).toBeNull();
+  });
 });

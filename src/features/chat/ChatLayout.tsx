@@ -64,7 +64,7 @@ export function ChatLayout({
   );
 
   return (
-    <div className="h-[75vh] fade-up flex flex-col md:flex-row gap-6">
+    <div className="fade-up flex h-[75vh] min-h-[520px] flex-col gap-4 md:flex-row md:gap-6">
       <ChatList
         title={listTitle}
         icon={listIcon}
@@ -75,14 +75,14 @@ export function ChatLayout({
         onSelect={selectChat}
       />
 
-      <div className="w-full md:w-2/3 bg-white rounded-3xl shadow-sm border border-outline-variant flex flex-col relative h-[50vh] md:h-full overflow-hidden">
+      <div className="card relative flex h-[50vh] w-full flex-col overflow-hidden md:h-full md:w-2/3">
         {!activeChatId && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-surface-container-lowest z-10">
-            <span className="material-symbols-outlined text-6xl text-outline-variant mb-4">
-              {emptyIcon}
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white p-6 text-center">
+            <span className="icon-tile icon-tile-lg mb-4">
+              <span aria-hidden="true" className="material-symbols-outlined text-[28px]">{emptyIcon}</span>
             </span>
-            <h3 className="text-lg font-bold text-primary mb-2">{emptyTitle}</h3>
-            <p className="text-sm text-secondary">{emptyDescription}</p>
+            <h3 className="mb-1 text-lg font-bold text-forest">{emptyTitle}</h3>
+            <p className="max-w-sm text-sm leading-relaxed text-muted">{emptyDescription}</p>
           </div>
         )}
 

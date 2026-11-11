@@ -14,12 +14,8 @@ interface DocumentUploadCardProps {
   onFile: (file: File) => void;
   /** When set, replaces the default content (legacy "تم الإرفاق تلقائياً" label). */
   attachedFileName?: string | null;
-  /** Extra classes for the card (legacy variants differ in padding/surface). */
+  /** Extra classes for the card (spacing). */
   className?: string;
-  /** Per-variant inner classes (the three legacy cards differ slightly). */
-  iconContainerClassName?: string;
-  titleClassName?: string;
-  descriptionClassName?: string;
   /** The default content block may need the legacy inner layout. */
   children?: ReactNode;
   inputId: string;
@@ -39,9 +35,6 @@ export function DocumentUploadCard({
   onFile,
   attachedFileName,
   className = '',
-  iconContainerClassName = 'w-14 h-14 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform',
-  titleClassName = 'text-primary font-bold mb-1',
-  descriptionClassName = 'text-xs text-secondary',
   children,
   inputId,
 }: DocumentUploadCardProps) {
@@ -75,7 +68,7 @@ export function DocumentUploadCard({
       onMouseDown={() => setPressed(true)}
       onMouseUp={() => setPressed(false)}
       onMouseLeave={() => setPressed(false)}
-      className={`relative border-2 border-dashed border-primary/30 rounded-2xl text-center hover:bg-primary/5 transition-colors cursor-pointer group ${
+      className={`group relative cursor-pointer rounded-card border-2 border-dashed border-sage bg-wash p-6 text-center transition-colors hover:border-secondary hover:bg-accent-soft ${
         pressed ? 'scale-[0.99]' : ''
       } ${className}`}
     >
@@ -89,21 +82,21 @@ export function DocumentUploadCard({
       />
       {attachedFileName ? (
         <div className="flex flex-col items-center">
-          <span className="material-symbols-outlined text-primary text-2xl block mb-1">
+          <span aria-hidden="true" className="material-symbols-outlined mb-1 block text-2xl text-success">
             task_alt
           </span>
-          <span className="text-sm font-bold text-primary break-all">
+          <span className="text-sm font-bold break-all text-forest">
             تم الإرفاق تلقائياً: {attachedFileName}
           </span>
         </div>
       ) : (
         children ?? (
           <div className="flex flex-col items-center">
-            <div className={iconContainerClassName}>
-              <span className="material-symbols-outlined text-3xl">{icon}</span>
-            </div>
-            <h3 className={titleClassName}>{title}</h3>
-            <p className={descriptionClassName}>{description}</p>
+            <span className="icon-tile icon-tile-lg mb-3 bg-white transition-transform group-hover:scale-105">
+              <span aria-hidden="true" className="material-symbols-outlined text-[28px]">{icon}</span>
+            </span>
+            <h3 className="mb-1 font-bold text-forest">{title}</h3>
+            <p className="max-w-sm text-xs leading-relaxed text-muted">{description}</p>
           </div>
         )
       )}

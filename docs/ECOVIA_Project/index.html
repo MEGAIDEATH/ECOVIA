@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="#0F3D36" name="theme-color"/>
+<meta content="إيكوفيا منصة سعودية تربط المنشآت بالأخصائيين البيئيين وتجمع الخدمات المهنية والتوعية البيئية في مكان واحد." name="description"/>
+<title>إيكوفيا | الخدمات البيئية والوعي المجتمعي</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;family=Manrope:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind v4 Play CDN: suitable for this static prototype -->
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style type="text/tailwindcss">
+  @theme {
+    --color-forest: #0F3D36;
+    --color-green: #2E7D73;
+    --color-sage: #8FBFAF;
+    --color-mist: #E6EFEA;
+    --color-cloud: #F5F7F6;
+    --color-ink: #1A2421;
+    --font-arabic: "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif;
+  }
+</style>
+<!-- Custom artwork and interaction styles; layout and UI use Tailwind CDN. -->
+<style>
+/* Brand-specific artwork, animations and interactive states only.
+   Layout, spacing, responsive rules, common typography are Tailwind classes in index.html. */
+:root {
+    --forest:#0F3D36; --green:#2E7D73; --sage:#8FBFAF; --mist:#E6EFEA;
+    --sand:#D9D1C0; --stone:#A7ADA7; --cloud:#F5F7F6; --ink:#1A2421;
+    --white:#FFFFFF; --line:rgba(15,61,54,.12); --muted:#63746D;
+    --radius:22px; --shadow:0 14px 44px rgba(15,61,54,.08);
+    --font-ar: "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif;
+  }
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;font-family:var(--font-ar)}
+body{margin:0;background:#fbfcfa;color:var(--ink);font-family:var(--font-ar);line-height:1.85;overflow-x:hidden}
+button,input,select,textarea,summary{font-family:var(--font-ar)}
+button{font:inherit;cursor:pointer}
+button:focus-visible,summary:focus-visible{outline:3px solid var(--sage);outline-offset:4px}
+::selection{background:var(--sage);color:var(--forest)}
+.container{width:min(1180px,calc(100% - 56px));margin-inline:auto}
+.progress{position:fixed;top:0;right:0;left:auto;width:0;height:3px;background:var(--green);z-index:50;transition:width .1s linear}
+.btn:active{transform:scale(.98)}
+.btn:hover{transform:translateY(-2px)}
+.hero{position:relative;overflow:hidden;background:radial-gradient(circle at 8% 9%,rgba(143,191,175,.17) 0,transparent 32%),linear-gradient(150deg,#fcfdfa 10%,#f6f9f5 86%);padding:82px 0 110px}
+.hero::before{position:absolute;content:"";width:520px;height:520px;border:1px solid rgba(46,125,115,.09);border-radius:50%;right:-330px;top:40px;pointer-events:none}
+.eyebrow:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 6px rgba(143,191,175,.2)}
+.visual-panel{position:relative;width:100%;max-width:520px;height:550px;overflow:hidden;border-radius:34px;background:radial-gradient(circle at 68% 31%,rgba(143,191,175,.5),transparent 30%),radial-gradient(circle at 12% 82%,#235c4a,transparent 46%),linear-gradient(140deg,#0c302e,#11514a 60%,#347b67);box-shadow:0 35px 65px rgba(15,61,54,.20)}
+.visual-panel:after{content:"";position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.73' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");opacity:.15;pointer-events:none}
+.halo{position:absolute;left:8%;top:14%;height:82%;width:82%;border-radius:50%;border:1px solid rgba(223,243,221,.19)}
+.halo.h2{transform:scale(.79)}
+.halo.h3{transform:scale(.53)}
+.eco-orb{position:absolute;left:17%;top:20%;width:66%;height:62%;border-radius:49% 51% 48% 52%;background:radial-gradient(circle at 35% 24%,#d2e2cd,#85b89b 47%,#276e5e 73%,#0b3a36 98%);box-shadow:inset -17px -19px 34px rgba(1,27,25,.4),inset 10px 14px 35px rgba(255,255,245,.43),0 35px 72px rgba(0,0,0,.28);animation:float 8s ease-in-out infinite;overflow:hidden}
+.eco-orb:before{content:"";position:absolute;inset:12% 15%;border-radius:100% 2% 100% 4%;transform:rotate(-37deg);border:1px solid rgba(245,251,241,.32);background:linear-gradient(130deg,transparent 42%,rgba(255,255,255,.19) 43%,transparent 45%);opacity:.7}
+.orb-branch{position:absolute;width:78%;height:69%;bottom:-15%;right:-5%;transform:rotate(-27deg)}
+.orb-branch path{fill:#104b42;opacity:.88;stroke:#6aab8e;stroke-width:1.2}
+.orb-branch path:nth-child(2){fill:#226d55}
+.orb-branch path:nth-child(3){fill:#387d5f}
+.orbit-label{position:absolute;z-index:2;color:#eff7ed;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);backdrop-filter:blur(16px);border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:12px 16px;font-size:14px;line-height:1.5;font-weight:600}
+.orbit-label:before{content:"";display:inline-block;width:8px;height:8px;margin-left:8px;background:#aad7aa;border-radius:50%;vertical-align:middle}
+.orbit-label.one{right:8%;top:13%}
+.orbit-label.two{left:6%;top:49%}
+.orbit-label.three{right:12%;bottom:9%}
+.visual-footer{position:absolute;left:28px;bottom:22px;font-family:Manrope,Arial,sans-serif;font-size:11px;color:rgba(255,255,255,.55);letter-spacing:.26em}
+.micro-id{position:absolute;top:22px;left:24px;color:rgba(255,255,255,.54);font-size:13px;letter-spacing:.08em}
+@keyframes float{50%{transform:translateY(-13px) rotate(3deg)}}
+section{scroll-margin-top:50px}
+.path-card:hover{transform:translateY(-7px);border-color:#cbdcd2;box-shadow:var(--shadow)}
+.path-card .round-icon{width:57px;height:57px;border-radius:17px}
+.path-card .round-icon svg{width:29px;height:29px}
+.path-card:nth-child(2){background:#f3f8f3}
+.path-card:nth-child(3){background:#f9f8f3}
+.roles-section{background:linear-gradient(180deg,#edf4ee,#f4f7f1);padding:110px 0}
+.role-tabs{display:inline-flex;gap:5px;background:#fff;border-radius:14px;padding:6px;border:1px solid #dce7df;margin-top:28px}
+.role-tab{border:0;background:transparent;color:#587064;padding:12px 22px;border-radius:10px;font-weight:700;font-size:16px;transition:background .2s,color .2s}
+.role-tab[aria-selected="true"]{background:var(--forest);color:#fff}
+.role-panel{background:#fff;border-radius:26px;padding:40px;box-shadow:0 20px 45px rgba(17,48,37,.06);border:1px solid #e5ede7;min-height:355px}
+.role-panel[hidden]{display:none}
+.role-feature{display:flex;gap:11px;align-items:flex-start;font-size:16px;color:#40584c;line-height:1.8;font-weight:600}
+.role-feature:before{content:"✓";display:grid;place-items:center;flex:none;width:23px;height:23px;border-radius:50%;background:#dff0e5;color:#236447;font-family:Arial,sans-serif;font-size:13px;margin-top:1px}
+.community-chips span{display:inline-flex;border-radius:999px;padding:7px 14px;color:#def2e4;border:1px solid rgba(224,252,235,.22);background:rgba(255,255,255,.06);font-size:15px}
+.community-art{position:relative;min-height:420px;background:radial-gradient(circle at 50% 67%,rgba(218,224,191,.75),transparent 34%),linear-gradient(150deg,#a9c8b0,#e5e4d6 68%,#c5d3b8);overflow:hidden}
+.community-art:before{content:"";position:absolute;width:620px;height:620px;bottom:-420px;left:-80px;background:#2d765f;border-radius:49%;box-shadow:0 -20px 0 rgba(46,125,115,.18)}
+.community-art:after{content:"";position:absolute;width:420px;height:420px;top:-294px;right:-150px;background:#d9d1c0;border-radius:50%;box-shadow:0 0 0 60px rgba(255,255,255,.11)}
+.art-leaf{position:absolute;z-index:2;width:175px;height:310px;border-radius:100% 5% 95% 6%;background:linear-gradient(150deg,#165c4d,#61a58c);box-shadow:inset 8px 8px 20px rgba(255,255,255,.24),0 14px 26px rgba(13,71,54,.14);transform:rotate(-35deg);bottom:-38px;right:32%}
+.art-leaf.two{width:150px;height:270px;bottom:-88px;right:2%;transform:rotate(27deg);background:linear-gradient(140deg,#86b59c,#225c4c)}
+.art-leaf.three{width:135px;height:245px;bottom:-70px;right:68%;transform:rotate(-78deg);background:linear-gradient(140deg,#2c876e,#c5ddc6)}
+.art-caption{position:absolute;z-index:3;top:40px;right:38px;background:rgba(255,255,255,.75);backdrop-filter:blur(10px);padding:10px 17px;border-radius:12px;color:#245f50;font-size:15px;font-weight:700}
+details[open]{border-color:#b6d2c3}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"+";font-family:Arial,sans-serif;font-size:24px;font-weight:400;color:#4b876d;transition:transform .2s}
+details[open] summary:after{transform:rotate(45deg)}
+.footer-grid .brand-name strong,.footer-grid .brand-name small{color:#eaf5ee}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:none}
+@media (max-width:1000px){.visual-panel{height:460px}}
+@media (max-width:760px){.container{width:min(100% - 34px,1180px)}.header-actions .btn{min-height:38px;padding:8px 11px;font-size:12px}.hero{padding:58px 0 90px}.hero-grid,.roles-shell,.community-box,.faq-wrap{grid-template-columns:1fr}.visual-panel{height:430px;max-width:520px}.section-pad,.roles-section{padding:75px 0}.role-panel{min-height:auto;padding:28px}.community-art{min-height:310px}.footer-grid,.footer-bottom{align-items:flex-start;flex-direction:column}}
+@media (max-width:440px){.header-actions .btn-quiet{display:none}.visual-panel{height:368px;border-radius:24px}.orbit-label{font-size:12px;padding:9px 10px}.orbit-label.one{right:3%}.orbit-label.two{left:2%}.orbit-label.three{bottom:8%}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.eco-orb{animation:none}.reveal{opacity:1;transform:none;transition:none}.btn,.path-card{transition:none}}
+:root{--motion:cubic-bezier(.22,.7,.19,1)}
+html{scroll-padding-top:110px}
+.nav-words a{text-decoration:none;color:inherit;white-space:nowrap;position:relative;transition:color .22s}
+.nav-words a:hover,.nav-words a:focus-visible{color:var(--green)}
+.nav-words a::after{content:"";position:absolute;right:0;left:100%;height:2px;bottom:-9px;background:var(--green);transition:left .25s var(--motion)}
+.nav-words a:hover::after,.nav-words a:focus-visible::after{left:0}
+.eyebrow::before,.orbit-label::before{content:none!important;display:none!important}
+.orbit-label{display:flex;align-items:center;gap:9px;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:transform .34s var(--motion),background .3s,border-color .3s,box-shadow .3s;will-change:transform;white-space:nowrap}
+.orbit-label svg{height:23px;width:23px;flex:none;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.6}
+.orbit-label:hover,.orbit-label[aria-pressed="true"]{background:rgba(248,255,248,.19);border-color:rgba(255,255,255,.63);box-shadow:0 16px 30px rgba(0,0,0,.16)}
+.orbit-label.is-dragging{cursor:grabbing;transition:none;z-index:9}
+.orbit-label:focus-visible{outline:2px solid #e9f5e8;outline-offset:3px}
+.play-hint{position:absolute;bottom:-22px;font-size:13px;color:#789489;text-align:center;width:100%;margin:0;pointer-events:none}
+.role-tabs{position:relative;isolation:isolate;overflow:hidden;touch-action:pan-y}
+.role-slider{position:absolute;top:6px;bottom:6px;border-radius:10px;background:var(--forest);z-index:0;transition:left .46s var(--motion),width .46s var(--motion);box-shadow:0 5px 12px rgba(15,61,54,.1)}
+.role-tab{position:relative;z-index:1;transition:color .24s;font-weight:700}
+.role-tab[aria-selected="true"]{background:transparent}
+.role-stage{position:relative;touch-action:pan-y;cursor:grab;min-height:355px}
+.role-stage:active{cursor:grabbing}
+.role-panel.is-entering{animation:roleSlide .43s var(--motion) both}
+@keyframes roleSlide{from{transform:translateX(var(--slide-from,18px));opacity:.78}to{transform:translateX(0);opacity:1}}
+.service-card:hover{transform:translateY(-5px);box-shadow:var(--shadow)}
+.community-chip{display:inline-flex;align-items:center;border-radius:999px;padding:8px 16px;color:#def2e4;border:1px solid rgba(224,252,235,.25);background:rgba(255,255,255,.06);font-size:15px;transition:background .25s,transform .25s,border-color .25s}
+.community-chip:hover{transform:translateY(-3px);background:rgba(255,255,255,.12)}
+.community-chip[aria-pressed="true"]{background:#dcebe0;color:var(--forest);border-color:#dcebe0}
+.community-preview{max-width:440px;min-height:97px;border-top:1px solid rgba(223,239,228,.18);margin-top:26px;padding-top:17px}
+.community-preview-label{font-size:14px;color:#a5d2ba}
+.community-preview p{font-size:16px;line-height:1.9;margin:4px 0 0;color:#e0f1e8}
+.community-preview p.preview-enter{animation:roleSlide .36s var(--motion) both}
+@media (max-width:1000px){.nav-words::-webkit-scrollbar{display:none}.nav-words a{flex:none}.role-stage{min-height:370px}}
+@media (max-width:760px){html{scroll-padding-top:150px}.service-grid,.about-grid{grid-template-columns:1fr}.play-hint{bottom:-18px}.role-stage{min-height:420px}}
+@media (max-width:440px){.header-actions .btn-quiet{display:inline-flex}.header-actions .btn{padding:8px 8px;font-size:12px}.orbit-label{font-size:12px;gap:6px}.orbit-label svg{height:18px;width:18px}.visual-panel{height:385px}.role-stage{min-height:445px}}
+@media (prefers-reduced-motion:reduce){.orbit-label,.role-slider,.role-panel,.community-chip,.community-preview p{transition:none!important;animation:none!important}}
+.round-icon svg,.service-icon svg{stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.kicker{direction:rtl}
+</style>
+</head>
+<body>
+<div aria-hidden="true" class="progress" id="scroll-progress"></div>
+<header class="relative z-10 bg-white/95 border-b border-[#0f3d36]/10">
+<div class="container header-inner min-h-[94px] flex items-center justify-between gap-6 max-[1000px]:flex-wrap max-[1000px]:gap-x-3 max-[1000px]:gap-y-0 max-[1000px]:py-2.5 max-[760px]:min-h-[78px]">
+<div aria-label="إيكوفيا" class="brand inline-flex items-center gap-[11px] whitespace-nowrap">
+<img alt="رمز إيكوفيا" class="brand-symbol size-14 object-contain drop-shadow-sm max-[760px]:size-[42px] max-[440px]:size-[37px]" src="assets/ecovia-logo.png"/>
+<span class="brand-name flex flex-col leading-[1.15]"><strong class="font-[Manrope] font-extrabold text-[23px] tracking-[.08em] text-forest max-[760px]:text-[19px] max-[440px]:text-[16px]">ECOVIA</strong><small class="mt-[3px] text-sm tracking-[.15em] text-forest max-[760px]:text-[11px] max-[440px]:text-[10px]">إيكوفيا</small></span>
+</div>
+<nav aria-label="أقسام الصفحة" class="nav-words flex items-center gap-[31px] font-semibold text-[#445950] max-[1000px]:order-3 max-[1000px]:w-full max-[1000px]:gap-6 max-[1000px]:overflow-x-auto max-[1000px]:border-t max-[1000px]:border-[#eaf0ec] max-[1000px]:pt-[13px] max-[1000px]:pb-2 text-[15px]"><a href="#about">عن إيكوفيا</a><a href="#services">الخدمات المهنية</a><a href="#community">المجتمع البيئي</a><a href="#faq">الأسئلة الشائعة</a></nav>
+<div class="header-actions flex items-center gap-2.5 max-[760px]:gap-1.5 max-[440px]:gap-1"><button class="btn btn-quiet inline-flex min-h-11 items-center justify-center gap-[9px] whitespace-nowrap rounded-xl border border-transparent px-[21px] py-[9px] text-[13px] font-bold transition-[transform,box-shadow,background] duration-200 hover:-translate-y-[2px] active:scale-[.98] max-[760px]:min-h-[38px] max-[760px]:px-[11px] max-[760px]:py-2 max-[760px]:text-[11px] max-[440px]:px-2 max-[440px]:text-[10px] border-[#dce6df] bg-white text-forest" title="زر استعراضي، غير مربوط بنظام تسجيل الدخول" type="button">تسجيل الدخول</button><button class="btn btn-solid inline-flex min-h-11 items-center justify-center gap-[9px] whitespace-nowrap rounded-xl border border-transparent px-[21px] py-[9px] text-[13px] font-bold transition-[transform,box-shadow,background] duration-200 hover:-translate-y-[2px] active:scale-[.98] max-[760px]:min-h-[38px] max-[760px]:px-[11px] max-[760px]:py-2 max-[760px]:text-[11px] max-[440px]:px-2 max-[440px]:text-[10px] bg-forest text-white shadow-[0_7px_16px_rgba(15,61,54,.15)]" title="زر استعراضي، غير مربوط بنظام التسجيل" type="button">إنشاء حساب</button></div>
+</div>
+</header>
+<main>
+<section aria-labelledby="hero-title" class="hero">
+<div class="container hero-grid grid grid-cols-[1.07fr_.93fr] items-center gap-[58px] max-[1000px]:gap-7 max-[760px]:grid-cols-1">
+<div class="hero-copy-side">
+<div class="eyebrow inline-flex items-center gap-[9px] font-bold tracking-[.02em] text-green text-[16px]">منصة بيئية سعودية</div>
+<h1 class="mt-[25px] mb-[22px] text-[clamp(46px,5.4vw,80px)] leading-[1.32] tracking-[-.055em] font-bold text-forest max-[760px]:text-[clamp(43px,10vw,64px)]" id="hero-title">بيئة واحدة.<span class="block text-green">أثر أبقى.</span></h1>
+<p class="hero-copy mt-0 mb-[30px] max-w-[580px] text-[17px] leading-[2.05] text-[#52655d] max-[760px]:text-[16px]">تجمع إيكوفيا المنشآت بالأخصائيين البيئيين في مساحة مهنية واضحة، وتفتح باب المعرفة والمشاركة البيئية للجميع.</p>
+<div class="hero-tags mt-[27px] flex flex-wrap gap-2.5"><span class="tag rounded-full border border-[#dde8e0] bg-white/75 px-3.5 py-2 font-semibold text-[#496258] text-[14px]">خدمات بيئية متخصصة</span><span class="tag rounded-full border border-[#dde8e0] bg-white/75 px-3.5 py-2 font-semibold text-[#496258] text-[14px]">فرص مهنية</span><span class="tag rounded-full border border-[#dde8e0] bg-white/75 px-3.5 py-2 font-semibold text-[#496258] text-[14px]">توعية مجتمعية</span></div>
+</div>
+<div class="hero-side relative grid min-h-[560px] place-items-center max-[1000px]:min-h-[460px] max-[760px]:min-h-[440px] max-[440px]:min-h-[370px]">
+<div class="visual-panel">
+<div class="halo"></div><div class="halo h2"></div><div class="halo h3"></div>
+<div class="eco-orb">
+<svg class="orb-branch" viewbox="0 0 290 250" xmlns="http://www.w3.org/2000/svg"><path d="M115 245 C58 176 47 125 92 58 C137 82 171 128 154 185 C148 210 135 229 115 245Z"></path><path d="M135 247 C145 180 178 125 265 85 C275 168 226 223 135 247Z"></path><path d="M73 186 C30 166 21 103 28 30 C94 52 130 108 109 172Z"></path></svg>
+</div>
+<button aria-label="الأخصائي البيئي — اسحب البطاقة أو اضغط عليها" aria-pressed="false" class="orbit-label one draggable-role" data-drag-card="" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><circle cx="12" cy="8" r="3.6"></circle><path d="M5.3 20c.2-4.2 2.4-6.2 6.7-6.2s6.5 2 6.7 6.2"></path></svg><span>الأخصائي البيئي</span></button>
+<button aria-label="المنشآت — اسحب البطاقة أو اضغط عليها" aria-pressed="false" class="orbit-label two draggable-role" data-drag-card="" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16M2 21h20M8 7h2m4 0h2M8 11h2m4 0h2M8 15h2m4 0h2M10 21v-4h4v4"></path></svg><span>المنشآت</span></button>
+<button aria-label="المجتمع — اسحب البطاقة أو اضغط عليها" aria-pressed="false" class="orbit-label three draggable-role" data-drag-card="" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><circle cx="12" cy="7" r="3"></circle><path d="M6.5 20v-1.2a5.5 5.5 0 0 1 11 0V20"></path><path d="M4.8 10.1a2.5 2.5 0 1 1 1-4.7M3.7 19.4v-.9c0-2.4.9-3.9 2.6-4.4M19.2 10.1a2.5 2.5 0 1 0-1-4.7M20.3 19.4v-.9c0-2.4-.9-3.9-2.6-4.4"></path></svg><span>المجتمع</span></button>
+</div>
+<p class="play-hint">يمكنك تحريك البطاقات أو الضغط عليها</p>
+</div>
+</div>
+</section>
+<div class="trust-ribbon relative z-[3] -mt-12 bg-white"><div class="container ribbon-box flex min-h-[98px] items-center justify-around gap-3.5 rounded-[18px] border border-[#e5eee8] bg-white p-5 shadow-[0_13px_42px_rgba(18,47,36,.06)] max-[760px]:flex-wrap max-[760px]:justify-start max-[760px]:gap-x-[22px] max-[760px]:gap-y-3 max-[760px]:p-[19px]">
+<div class="ribbon-item flex items-center gap-[13px] text-sm font-bold text-forest max-[760px]:text-xs max-[440px]:flex-[1_1_100%]"><span class="round-icon grid size-11 shrink-0 place-items-center rounded-[14px] bg-[#edf5ef] text-green max-[760px]:size-9"><svg class="size-[23px]" viewbox="0 0 24 24"><path d="M4 12h16M12 4v16"></path><circle cx="12" cy="12" r="9"></circle></svg></span>منظومة واحدة</div>
+<div class="ribbon-item flex items-center gap-[13px] text-sm font-bold text-forest max-[760px]:text-xs max-[440px]:flex-[1_1_100%]"><span class="round-icon grid size-11 shrink-0 place-items-center rounded-[14px] bg-[#edf5ef] text-green max-[760px]:size-9"><svg class="size-[23px]" viewbox="0 0 24 24"><path d="m4 14 5-5 4 4 7-7"></path><path d="M16 6h4v4"></path></svg></span>فرص تصل لأصحابها</div>
+<div class="ribbon-item flex items-center gap-[13px] text-sm font-bold text-forest max-[760px]:text-xs max-[440px]:flex-[1_1_100%]"><span class="round-icon grid size-11 shrink-0 place-items-center rounded-[14px] bg-[#edf5ef] text-green max-[760px]:size-9"><svg class="size-[23px]" viewbox="0 0 24 24"><path d="M20 4c-9-1-15 3-16 10 0 4 3 6 7 5 7-1 10-7 9-15Z"></path><path d="M6 21c2-6 5-9 11-12"></path></svg></span>أثر مستدام</div>
+</div></div>
+<section aria-labelledby="ecosystem-title" class="section-pad py-28 max-[760px]:py-[75px]">
+<div class="container">
+<div class="section-top center reveal mb-11 max-w-[650px] mx-auto text-center"><span class="kicker inline-block font-extrabold text-green font-arabic text-[16px] font-bold tracking-normal leading-[1.7]">إيكوفيا باختصار</span><h2 class="my-[9px] mb-[13px] text-[clamp(30px,3.6vw,47px)] leading-[1.46] tracking-[-.045em] text-forest" id="ecosystem-title">ثلاثة مسارات. منظومة واحدة.</h2><p class="lead m-0 leading-[2.1] text-[#65766e] text-[17px] max-[760px]:text-[16px]">لكل طرف دور، ولكل تفاعل قيمة. تتكامل المعرفة والخدمات والبيانات لصناعة بيئة أكثر اتصالًا.</p></div>
+<div class="path-grid grid grid-cols-3 gap-[17px] max-[760px]:grid-cols-1">
+<article class="path-card reveal relative min-h-[290px] overflow-hidden rounded-3xl border border-[#e5ece7] bg-white px-[29px] pt-8 pb-9 transition-[transform,box-shadow,border-color] duration-[250ms] hover:-translate-y-[7px] hover:border-[#cbdcd2] hover:shadow-[0_14px_44px_rgba(15,61,54,.08)] max-[760px]:min-h-0 max-[760px]:p-[25px]"><span class="card-num absolute top-[29px] left-[29px] font-[Manrope] text-[11px] font-bold text-[#9caaa2]">01</span><span class="round-icon grid size-11 shrink-0 place-items-center rounded-[14px] bg-[#edf5ef] text-green max-[760px]:size-9"><svg class="size-[23px]" viewbox="0 0 24 24"><rect height="17" rx="3" width="18" x="3" y="4"></rect><path d="M8 9h8M8 13h8M8 17h5"></path></svg></span><strong class="mt-[25px] mb-1.5 block text-[23px] text-forest max-[760px]:mt-[15px] max-[760px]:mb-1">الخدمات المهنية</strong><p class="m-0 leading-[2] text-[#697970] text-[16px]">مساحة تجمع المنشآت بالأخصائيين البيئيين لإدارة الطلبات والتعاون والاتفاقات ومتابعة الخدمات.</p></article>
+<article class="path-card reveal relative min-h-[290px] overflow-hidden rounded-3xl border border-[#e5ece7] bg-white px-[29px] pt-8 pb-9 transition-[transform,box-shadow,border-color] duration-[250ms] hover:-translate-y-[7px] hover:border-[#cbdcd2] hover:shadow-[0_14px_44px_rgba(15,61,54,.08)] max-[760px]:min-h-0 max-[760px]:p-[25px]"><span class="card-num absolute top-[29px] left-[29px] font-[Manrope] text-[11px] font-bold text-[#9caaa2]">02</span><span class="round-icon grid size-11 shrink-0 place-items-center rounded-[14px] bg-[#edf5ef] text-green max-[760px]:size-9"><svg class="size-[23px]" viewbox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5Z"></path><path d="M8 10h8M8 13h5"></path></svg></span><strong class="mt-[25px] mb-1.5 block text-[23px] text-forest max-[760px]:mt-[15px] max-[760px]:mb-1">الوعي والمجتمع</strong><p class="m-0 leading-[2] text-[#697970] text-[16px]">معرفة بيئية في صورة محتوى وتجارب وتحديات ومبادرات تشجع المشاركة والاهتمام بالبيئة.</p></article>
+<article class="path-card reveal relative min-h-[290px] overflow-hidden rounded-3xl border border-[#e5ece7] bg-white px-[29px] pt-8 pb-9 transition-[transform,box-shadow,border-color] duration-[250ms] hover:-translate-y-[7px] hover:border-[#cbdcd2] hover:shadow-[0_14px_44px_rgba(15,61,54,.08)] max-[760px]:min-h-0 max-[760px]:p-[25px]"><span class="card-num absolute top-[29px] left-[29px] font-[Manrope] text-[11px] font-bold text-[#9caaa2]">03</span><span class="round-icon grid size-11 shrink-0 place-items-center rounded-[14px] bg-[#edf5ef] text-green max-[760px]:size-9"><svg class="size-[23px]" viewbox="0 0 24 24"><path d="M3 19h18M6 15V8M12 15V5M18 15v-4"></path><circle cx="6" cy="7" r="1"></circle><circle cx="12" cy="4" r="1"></circle><circle cx="18" cy="10" r="1"></circle></svg></span><strong class="mt-[25px] mb-1.5 block text-[23px] text-forest max-[760px]:mt-[15px] max-[760px]:mb-1">تطوير مستمر</strong><p class="m-0 leading-[2] text-[#697970] text-[16px]">نستفيد من بيانات الاستخدام لتحسين الخدمات والمحتوى واتخاذ قرارات أفضل.</p></article>
+</div>
+</div>
+</section>
+<section aria-labelledby="services-title" class="services-section section-pad py-28 max-[760px]:py-[75px] bg-[#f6f9f6]" id="services">
+<div class="container">
+<div class="section-top reveal mb-11 max-w-[650px]"><span class="kicker inline-block font-extrabold text-green font-arabic text-[16px] font-bold tracking-normal leading-[1.7]">الخدمات المهنية</span><h2 class="my-[9px] mb-[13px] text-[clamp(30px,3.6vw,47px)] leading-[1.46] tracking-[-.045em] text-forest" id="services-title">خدمات بيئية تبدأ من احتياج المنشأة.</h2><p class="lead m-0 leading-[2.1] text-[#65766e] text-[17px] max-[760px]:text-[16px]">تركز إيكوفيا في مرحلتها الأولى على احتياجات منشآت الفئة الأولى، وتساعدها على الوصول إلى مقدمي الخدمات المرخّصين.</p></div>
+<div class="service-grid grid grid-cols-2 gap-5 max-[1000px]:gap-3.5 max-[760px]:grid-cols-1">
+<article class="service-card reveal flex min-h-[255px] gap-[23px] rounded-3xl border border-[#e0eae2] bg-white p-8 transition-[transform,box-shadow] duration-[250ms] hover:-translate-y-[5px] hover:shadow-[0_14px_44px_rgba(15,61,54,.08)] max-[760px]:min-h-0 max-[760px]:px-[23px] max-[760px]:py-[26px] max-[440px]:gap-[13px] max-[440px]:p-[21px]">
+<span aria-hidden="true" class="service-icon grid size-[62px] shrink-0 place-items-center rounded-[19px] bg-[#e7f1e9] text-forest max-[440px]:size-12 max-[440px]:rounded-[14px]"><svg class="size-7 max-[440px]:size-[23px]" viewbox="0 0 24 24"><path d="M6 3h9l4 4v14H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"></path><path d="M14 3v5h5M8 12h8M8 16h6"></path></svg></span>
+<div><p class="service-type mt-px mb-[5px] font-bold text-green text-[15px]">إعداد المستندات</p><h3 class="mt-0 mb-3 text-[23px] leading-[1.6] text-forest max-[440px]:text-lg">خطة الإدارة البيئية</h3><p class="mt-0 mb-[18px] leading-[2] text-[#64776c] text-[16px]">إعداد خطة توضح الإجراءات والاشتراطات البيئية المرتبطة بنشاط المنشأة، من خلال مقدم خدمة مخوّل.</p><span class="service-note inline-block rounded-[9px] bg-[#edf5ef] px-[11px] py-[7px] text-[#3d7860] text-[14px] leading-[1.8]">من متطلبات التصاريح البيئية للفئة الأولى</span></div>
+</article>
+<article class="service-card reveal flex min-h-[255px] gap-[23px] rounded-3xl border border-[#e0eae2] bg-white p-8 transition-[transform,box-shadow] duration-[250ms] hover:-translate-y-[5px] hover:shadow-[0_14px_44px_rgba(15,61,54,.08)] max-[760px]:min-h-0 max-[760px]:px-[23px] max-[760px]:py-[26px] max-[440px]:gap-[13px] max-[440px]:p-[21px]">
+<span aria-hidden="true" class="service-icon grid size-[62px] shrink-0 place-items-center rounded-[19px] bg-[#e7f1e9] text-forest max-[440px]:size-12 max-[440px]:rounded-[14px]"><svg class="size-7 max-[440px]:size-[23px]" viewbox="0 0 24 24"><rect height="18" rx="2" width="16" x="4" y="3"></rect><path d="M8 8h8M8 12h8M8 16l2 2 5-5"></path></svg></span>
+<div><p class="service-type mt-px mb-[5px] font-bold text-green text-[15px]">تجهيز ومتابعة</p><h3 class="mt-0 mb-3 text-[23px] leading-[1.6] text-forest max-[440px]:text-lg">دعم إجراءات التصريح البيئي</h3><p class="mt-0 mb-[18px] leading-[2] text-[#64776c] text-[16px]">مساعدة المنشأة في تجهيز المتطلبات والملفات اللازمة للتقديم ومتابعة الإجراءات حسب نوع النشاط.</p><span class="service-note inline-block rounded-[9px] bg-[#edf5ef] px-[11px] py-[7px] text-[#3d7860] text-[14px] leading-[1.8]">إصدار التصريح من اختصاص الجهة التنظيمية</span></div>
+</article>
+</div>
+<p class="services-disclaimer mt-[19px] mb-0 text-[#738279] text-[14px]">قد تختلف المتطلبات بحسب تصنيف النشاط ونوع التصريح. الخدمات المعروضة هنا تعريفية، وتُفعّل داخل المنصة حسب نطاق مقدمي الخدمة المعتمدين.</p>
+</div>
+</section>
+<section aria-labelledby="roles-title" class="roles-section">
+<div class="container roles-shell grid grid-cols-[.77fr_1.23fr] items-center gap-16 max-[1000px]:gap-7 max-[760px]:grid-cols-1">
+<div class="role-intro reveal"><span class="kicker inline-block font-extrabold text-green font-arabic text-[16px] font-bold tracking-normal leading-[1.7]">لمن صُممت المنصة؟</span><h2 class="my-[9px] mb-[13px] text-[clamp(30px,3.6vw,47px)] leading-[1.46] tracking-[-.045em] text-forest mt-3" id="roles-title">للمنشأة وللأخصائي.</h2><p class="lead m-0 leading-[2.1] text-[#65766e] text-[17px] max-[760px]:text-[16px]">طلبات واضحة للمنشآت، وفرص مناسبة للأخصائيين. اختر الفئة لتتعرف على ما تقدمه المنصة.</p>
+<div aria-label="الفئة المستهدفة" class="role-tabs" role="tablist"><span aria-hidden="true" class="role-slider"></span><button aria-controls="panel-org" aria-selected="true" class="role-tab" data-tab="org" id="tab-org" role="tab" tabindex="0" type="button">للمنشآت</button><button aria-controls="panel-pro" aria-selected="false" class="role-tab" data-tab="pro" id="tab-pro" role="tab" tabindex="-1" type="button">للأخصائيين</button></div>
+</div>
+<div aria-label="اسحب يمينًا أو يسارًا لتغيير الفئة المستهدفة" class="role-stage reveal">
+<div aria-labelledby="tab-org" class="role-panel" id="panel-org" role="tabpanel"><div class="eyebrow inline-flex items-center gap-[9px] font-bold tracking-[.02em] text-green text-[16px]">للمنشآت</div><p class="role-big mt-0 mb-[9px] text-[27px] font-bold text-forest">الخبرة المناسبة أقرب إليك.</p><p class="role-summary mt-0 mb-[27px] text-[#65776c] text-[16px]">من البحث عن أخصائي بيئي إلى متابعة الخدمة في مساحة موحّدة.</p><div class="role-list grid grid-cols-2 gap-x-5 gap-y-[19px] max-[760px]:grid-cols-1"><div class="role-feature">استعراض الخدمات البيئية والمتطلبات</div><div class="role-feature">العثور على أخصائيين مؤهلين</div><div class="role-feature">إنشاء طلبات الخدمات ومراجعة العروض</div><div class="role-feature">التواصل ومتابعة التنفيذ والمخرجات</div></div></div>
+<div aria-labelledby="tab-pro" class="role-panel" hidden="" id="panel-pro" role="tabpanel"><div class="eyebrow inline-flex items-center gap-[9px] font-bold tracking-[.02em] text-green text-[16px]">للأخصائيين البيئيين</div><p class="role-big mt-0 mb-[9px] text-[27px] font-bold text-forest">خبرتك تستحق أن تُرى.</p><p class="role-summary mt-0 mb-[27px] text-[#65776c] text-[16px]">مساحة مهنية تعرض مؤهلاتك وتساعدك في الوصول إلى فرص تتناسب مع تخصصك.</p><div class="role-list grid grid-cols-2 gap-x-5 gap-y-[19px] max-[760px]:grid-cols-1"><div class="role-feature">إنشاء ملف مهني وشهادات وأعمال سابقة</div><div class="role-feature">عرض التخصصات والخدمات البيئية</div><div class="role-feature">متابعة طلبات المنشآت وتقديم العروض</div><div class="role-feature">إدارة التعاقدات والتسليم والتقييمات</div></div></div>
+</div>
+</div>
+</section>
+<section aria-labelledby="steps-title" class="section-pad steps py-28 max-[760px]:py-[75px] bg-white">
+<div class="container"><div class="section-top reveal mb-11 max-w-[650px]"><span class="kicker inline-block font-extrabold text-green font-arabic text-[16px] font-bold tracking-normal leading-[1.7]">كيف تسير الخدمة؟</span><h2 class="my-[9px] mb-[13px] text-[clamp(30px,3.6vw,47px)] leading-[1.46] tracking-[-.045em] text-forest" id="steps-title">امتثال بيئي أسرع.</h2><p class="lead m-0 leading-[2.1] text-[#65766e] text-[17px] max-[760px]:text-[16px]">من تحديد الخدمة إلى تسلّم المخرجات: خطوات واضحة للمنشأة والأخصائي البيئي.</p></div>
+<div class="steps-grid grid grid-cols-4 gap-3.5 max-[760px]:grid-cols-2 max-[440px]:gap-[9px]"><article class="step reveal min-h-[225px] rounded-[20px] border border-[#e8eee9] bg-[linear-gradient(170deg,#fff,#fcfdfa)] px-6 py-7 max-[760px]:min-h-[200px] max-[440px]:px-[15px] max-[440px]:py-5"><span class="step-no font-[Manrope] text-[32px] leading-none font-extrabold text-[#9dc4b1]">01</span><h3 class="mt-[22px] mb-[7px] text-lg text-forest max-[440px]:text-[17px]">حدّد احتياجك</h3><p class="m-0 leading-[2] text-[#718078] text-[16px] max-[440px]:text-[15px]">تختار المنشأة الخدمة البيئية وتوضّح نطاق العمل والمستندات المطلوبة.</p></article><article class="step reveal min-h-[225px] rounded-[20px] border border-[#e8eee9] bg-[linear-gradient(170deg,#fff,#fcfdfa)] px-6 py-7 max-[760px]:min-h-[200px] max-[440px]:px-[15px] max-[440px]:py-5"><span class="step-no font-[Manrope] text-[32px] leading-none font-extrabold text-[#9dc4b1]">02</span><h3 class="mt-[22px] mb-[7px] text-lg text-forest max-[440px]:text-[17px]">تعرّف على المختص</h3><p class="m-0 leading-[2] text-[#718078] text-[16px] max-[440px]:text-[15px]">تستعرض ملفات الأخصائيين والعروض لتختار الخبرة الأنسب.</p></article><article class="step reveal min-h-[225px] rounded-[20px] border border-[#e8eee9] bg-[linear-gradient(170deg,#fff,#fcfdfa)] px-6 py-7 max-[760px]:min-h-[200px] max-[440px]:px-[15px] max-[440px]:py-5"><span class="step-no font-[Manrope] text-[32px] leading-none font-extrabold text-[#9dc4b1]">03</span><h3 class="mt-[22px] mb-[7px] text-lg text-forest max-[440px]:text-[17px]">أنجزوا معًا</h3><p class="m-0 leading-[2] text-[#718078] text-[16px] max-[440px]:text-[15px]">تُنظّم الاتفاقات والمراسلات ومتابعة التنفيذ ضمن مسار واحد.</p></article><article class="step reveal min-h-[225px] rounded-[20px] border border-[#e8eee9] bg-[linear-gradient(170deg,#fff,#fcfdfa)] px-6 py-7 max-[760px]:min-h-[200px] max-[440px]:px-[15px] max-[440px]:py-5"><span class="step-no font-[Manrope] text-[32px] leading-none font-extrabold text-[#9dc4b1]">04</span><h3 class="mt-[22px] mb-[7px] text-lg text-forest max-[440px]:text-[17px]">اعتمد النتيجة</h3><p class="m-0 leading-[2] text-[#718078] text-[16px] max-[440px]:text-[15px]">تُراجع المخرجات ويُوثّق التسليم والإغلاق والتقييم.</p></article></div>
+</div>
+</section>
+<section aria-labelledby="community-title" class="community-section bg-white pt-[65px] pb-[115px] max-[760px]:pt-[45px] max-[760px]:pb-[75px]" id="community"><div class="container"><div class="community-box reveal grid min-h-[465px] grid-cols-2 gap-0 overflow-hidden rounded-[30px] bg-forest max-[760px]:grid-cols-1"><div class="community-text self-center px-[63px] py-[60px] text-[#f6fcf5] max-[1000px]:p-11 max-[760px]:px-[29px] max-[760px]:py-[38px]"><span class="kicker inline-block font-extrabold text-green text-[#b1d8c3] font-arabic text-[16px] font-bold tracking-normal leading-[1.7]">الجانب المجتمعي</span><h2 class="my-[9px] mb-[13px] text-[clamp(30px,3.6vw,47px)] leading-[1.46] tracking-[-.045em] text-forest mt-3 mb-5 text-white" id="community-title">البيئة ليست خدمة فقط.<br/>إنها ثقافة نشاركها.</h2><p class="m-0 max-w-[420px] text-[15px] leading-[2.15] text-[#c9e1d7]">إلى جانب الخدمات المهنية، تتطلع إيكوفيا إلى تجربة مجتمعية تجمع المعرفة بالقصص والتحديات والمبادرات البيئية، وتحوّل الوعي إلى مشاركة حقيقية.</p><div aria-label="مجالات المجتمع البيئي" class="community-chips mt-[26px] flex flex-wrap gap-2.5" role="group"><button aria-pressed="true" class="community-chip is-current" data-community="articles" type="button">محتوى بيئي</button><button aria-pressed="false" class="community-chip" data-community="experiences" type="button">تجارب تفاعلية</button><button aria-pressed="false" class="community-chip" data-community="challenges" type="button">تحديات ومبادرات</button></div><div aria-live="polite" class="community-preview"><span class="community-preview-label">مساحة قيد التطوير</span><p class="m-0 max-w-[420px] text-[15px] leading-[2.15] text-[#c9e1d7]" id="community-preview-text">مقالات مبسطة وقصص من واقع البيئة السعودية، بعيدًا عن النصائح المكررة.</p></div></div><div aria-hidden="true" class="community-art"><span class="art-caption">نزرع المعرفة، فينمو الأثر.</span><span class="art-leaf"></span><span class="art-leaf two"></span><span class="art-leaf three"></span></div></div></div></section>
+<section aria-labelledby="about-title" class="about-section section-pad py-28 max-[760px]:py-[75px] bg-white" id="about">
+<div class="container about-grid grid grid-cols-[1.12fr_.88fr] items-center gap-[82px] max-[1000px]:gap-[38px] max-[760px]:grid-cols-1">
+<div class="about-copy reveal">
+<span class="kicker inline-block font-extrabold text-green font-arabic text-[16px] font-bold tracking-normal leading-[1.7]">عن إيكوفيا</span>
+<h2 class="my-[9px] mb-[13px] text-[clamp(30px,3.6vw,47px)] leading-[1.46] tracking-[-.045em] text-forest max-w-[650px]" id="about-title">لأن الوصول إلى الخدمة البيئية لازم يكون أوضح.</h2>
+<p class="lead m-0 leading-[2.1] text-[#65766e] text-[17px] max-[760px]:text-[16px]">إيكوفيا مشروع منصة سعودية تجمع المنشآت والأخصائيين البيئيين والمجتمع، بحيث تصبح الخدمات المهنية والمعرفة البيئية أقرب لمن يحتاجها، في مكان واحد.</p>
+<div class="about-mission mt-[34px] grid grid-cols-2 gap-7 max-[760px]:gap-5 max-[440px]:grid-cols-1 max-[440px]:gap-[13px]"><div class="border-t-2 border-[#d7e5dc] pt-[15px]"><span class="font-bold text-green text-[17px]">رؤيتنا</span><p class="mt-1.5 mb-0 leading-[1.95] text-[#6c7e72] text-[16px]">منظومة رقمية تجمع الخبرات والخدمات والمعرفة وتدعم ممارسات بيئية أفضل.</p></div><div class="border-t-2 border-[#d7e5dc] pt-[15px]"><span class="font-bold text-green text-[17px]">هدفنا</span><p class="mt-1.5 mb-0 leading-[1.95] text-[#6c7e72] text-[16px]">تسهيل الوصول إلى المتخصصين، وتنظيم دورة الخدمة، وإتاحة المعرفة البيئية للمجتمع.</p></div></div>
+</div>
+<div class="founder-card reveal w-full max-w-[400px] justify-self-center overflow-hidden rounded-[26px] border border-[#dfeae2] bg-[#f5f8f5] shadow-[0_20px_42px_rgba(15,61,54,.06)] max-[760px]:max-w-[420px]"><div class="founder-photo h-[295px] overflow-hidden bg-mist max-[440px]:h-[280px]"><img alt="صورة ريان متولي، مؤسس مشروع إيكوفيا" class="block size-full object-cover object-[center_31%] saturate-[.92]" loading="eager" src="assets/rayan-metwally.png"/></div><div class="founder-meta px-7 pt-5 pb-[25px]"><span class="font-bold text-green text-[15px]">مؤسس المشروع</span><h3 class="mt-[5px] mb-1 text-2xl text-forest">ريان متولي</h3><p class="m-0 text-[#718077] text-[16px]">صاحب الرؤية وراء إيكوفيا.</p></div></div>
+</div>
+</section>
+<section aria-labelledby="faq-title" class="faq-section bg-cloud pt-[100px] pb-[105px] max-[760px]:py-[75px]" id="faq"><div class="container faq-wrap grid grid-cols-[.75fr_1.25fr] gap-[75px] max-[760px]:grid-cols-1 max-[760px]:gap-[30px]"><div class="reveal"><span class="kicker inline-block font-extrabold text-green font-arabic text-[16px] font-bold tracking-normal leading-[1.7]">معلومات تهمك</span><h2 class="my-[9px] mb-[13px] text-[clamp(30px,3.6vw,47px)] leading-[1.46] tracking-[-.045em] text-forest" id="faq-title">أسئلة قبل البداية.</h2><p class="lead m-0 leading-[2.1] text-[#65766e] text-[17px] max-[760px]:text-[16px]">إجابات مختصرة عن فكرة إيكوفيا وآلية الاستفادة منها.</p></div><div class="faq-list reveal grid gap-2.5">
+<details class="rounded-[15px] border border-[#e5ebe6] bg-white px-[22px] transition-[border-color] duration-200"><summary class="flex cursor-pointer list-none items-center justify-between gap-[18px] py-[18px] font-bold text-forest text-[17px]">ما هي منصة إيكوفيا؟</summary><p class="mb-5 leading-[2] text-[#687a70] text-[16px]">منصة بيئية سعودية تجمع المنشآت والأخصائيين البيئيين والمجتمع في منظومة تربط الخدمات المهنية بالتوعية البيئية وتحسين التجربة عبر البيانات.</p></details>
+<details class="rounded-[15px] border border-[#e5ebe6] bg-white px-[22px] transition-[border-color] duration-200"><summary class="flex cursor-pointer list-none items-center justify-between gap-[18px] py-[18px] font-bold text-forest text-[17px]">هل يمكن لأي شخص تصفح المحتوى البيئي؟</summary><p class="mb-5 leading-[2] text-[#687a70] text-[16px]">تستهدف منظومة التوعية أفراد المجتمع المهتمين بالبيئة. أما تقديم الخدمات المهنية أو طلبها فيرتبط بالحساب والصلاحيات والمتطلبات الخاصة بكل فئة.</p></details>
+<details class="rounded-[15px] border border-[#e5ebe6] bg-white px-[22px] transition-[border-color] duration-200"><summary class="flex cursor-pointer list-none items-center justify-between gap-[18px] py-[18px] font-bold text-forest text-[17px]">كيف يتم اعتماد الأخصائي البيئي؟</summary><p class="mb-5 leading-[2] text-[#687a70] text-[16px]">تتضمن متطلبات المنتج تقديم بيانات المؤهلات والترخيص المهني والتحقق منها قبل إتاحة تقديم الخدمات المهنية وظهور الملف للمنشآت.</p></details>
+<details class="rounded-[15px] border border-[#e5ebe6] bg-white px-[22px] transition-[border-color] duration-200"><summary class="flex cursor-pointer list-none items-center justify-between gap-[18px] py-[18px] font-bold text-forest text-[17px]">من هي المنشآت المستهدفة أولًا؟</summary><p class="mb-5 leading-[2] text-[#687a70] text-[16px]">تركز المرحلة الأولى على منشآت الفئة الأولى، مع تصور للتوسع إلى فئات واحتياجات أخرى مستقبلًا.</p></details>
+<details class="rounded-[15px] border border-[#e5ebe6] bg-white px-[22px] transition-[border-color] duration-200"><summary class="flex cursor-pointer list-none items-center justify-between gap-[18px] py-[18px] font-bold text-forest text-[17px]">هل تُصدر إيكوفيا التصريح البيئي؟</summary><p class="mb-5 leading-[2] text-[#687a70] text-[16px]">لا. تساعد المنصة على الوصول إلى مقدمي الخدمات المؤهلين لإعداد الملفات والمساعدة في الإجراءات، أما التصريح فيصدر من المركز الوطني للرقابة على الالتزام البيئي.</p></details>
+<details class="rounded-[15px] border border-[#e5ebe6] bg-white px-[22px] transition-[border-color] duration-200"><summary class="flex cursor-pointer list-none items-center justify-between gap-[18px] py-[18px] font-bold text-forest text-[17px]">هل تُدار العقود والمدفوعات داخل المنصة؟</summary><p class="mb-5 leading-[2] text-[#687a70] text-[16px]">تتضمن الرؤية التشغيلية إدارة الاتفاقات وتوثيق الخدمات والتسليم واستكمال الالتزامات المالية. تفاصيل تفعيل الدفع والتكامل مع مزوده تخضع لمرحلة التنفيذ والاعتماد.</p></details>
+</div></div></section>
+<section class="cta-section bg-white pt-[90px] pb-[100px] max-[760px]:py-[70px]"><div class="container"><div class="cta-box reveal flex items-center justify-between gap-[35px] rounded-[26px] border px-[60px] py-[54px] max-[760px]:flex-col max-[760px]:items-start max-[760px]:px-7 max-[760px]:py-[34px] border-[#225c50] bg-[linear-gradient(120deg,#0b302b,#144d43_60%,#226354)] shadow-[0_24px_65px_rgba(15,61,54,.16)]"><div><span class="kicker inline-block font-extrabold font-arabic text-[16px] font-bold tracking-normal leading-[1.7] text-[#bce6d0]">ابدأ مع إيكوفيا</span><h2 class="my-[9px] mb-[13px] text-[clamp(30px,3.6vw,47px)] leading-[1.46] tracking-[-.045em] mt-0 mb-2 text-[#f7fcf8] text-[clamp(34px,3.2vw,44px)] max-[760px]:text-[clamp(29px,7.4vw,36px)]">مستقبل أكثر اتصالًا بالبيئة.</h2><p class="m-0 text-[17px] leading-[1.95] text-[#dcece3] max-[760px]:text-[16px]">مساحة واحدة تجمع الفرص والخبرات والمعرفة. هذه بداية الأثر.</p></div><button class="btn btn-solid inline-flex min-h-11 items-center justify-center gap-[9px] whitespace-nowrap rounded-xl border border-transparent px-[21px] py-[9px] font-bold transition-[transform,box-shadow,background] duration-200 hover:-translate-y-[2px] active:scale-[.98] max-[760px]:px-[11px] max-[760px]:py-2 max-[440px]:px-2 bg-[#e8f4eb] text-[#103b31] shadow-[0_8px_20px_rgba(0,0,0,.12)] hover:bg-white text-[16px] max-[760px]:text-[15px] min-h-[50px] px-[26px]" title="زر استعراضي، غير مرتبط بوظيفة" type="button">إنشاء حساب</button></div></div></section>
+</main>
+<footer class="bg-[#0e2c2b] pt-[57px] pb-[30px] text-[#c2d9cf]"><div class="container"><div class="footer-grid flex items-center justify-between gap-[25px] pb-11 max-[760px]:flex-col max-[760px]:items-start"><div class="brand inline-flex items-center gap-[11px] whitespace-nowrap"><img alt="رمز إيكوفيا" class="brand-symbol size-14 object-contain drop-shadow-sm max-[760px]:size-[42px] max-[440px]:size-[37px]" src="assets/ecovia-logo.png"/><span class="brand-name flex flex-col leading-[1.15]"><strong class="font-[Manrope] font-extrabold text-[23px] tracking-[.08em] text-forest max-[760px]:text-[19px] max-[440px]:text-[16px] text-[#eaf5ee]">ECOVIA</strong><small class="mt-[3px] text-sm tracking-[.15em] text-forest max-[760px]:text-[11px] max-[440px]:text-[10px] text-[#eaf5ee]">إيكوفيا</small></span></div><p class="footer-tagline max-w-[440px] leading-[2] text-[#9fbdb0] text-[15px]">منظومة رقمية سعودية تقرّب بين الخدمات البيئية والمعرفة والمجتمع، وتمنح كل تفاعل فرصة لصناعة أثر مستدام.</p></div><div class="footer-bottom flex items-center justify-between gap-5 border-t border-white/15 pt-[23px] text-[#8bada1] max-[760px]:flex-col max-[760px]:items-start text-[13px]"><p class="m-0">© <span id="year">2026</span> ECOVIA · Concept Landing Page</p><p class="m-0">تصميم تجريبي غير مرتبط بوظائف أو أنظمة إنتاجية.</p></div></div></footer>
+<script>
+(() => {
+  'use strict';
+  // Presentational UI only: no backend, storage, external requests or user-data submission.
+  const tabs = [...document.querySelectorAll('.role-tab')];
+  const panels = {org:document.getElementById('panel-org'), pro:document.getElementById('panel-pro')};
+  const roleSlider = document.querySelector('.role-slider');
+  let activeRole = 'org';
+  const motionOK = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function placeSlider(){
+    const tab = tabs.find(t=>t.dataset.tab===activeRole);
+    if (!tab) return;
+    roleSlider.style.width = tab.offsetWidth + 'px';
+    roleSlider.style.left = tab.offsetLeft + 'px';
+  }
+  function selectRole(key, focus=false){
+    if (!panels[key] || (key===activeRole && roleSlider.style.width)) return;
+    const previous=activeRole;
+    activeRole=key;
+    tabs.forEach(t=>{
+      const selected=t.dataset.tab===key;
+      t.setAttribute('aria-selected', String(selected));
+      t.tabIndex=selected?0:-1;
+      if (selected && focus)t.focus();
+    });
+    Object.entries(panels).forEach(([id,p])=>{
+      p.hidden=id!==key;
+      p.classList.remove('is-entering');
+    });
+    const incoming=panels[key];
+    incoming.style.setProperty('--slide-from', key==='pro'?'-20px':'20px');
+    if(motionOK && previous!==key){void incoming.offsetWidth;incoming.classList.add('is-entering');}
+    placeSlider();
+  }
+  tabs.forEach(t=>{
+    t.addEventListener('click',()=>selectRole(t.dataset.tab));
+    t.addEventListener('keydown',e=>{
+      if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+      e.preventDefault();
+      const i=tabs.indexOf(t);
+      const next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowLeft'?1:-1)+tabs.length)%tabs.length;
+      selectRole(tabs[next].dataset.tab,true);
+    });
+  });
+  placeSlider();
+  window.addEventListener('resize',placeSlider,{passive:true});
+  // Horizontal swipe on the role content switches the category on mobile and desktop.
+  const stage=document.querySelector('.role-stage');
+  let swipe=null;
+  stage.addEventListener('pointerdown',e=>{if(e.button!==0 || e.target.closest('button,a'))return;swipe={x:e.clientX,y:e.clientY,id:e.pointerId};});
+  stage.addEventListener('pointerup',e=>{
+    if(!swipe||swipe.id!==e.pointerId)return;
+    const dx=e.clientX-swipe.x,dy=e.clientY-swipe.y;
+    if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4){selectRole(activeRole==='org'?'pro':'org');}
+    swipe=null;
+  });
+  stage.addEventListener('pointercancel',()=>swipe=null);
+  // Hero stakeholder cards support gentle bounded drag, tapping and keyboard arrow controls.
+  const dragCards=[...document.querySelectorAll('[data-drag-card]')];
+  const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+  function drawCard(card){card.style.transform=`translate3d(${card._x||0}px,${card._y||0}px,0)`;}
+  function highlightCard(card){dragCards.forEach(b=>b.setAttribute('aria-pressed',String(b===card)));}
+  dragCards.forEach(card=>{
+    card._x=0;card._y=0;let drag=null;
+    card.addEventListener('pointerdown',e=>{
+      if(e.button!==0)return;
+      drag={id:e.pointerId,x:e.clientX,y:e.clientY,bx:card._x,by:card._y,moved:false};
+      card.setPointerCapture(e.pointerId);
+      card.classList.add('is-dragging');
+    });
+    card.addEventListener('pointermove',e=>{
+      if(!drag||e.pointerId!==drag.id)return;
+      const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+      if(Math.hypot(dx,dy)>5)drag.moved=true;
+      if(drag.moved){card._x=clamp(drag.bx+dx,-43,43);card._y=clamp(drag.by+dy,-28,28);drawCard(card);}
+    });
+    card.addEventListener('pointerup',e=>{
+      if(!drag||e.pointerId!==drag.id)return;
+      card.classList.remove('is-dragging');
+      highlightCard(card);
+      // Prevent a drag release from triggering an unintended second click.
+      if(drag.moved){card._justDragged=true;setTimeout(()=>card._justDragged=false,0);}
+      drag=null;
+    });
+    card.addEventListener('pointercancel',()=>{drag=null;card.classList.remove('is-dragging');});
+    card.addEventListener('click',()=>{if(!card._justDragged)highlightCard(card);});
+    card.addEventListener('keydown',e=>{
+      const step=12;
+      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+        e.preventDefault();
+        card._x=clamp(card._x+(e.key==='ArrowLeft'?-step:e.key==='ArrowRight'?step:0),-43,43);
+        card._y=clamp(card._y+(e.key==='ArrowUp'?-step:e.key==='ArrowDown'?step:0),-28,28);
+        drawCard(card);highlightCard(card);
+      } else if(e.key==='Escape'){card._x=0;card._y=0;drawCard(card);}
+    });
+  });
+  // Future destinations are buttons with local content previews until their pages exist.
+  const communityCopy={
+    articles:'مقالات مبسطة وقصص من واقع البيئة السعودية، بعيدًا عن النصائح المكررة.',
+    experiences:'تجارب توضح الظواهر البيئية بالاستكشاف، مثل تأثير غياب الأكسجين على الاحتراق.',
+    challenges:'أسئلة ومسابقات ومبادرات بيئية تشجع على التعلم والمشاركة.'
+  };
+  const preview=document.getElementById('community-preview-text');
+  document.querySelectorAll('[data-community]').forEach(button=>button.addEventListener('click',()=>{
+    document.querySelectorAll('[data-community]').forEach(b=>{
+      const selected=b===button;
+      b.classList.toggle('is-current',selected);
+      b.setAttribute('aria-pressed',String(selected));
+    });
+    preview.textContent=communityCopy[button.dataset.community];
+    preview.classList.remove('preview-enter');
+    if(motionOK){void preview.offsetWidth;preview.classList.add('preview-enter');}
+  }));
+  const progress=document.getElementById('scroll-progress');
+  function updateProgress(){const max=document.documentElement.scrollHeight-window.innerHeight;progress.style.width=`${max>0?window.scrollY/max*100:0}%`;}
+  window.addEventListener('scroll',updateProgress,{passive:true});updateProgress();
+  const reveals=[...document.querySelectorAll('.reveal')];
+  if('IntersectionObserver' in window && motionOK){
+    const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{
+      if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target);}
+    }),{threshold:.08});reveals.forEach(el=>observer.observe(el));
+  } else reveals.forEach(el=>el.classList.add('visible'));
+  document.getElementById('year').textContent=new Date().getFullYear();
+})();
+</script>
+</body>
+</html>
