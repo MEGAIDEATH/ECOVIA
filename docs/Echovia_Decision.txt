@@ -21,4 +21,4 @@
 - Enable viewing the status of requests between the specialist and the facility.
 - View chats between the specialist and the facility.
 - View account registration details and enable viewing attachments, such as the specialist's permit and the facility's commercial registration.
-inside /specialist and /organization i want you to remove the old Specialist workspace header (CV printing lives on the CV page).
+inside /specialist and /organization i want you to remove the old Specialist workspace header (CV printing lives on the CV page). and Organization workspace header.
