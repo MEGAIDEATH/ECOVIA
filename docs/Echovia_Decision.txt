@@ -1,1 +1,23 @@
-create a personal page for the orgnization so it can add it's field of work and a previewing picture 
+- Add a profile page for the facility so it can add its field of business, profile picture, and additional information about itself.
+- Add at least one specialist name to review other flows, such as contracts, chats, how the specialist's name appears to the facility, how the specialist appears in the competency directory, and how sending a private request to a specific specialist works.
+- Add a notifications counter on the home page.
+- Enable the "View CV" button inside the chat between the specialist and the facility.
+- View the contract document after signing.
+- On the "Submit New Service Request" page, replace the "Service Name" field with "Service Type" as a multi-select option allowing multiple selections, with the following choices:
+  1. Environmental Activity Classification Service
+  2. Category 1 Construction Environmental Permit Issuance Service
+  3. Category 1 Operational Environmental Permit Issuance Service
+  4. Environmental Management Plan Service
+- Remove the "Price" and "Duration" fields.
+- Add an "Activity Description" field and a "Notes" field.
+- Add a button to switch between the facility and specialist accounts.
+- Add a notifications counter button.
+- When a specialist opens a public request submitted by a facility or a private request, allow the specialist to submit an offer and specify the duration required to execute the service.
+- Keep a service posted by a facility available until a contract is signed, rather than closing it immediately upon request acceptance.
+- Allow multiple specialists to apply for a posted service until a contract is signed with only one specialist.
+- View the contract document after it is signed.
+- Notify the specialist of new service requests added in their region.
+- Add a region filter for the specialist so they can track requests in their region.
+- Enable viewing the status of requests between the specialist and the facility.
+- View chats between the specialist and the facility.
+- View account registration details and enable viewing attachments, such as the specialist's permit and the facility's commercial registration.
