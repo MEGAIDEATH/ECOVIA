@@ -24,3 +24,13 @@
 inside /specialist and /organization i want you to remove the old Specialist workspace header (CV printing lives on the CV page). and Organization workspace header.
 create a md file and write on it what you actually did and what improvement you did and to create an interactive digram where it have the full routes 
 i want the website to be public to if you can pushing "use client" down to tiny interactive buttons/inputs while keeping your page.tsx files as Server Components, combined with Server Actions and URL search params
+Remove the /waiting page and any redirect logic sending unapproved/pending users to /waiting. Instead, update the authentication and authorization flow with the following requirements:
+1. Post-Signup & Login Redirect: When a new user signs up or an unapproved user logs in, log them in normally and redirect them directly to their CV page (/cv or /cv/edit) instead of /waiting.
+2. Route Protection (Pending Users): Allow unapproved users (isApproved === false / status === 'pending') to access and edit their own CV page, profile basics, and logout functionality. If they try to navigate to any other protected routes or approved-only features, redirect them back to their CV page.
+3. UI Restrictions & Status Banner:
+	• On the CV page and navigation bar, hide or disable features/buttons reserved for approved users.
+	• Display a clear, non-blocking banner at the top of the dashboard/CV page letting the user know their account is currently pending approval, and that they can edit their CV while waiting.
+4. Backend / API Security: Ensure backend routes/endpoints for viewing and updating the user's own CV work for unapproved users, while all other protected endpoints strictly require the user to be approved (returning a 403 Forbidden error if an unapproved user attempts to call them).
+5. Cleanup: Delete the unused /waiting page/component and remove dead references to it across the codebase.
+clean the database and create a clean database that makes easy to maintain in the long run and clean tables that connect to each other and easy to follow 
+make the backend more secure and i want you make it more stable and more effective and remove unnecessary code that is unrelated or just full of shit 
