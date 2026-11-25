@@ -1,27 +1,23 @@
 import type { NextRequest } from 'next/server';
 
-import { jsonError, jsonOk, mapError, readJson, asString } from '@/lib/api/http';
+import { asString, jsonError, jsonOk, mapError, readJson } from '@/lib/api/http';
 import { requireAdmin } from '@/lib/auth/session';
-import { getDb } from '@/db';
-import { organizations, specialists } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { isUuid } from '@/lib/utils/ids';
+import { rejectAccount } from '@/repositories/profiles';
 
+/** POST /api/admin/accounts/reject { collection, id, reason } — admin only, audited. */
 export async function POST(request: NextRequest): Promise<Response> {
   try {
-    await requireAdmin(request);
+    const admin = await requireAdmin(request);
     const body = await readJson(request);
     const collection = body?.collection;
-    const id = asString(body?.id);
-    const reason = asString(body?.reason);
-    if ((collection !== 'specialists' && collection !== 'organizations') || !id || !reason) {
+    const id = asString(body?.id, 64);
+    const reason = asString(body?.reason, 1000);
+    if ((collection !== 'specialists' && collection !== 'organizations') || !isUuid(id) || !reason) {
       return jsonError('بيانات غير صالحة.', 400);
     }
-    const db = getDb();
-    if (collection === 'specialists') {
-      await db.update(specialists).set({ status: 'rejected', rejectionReason: reason, updatedAt: new Date() }).where(eq(specialists.id, id));
-    } else {
-      await db.update(organizations).set({ status: 'rejected', rejectionReason: reason, updatedAt: new Date() }).where(eq(organizations.id, id));
-    }
+    const updated = await rejectAccount(collection, id, reason, admin.id);
+    if (!updated) return jsonError('الحساب غير موجود.', 404);
     return jsonOk({ ok: true });
   } catch (error) {
     return mapError(error, 'admin:reject');

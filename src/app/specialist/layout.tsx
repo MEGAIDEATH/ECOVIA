@@ -1,15 +1,26 @@
 import type { ReactNode } from 'react';
 
-import { SpecialistDashboardHeader } from '@/features/specialists/dashboard/SpecialistDashboardHeader';
-import { SpecialistDashboardProvider } from '@/features/specialists/dashboard/SpecialistDashboardProvider';
+import { AppShell } from '@/components/layout/AppShell';
+import { AuthProvider } from '@/features/auth/AuthProvider';
+import { isApprovedStatus } from '@/lib/auth/access';
+import { toClientSession } from '@/lib/auth/clientSession';
+import { getCurrentAccount, requireWorkspacePage } from '@/lib/auth/policies';
+import { countUnreadNotifications } from '@/repositories/notifications';
 
-export default function SpecialistDashboardLayout({ children }: { children: ReactNode }) {
+/**
+ * /specialist/* — requires a specialist profile (any approval state; each
+ * approved-only page re-checks with `requireWorkspacePage('spec', 'approved')`).
+ */
+export default async function SpecialistLayout({ children }: { children: ReactNode }) {
+  // Signed out: every page redirects to /login?next=<its exact path> itself.
+  if (!(await getCurrentAccount())) return children;
+  const { account, profile } = await requireWorkspacePage('spec', 'any', '/specialist');
+  const unread = isApprovedStatus(profile.status) ? await countUnreadNotifications(account.user.id) : 0;
   return (
-    <SpecialistDashboardProvider>
-      <div className="flex flex-col min-h-screen bg-surface">
-        <SpecialistDashboardHeader />
-        <main className="container-brand flex-1 py-8 md:py-10">{children}</main>
-      </div>
-    </SpecialistDashboardProvider>
+    <AuthProvider initial={toClientSession(account)}>
+      <AppShell role="spec" account={account} unreadCount={unread}>
+        {children}
+      </AppShell>
+    </AuthProvider>
   );
 }

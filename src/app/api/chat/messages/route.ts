@@ -1,21 +1,25 @@
 import type { NextRequest } from 'next/server';
 
-import { asString, jsonError, jsonOk, mapError, readJson } from '@/lib/api/http';
-import { requireUser } from '@/lib/auth/session';
-import { listMessages, sendMessage, createContractMessage } from '@/repositories/chat';
+import { jsonError, jsonOk, mapError, readJson } from '@/lib/api/http';
+import { consumeRateLimit, RateLimitError } from '@/lib/auth/rateLimit';
+import { requireChatActor } from '@/lib/chat/actor';
+import { listMessages, MESSAGE_MAX_LENGTH, sendMessage } from '@/repositories/chat';
+
+/** 30 messages per user per minute (DB-backed, shared by every instance). */
+const SEND_RATE_LIMIT = { scope: 'chat-send-user', max: 30, windowSeconds: 60 };
 
 /**
- * GET /api/chat/messages?chatId=...
- * POST /api/chat/messages
+ * GET  /api/chat/messages?chatId=… — latest messages (participants only).
+ * POST /api/chat/messages { chatId, text } — plain text message; the sender
+ *      is always the session user. Contracts are no longer created from chat:
+ *      they are prepared from a selected offer on the request page.
  */
 export async function GET(request: NextRequest): Promise<Response> {
   try {
-    const user = await requireUser(request);
+    const actor = await requireChatActor(request);
     const chatId = request.nextUrl.searchParams.get('chatId');
-    if (!chatId) return jsonError('معرّف المحادثة مطلوب.', 400);
-
-    const messages = await listMessages(chatId, user.id);
-    return jsonOk(messages);
+    if (!chatId || chatId.length > 160) return jsonError('معرّف المحادثة مطلوب.', 400);
+    return jsonOk(await listMessages(chatId, actor));
   } catch (error) {
     return mapError(error, 'chat/messages:get');
   }
@@ -23,40 +27,21 @@ export async function GET(request: NextRequest): Promise<Response> {
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {
-    const user = await requireUser(request);
+    const actor = await requireChatActor(request);
     const body = await readJson(request);
     if (!body) return jsonError('طلب غير صالح.', 400);
 
-    const chatId = asString(body.chatId, 128);
-    if (!chatId) return jsonError('معرّف المحادثة مطلوب.', 400);
-
-    // If it's a contract message
-    if (body.isContract && body.contractData && typeof body.contractData === 'object') {
-      const cd = body.contractData as Record<string, unknown>;
-      const title = asString(cd.title, 200) || 'عقد عمل';
-      const value = asString(cd.value, 50) || '0';
-      const duration = asString(cd.duration, 50) || 'شهر';
-      const orgSig = asString(cd.orgSig, 100) || user.name;
-
-      const message = await createContractMessage(chatId, user.id, {
-        title,
-        value,
-        duration,
-        orgSig,
-      });
-      return jsonOk(message);
+    const chatId = typeof body.chatId === 'string' ? body.chatId.trim() : '';
+    if (!chatId || chatId.length > 160) return jsonError('معرّف المحادثة مطلوب.', 400);
+    if (body.isContract) {
+      return jsonError('تُعدّ العقود من صفحة الطلب بعد اختيار عرض الأخصائي.', 400);
     }
-
-    // Plain message
-    const text = asString(body.text, 5000);
+    const text = typeof body.text === 'string' ? body.text.trim() : '';
     if (!text) return jsonError('نص الرسالة مطلوب.', 400);
+    if (text.length > MESSAGE_MAX_LENGTH) return jsonError(`الرسالة أطول من ${MESSAGE_MAX_LENGTH} حرف.`, 400);
+    if (!(await consumeRateLimit(SEND_RATE_LIMIT, actor.userId))) throw new RateLimitError();
 
-    const message = await sendMessage({
-      chatId,
-      senderUserId: user.id,
-      text,
-    });
-    return jsonOk(message);
+    return jsonOk(await sendMessage(chatId, actor, text));
   } catch (error) {
     return mapError(error, 'chat/messages:post');
   }

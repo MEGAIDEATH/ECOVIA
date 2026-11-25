@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 
 import { getDb } from '@/db';
 import { organizations, specialists } from '@/db/schema';
+import { toOrganization, toSpecialist } from '@/repositories/profiles';
 import type { Organization, Specialist } from '@/types';
 
 import { getAuth } from './index';
@@ -16,7 +17,7 @@ export interface SessionUser {
   role: string;
 }
 
-/** Thrown by every `require*` helper when the request has no valid session. */
+/** Thrown by every `require*` helper when the request has no valid session (HTTP 401). */
 export class UnauthorizedError extends Error {
   constructor(message = 'غير مصرح بالوصول.') {
     super(message);
@@ -24,6 +25,7 @@ export class UnauthorizedError extends Error {
   }
 }
 
+/** Authenticated but not allowed: wrong role, unapproved account, foreign record (HTTP 403). */
 export class ForbiddenError extends Error {
   constructor(message = 'غير مصرح بالوصول.') {
     super(message);
@@ -61,6 +63,14 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   };
 }
 
+/** Requested record does not exist or is outside the caller's scope (HTTP 404). */
+export class NotFoundError extends Error {
+  constructor(message = 'غير موجود.') {
+    super(message);
+    this.name = 'NotFoundError';
+  }
+}
+
 export async function requireUser(request?: Request): Promise<SessionUser> {
   const user = request ? await getSessionUserFromRequest(request) : await getSessionUser();
   if (!user) throw new UnauthorizedError();
@@ -79,75 +89,15 @@ export interface ProfilePair {
   organization: Organization | null;
 }
 
-/** Loads both possible profiles for a user id (legacy dashboards needed both). */
+/** Loads both possible profiles for a user id (a user may own one of each). */
 export async function loadProfilesForUser(userId: string): Promise<ProfilePair> {
   const db = getDb();
   const [specialistRows, organizationRows] = await Promise.all([
     db.select().from(specialists).where(eq(specialists.userId, userId)).limit(1),
     db.select().from(organizations).where(eq(organizations.userId, userId)).limit(1),
   ]);
-
-  const specialist = specialistRows[0];
-  const organization = organizationRows[0];
-
   return {
-    specialist: specialist
-      ? {
-          id: specialist.id,
-          userId: specialist.userId,
-          status: specialist.status,
-          fullName: specialist.fullName,
-          nationalId: specialist.nationalId,
-          email: specialist.email,
-          phone: specialist.phone,
-          license: specialist.license,
-          issueDate: specialist.issueDate,
-          edu: specialist.edu,
-          years: specialist.years,
-          exp: specialist.exp,
-          portfolio: specialist.portfolio,
-          profilePicId: specialist.profileImageId,
-          resumeFileId: specialist.resumeDocumentId,
-          licenseDocId: specialist.licenseDocumentId,
-          createdAt: specialist.createdAt.toISOString(),
-        }
-      : null,
-    organization: organization
-      ? {
-          id: organization.id,
-          userId: organization.userId,
-          status: organization.status,
-          orgName: organization.orgName,
-          crNumber: organization.crNumber,
-          phone: organization.phone,
-          orgDesc: organization.orgDesc,
-          crDocId: organization.crDocumentId,
-          createdAt: organization.createdAt.toISOString(),
-        }
-      : null,
+    specialist: specialistRows[0] ? toSpecialist(specialistRows[0]) : null,
+    organization: organizationRows[0] ? toOrganization(organizationRows[0]) : null,
   };
-}
-
-/** Guards specialist-only endpoints and returns the caller's own profile row. */
-export async function requireSpecialist(userId: string) {
-  const rows = await getDb()
-    .select()
-    .from(specialists)
-    .where(eq(specialists.userId, userId))
-    .limit(1);
-  const profile = rows[0];
-  if (!profile) throw new ForbiddenError('لا يوجد ملف أخصائي لهذا الحساب.');
-  return profile;
-}
-
-/** Guards organization-only endpoints and returns the caller's own profile row. */
-export async function requireOrganization(userId: string) {
-  const rows = await getDb()
-    .select()
-    .from(organizations)
-    .where(eq(organizations.userId, userId))
-    .limit(1);
-  const profile = rows[0];
-  if (!profile) throw new ForbiddenError('لا يوجد ملف منشأة لهذا الحساب.');
-  return profile;
 }

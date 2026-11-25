@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 
 import { jsonError, jsonOk, mapError } from '@/lib/api/http';
+import { consumeRateLimit, RateLimitError } from '@/lib/auth/rateLimit';
 import { requireUser } from '@/lib/auth/session';
 import { buildStorageKey, getStorage } from '@/lib/storage';
 import {
@@ -11,6 +12,9 @@ import {
 } from '@/lib/storage/validation';
 import { createDocument } from '@/repositories/documents';
 
+/** 30 uploads per user per 15 minutes (DB-backed fixed window). */
+const UPLOAD_RATE_LIMIT = { scope: 'upload-user', max: 30, windowSeconds: 15 * 60 };
+
 /**
  * POST /api/files — uploads a file to protected object storage and records its
  * metadata (object key, detected type, size, owner) in PostgreSQL.
@@ -19,7 +23,9 @@ import { createDocument } from '@/repositories/documents';
  */
 export async function POST(request: NextRequest): Promise<Response> {
   try {
+    // Any signed-in account (pending ones upload their CV / logo too).
     const user = await requireUser(request);
+    if (!(await consumeRateLimit(UPLOAD_RATE_LIMIT, user.id))) throw new RateLimitError();
     const formData = await request.formData();
     const file = formData.get('file');
     const kind = formData.get('kind');

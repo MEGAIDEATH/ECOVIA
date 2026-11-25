@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createContract, sendMessage, signContract } from './messageRepository';
+import { sendMessage, signContract } from './messageRepository';
 
 function jsonResponse(body: unknown, ok = true): Response {
   return {
@@ -44,40 +44,15 @@ describe('messageRepository (server-backed chat API)', () => {
     await expect(sendMessage({ chatId: CHAT_ID, text: 'x' })).rejects.toThrow('غير مصرح لك.');
   });
 
-  it('createContract POSTs contractData without a specialist signature', async () => {
-    await createContract(CHAT_ID, {
-      title: 'مسح بيئي',
-      value: '15000',
-      duration: 'شهرين',
-      orgSig: 'منشأة أحمد',
-    });
-
-    expect(fetch).toHaveBeenCalledWith(
-      '/api/chat/messages',
-      expect.objectContaining({ method: 'POST' }),
-    );
-    const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
-    expect(JSON.parse(String(init.body))).toEqual({
-      chatId: CHAT_ID,
-      isContract: true,
-      contractData: {
-        title: 'مسح بيئي',
-        value: '15000',
-        duration: 'شهرين',
-        orgSig: 'منشأة أحمد',
-      },
-    });
-  });
-
-  it('signContract POSTs messageId + signature to the sign endpoint', async () => {
-    await signContract('m1', 'خالد سعيد');
+  it('signContract POSTs the contract reference + signature to the sign endpoint', async () => {
+    await signContract({ contractId: 'c1', messageId: 'm1' }, 'خالد سعيد');
 
     expect(fetch).toHaveBeenCalledWith(
       '/api/chat/contracts/sign',
       expect.objectContaining({ method: 'POST' }),
     );
     const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
-    expect(JSON.parse(String(init.body))).toEqual({ messageId: 'm1', signature: 'خالد سعيد' });
+    expect(JSON.parse(String(init.body))).toEqual({ contractId: 'c1', messageId: 'm1', signature: 'خالد سعيد' });
   });
 
   it('signContract surfaces the server authorization refusal', async () => {
@@ -85,7 +60,7 @@ describe('messageRepository (server-backed chat API)', () => {
       jsonResponse({ error: 'غير مصرح لك بتوقيع هذا العقد.' }, false),
     );
 
-    await expect(signContract('m1', 'signature')).rejects.toThrow(
+    await expect(signContract({ messageId: 'm1' }, 'signature')).rejects.toThrow(
       'غير مصرح لك بتوقيع هذا العقد.',
     );
   });

@@ -1,9 +1,10 @@
 import 'server-only';
 
-import { and, desc, eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import { accountEvents, organizations, specialists } from '@/db/schema';
+import { isUuid } from '@/lib/utils/ids';
 import type { AccountStatus, Organization, Specialist } from '@/types';
 
 type SpecialistRow = typeof specialists.$inferSelect;
@@ -23,6 +24,7 @@ export function toSpecialist(row: SpecialistRow): Specialist {
     issueDate: row.issueDate,
     edu: row.edu,
     city: row.city,
+    region: row.region,
     years: row.years,
     exp: row.exp,
     portfolio: row.portfolio,
@@ -43,6 +45,9 @@ export function toOrganization(row: OrganizationRow): Organization {
     crNumber: row.crNumber,
     phone: row.phone,
     orgDesc: row.orgDesc,
+    businessFields: row.businessFields ?? [],
+    profileImageId: row.profileImageId,
+    website: row.website,
     crDocId: row.crDocumentId,
     createdAt: row.createdAt.toISOString(),
   };
@@ -122,11 +127,13 @@ export async function getOrganizationByUserId(userId: string): Promise<Organizat
 }
 
 export async function getSpecialistById(id: string): Promise<Specialist | null> {
+  if (!isUuid(id)) return null;
   const rows = await getDb().select().from(specialists).where(eq(specialists.id, id)).limit(1);
   return rows[0] ? toSpecialist(rows[0]) : null;
 }
 
 export async function getOrganizationById(id: string): Promise<Organization | null> {
+  if (!isUuid(id)) return null;
   const rows = await getDb().select().from(organizations).where(eq(organizations.id, id)).limit(1);
   return rows[0] ? toOrganization(rows[0]) : null;
 }
@@ -137,6 +144,7 @@ export interface SpecialistProfilePatch {
   phone?: string;
   edu?: string | null;
   city?: string | null;
+  region?: string | null;
   years?: string | null;
   exp?: string | null;
   portfolio?: string | null;
@@ -144,16 +152,31 @@ export interface SpecialistProfilePatch {
   resumeDocumentId?: string | null;
 }
 
+export interface OrganizationProfilePatch {
+  orgName?: string;
+  phone?: string;
+  orgDesc?: string;
+  businessFields?: string[];
+  website?: string | null;
+  profileImageId?: string | null;
+}
+
+/**
+ * Updates only the facility-editable fields of the caller's own organization.
+ * Status, CR number and the CR document are not patchable here.
+ */
+export async function updateOrganizationProfile(userId: string, patch: OrganizationProfilePatch): Promise<void> {
+  await getDb()
+    .update(organizations)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(eq(organizations.userId, userId));
+}
+
 /**
  * Updates only the CV fields the owner is allowed to change. Status, national
  * id, license and creation time are deliberately not patchable — the same
  * guarantee expressed by the affected-keys allowlist of the legacy rules.
  */
-export async function updateOrganizationProfile(userId: string, patch: { orgName?: string; phone?: string; orgDesc?: string }): Promise<void> {
-  const db = getDb();
-  await db.update(organizations).set({ ...patch, updatedAt: new Date() }).where(eq(organizations.userId, userId));
-}
-
 export async function updateSpecialistProfile(
   userId: string,
   patch: SpecialistProfilePatch,
@@ -175,10 +198,12 @@ export async function listApprovedSpecialists() {
       fullName: specialists.fullName,
       edu: specialists.edu,
       city: specialists.city,
+      region: specialists.region,
       years: specialists.years,
     })
     .from(specialists)
     .where(eq(specialists.status, 'approved'))
+    .orderBy(specialists.fullName)
     .limit(500);
 }
 
@@ -193,7 +218,7 @@ export async function listApprovedOrganizations() {
 
 export type AdminTarget = 'specialists' | 'organizations';
 
-/** Sets the approval flag; only ever called from an admin-authorized route. */
+/** Sets the approval status; only ever called from an admin-authorized route. */
 export async function approveAccount(
   target: AdminTarget,
   id: string,
@@ -205,12 +230,12 @@ export async function approveAccount(
     target === 'specialists'
       ? await db
           .update(specialists)
-          .set({ status, updatedAt: new Date() })
+          .set({ status, rejectionReason: null, updatedAt: new Date() })
           .where(eq(specialists.id, id))
           .returning({ id: specialists.id })
       : await db
           .update(organizations)
-          .set({ status, updatedAt: new Date() })
+          .set({ status, rejectionReason: null, updatedAt: new Date() })
           .where(eq(organizations.id, id))
           .returning({ id: organizations.id });
 
@@ -221,6 +246,30 @@ export async function approveAccount(
     action: 'account.approved',
     targetKind: target === 'specialists' ? 'specialist' : 'organization',
     targetId: id,
+  });
+  return true;
+}
+
+/** Rejects an account with a reason (admin only) and records the audit event. */
+export async function rejectAccount(
+  target: AdminTarget,
+  id: string,
+  reason: string,
+  actorUserId: string,
+): Promise<boolean> {
+  const db = getDb();
+  const values = { status: 'rejected' as AccountStatus, rejectionReason: reason, updatedAt: new Date() };
+  const updated =
+    target === 'specialists'
+      ? await db.update(specialists).set(values).where(eq(specialists.id, id)).returning({ id: specialists.id })
+      : await db.update(organizations).set(values).where(eq(organizations.id, id)).returning({ id: organizations.id });
+  if (updated.length === 0) return false;
+  await db.insert(accountEvents).values({
+    actorUserId,
+    action: 'account.rejected',
+    targetKind: target === 'specialists' ? 'specialist' : 'organization',
+    targetId: id,
+    detail: reason.slice(0, 500),
   });
   return true;
 }
@@ -255,25 +304,4 @@ export async function listAccountsForAdmin() {
       .orderBy(desc(organizations.createdAt)),
   ]);
   return { specialists: specialistRows, organizations: organizationRows };
-}
-
-/** Ownership check used by the file-serving route. */
-export async function isApprovedProfileOfKind(
-  userId: string,
-  kind: AdminTarget,
-): Promise<boolean> {
-  const db = getDb();
-  const rows =
-    kind === 'specialists'
-      ? await db
-          .select({ id: specialists.id })
-          .from(specialists)
-          .where(and(eq(specialists.userId, userId), eq(specialists.status, 'approved')))
-          .limit(1)
-      : await db
-          .select({ id: organizations.id })
-          .from(organizations)
-          .where(and(eq(organizations.userId, userId), eq(organizations.status, 'approved')))
-          .limit(1);
-  return rows.length > 0;
 }

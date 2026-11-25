@@ -43,6 +43,13 @@
       "when": 1794393849821,
       "tag": "0005_otp_rate_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795564254237,
+      "tag": "0006_marketplace_offers_contracts",
+      "breakpoints": true
     }
   ]
 }

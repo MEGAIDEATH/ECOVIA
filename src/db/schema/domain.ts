@@ -5,11 +5,14 @@
  * foreign keys and PostgreSQL enums, replacing the flat document blobs the
  * prototype used.
  */
+import { sql } from 'drizzle-orm';
 import {
+  check,
   index,
   integer,
   pgEnum,
   pgTable,
+  smallint,
   text,
   timestamp,
   uuid,
@@ -31,6 +34,17 @@ export const documentKind = pgEnum('document_kind', [
   'commercial_registration',
 ]);
 
+/**
+ * Canonical Saudi regions (seeded by migration 0006, mirrored by
+ * `src/lib/regions.ts`). `code` is the URL identifier; `name_ar` is the value
+ * stored by the referencing columns (FK with ON UPDATE CASCADE).
+ */
+export const regions = pgTable('regions', {
+  code: text('code').primaryKey(),
+  nameAr: text('name_ar').notNull().unique(),
+  sortOrder: smallint('sort_order').notNull().unique(),
+});
+
 export const specialists = pgTable(
   'specialists',
   {
@@ -51,6 +65,8 @@ export const specialists = pgTable(
     /** CV fields (legacy `saveCVSpecialist`). */
     edu: text('edu'),
     city: text('city'),
+    /** Region the specialist serves; drives regional request notifications. */
+    region: text('region').references(() => regions.nameAr, { onUpdate: 'cascade', onDelete: 'set null' }),
     years: text('years'),
     exp: text('exp'),
     portfolio: text('portfolio'),
@@ -61,7 +77,11 @@ export const specialists = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('specialists_status_idx').on(table.status)],
+  (table) => [
+    index('specialists_status_idx').on(table.status),
+    // Regional fan-out: approved specialists of one region.
+    index('specialists_region_status_idx').on(table.region, table.status),
+  ],
 );
 
 export const organizations = pgTable(
@@ -74,15 +94,25 @@ export const organizations = pgTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     status: accountStatus('status').notNull().default('pending'),
     rejectionReason: text('rejection_reason'),
+    /** Canonical facility name (registration name; editable on the profile). */
     orgName: text('org_name').notNull(),
     crNumber: text('cr_number').notNull(),
     phone: text('phone').notNull(),
+    /** "نبذة عن الجهة" — captured at registration, edited on the profile page. */
     orgDesc: text('org_desc').notNull(),
+    /** Field(s) of business, short labels entered by the facility (≤ 10). */
+    businessFields: text('business_fields').array().notNull().default(sql`'{}'::text[]`),
+    /** Logo / profile picture (`documents.kind = 'profile_image'`). */
+    profileImageId: uuid('profile_image_id').references(() => documents.id, { onDelete: 'set null' }),
+    website: text('website'),
     crDocumentId: uuid('cr_document_id').references(() => documents.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('organizations_status_idx').on(table.status)],
+  (table) => [
+    index('organizations_status_idx').on(table.status),
+    check('organizations_business_fields_max', sql`cardinality(${table.businessFields}) <= 10`),
+  ],
 );
 
 export const documents = pgTable(

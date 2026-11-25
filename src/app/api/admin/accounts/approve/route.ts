@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { jsonError, jsonOk, mapError, readJson } from '@/lib/api/http';
 import { requireAdmin } from '@/lib/auth/session';
+import { isUuid } from '@/lib/utils/ids';
 import { approveAccount, type AdminTarget } from '@/repositories/profiles';
 
 /**
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     if (!target || (target !== 'specialists' && target !== 'organizations')) {
       return jsonError('نوع الحساب غير صالح.', 400);
     }
-    if (!id || typeof id !== 'string') {
+    if (!isUuid(id)) {
       return jsonError('معرّف الحساب مطلوب.', 400);
     }
 

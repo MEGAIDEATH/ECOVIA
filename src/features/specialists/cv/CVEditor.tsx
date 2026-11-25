@@ -1,32 +1,36 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
+import { REGIONS, regionByName } from '@/lib/regions';
 import { cvSchema, type CvValues } from '@/lib/validation/forms';
 import { documentIdFromUrl, fileUrl } from '@/lib/utils/cv';
-import { useAuth } from '@/features/auth/AuthProvider';
 import {
   uploadProfileImage,
   uploadResume,
   UploadValidationError,
 } from '@/features/storage/storageService';
+import type { Specialist } from '@/types';
 
-import { useSpecialistDashboard } from '../dashboard/SpecialistDashboardProvider';
 import { updateSpecialistProfile } from '../specialistRepository';
 import { printElement } from '@/lib/print';
 
 import { CVDocument } from './CVDocument';
 import { CVPreviewModal } from './CVPreviewModal';
 
-/** Specialist CV editor (legacy `scontent-cv`). */
-export function CVEditor() {
-  const { specialist, refresh } = useSpecialistDashboard();
-  const { user } = useAuth();
+/**
+ * Specialist CV editor (own profile only — also used by pending accounts).
+ * Saves through PATCH /api/specialist/profile, then re-renders the server page.
+ */
+export function CVEditor({ specialist }: { specialist: Specialist }) {
+  const router = useRouter();
   const { showToast } = useToast();
+  const [regionCode, setRegionCode] = useState(regionByName(specialist.region)?.code ?? '');
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -67,7 +71,6 @@ export function CVEditor() {
   });
 
   const handlePicChange = async (file: File) => {
-    if (!user) return;
     const localUrl = URL.createObjectURL(file);
     setPicPreview(localUrl);
     setPicUploading(true);
@@ -92,7 +95,6 @@ export function CVEditor() {
   };
 
   const handleResumeChange = async (file: File) => {
-    if (!user) return;
     setResumeName(file.name);
     setResumeUploading(true);
     try {
@@ -113,7 +115,6 @@ export function CVEditor() {
   };
 
   const onSubmit = handleSubmit(async (values: CvValues) => {
-    if (!user) return;
     setSaving(true);
     try {
       // Wait for in-flight uploads so the saved profile uses final URLs.
@@ -131,12 +132,13 @@ export function CVEditor() {
         years: values.years,
         exp: values.exp,
         portfolio: values.portfolio,
+        region: regionCode,
         profilePicId: documentIdFromUrl(finalPic),
         resumeFileId: documentIdFromUrl(finalResume),
       });
       setPicUrl(finalPic ?? null);
       setResumeUrl(finalResume ?? null);
-      await refresh();
+      router.refresh();
       showToast('تم حفظ التحديثات!');
     } catch (error) {
       console.error('[cv] save failed:', error);
@@ -299,6 +301,28 @@ export function CVEditor() {
               className={EDIT_INPUT}
               placeholder="مثال: 5"
             />
+          </div>
+          <div>
+            <label htmlFor="cv_region" className={FIELD_LABEL}>
+              منطقة العمل
+            </label>
+            <select
+              id="cv_region"
+              value={regionCode}
+              onChange={(event) => setRegionCode(event.target.value)}
+              aria-describedby="cv_region_hint"
+              className={EDIT_INPUT}
+            >
+              <option value="">لم تُحدَّد</option>
+              {REGIONS.map((region) => (
+                <option key={region.code} value={region.code}>
+                  {region.nameAr}
+                </option>
+              ))}
+            </select>
+            <p id="cv_region_hint" className="field-hint">
+              تصلك إشعارات بطلبات الخدمة الجديدة في هذه المنطقة.
+            </p>
           </div>
           <div>
             <label htmlFor="cv_city" className={FIELD_LABEL}>

@@ -1,27 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
-import { contractSchema, cvSchema } from './forms';
-
-describe('contractSchema', () => {
-  const valid = { title: 'مسح بيئي', duration: 'شهرين', value: '15000', orgSig: 'أحمد' };
-
-  it('accepts a complete contract', () => {
-    expect(contractSchema.safeParse(valid).success).toBe(true);
-  });
-
-  it('requires every field (legacy required attributes)', () => {
-    expect(contractSchema.safeParse({ ...valid, title: '' }).success).toBe(false);
-    expect(contractSchema.safeParse({ ...valid, duration: ' ' }).success).toBe(false);
-    expect(contractSchema.safeParse({ ...valid, value: '' }).success).toBe(false);
-    expect(contractSchema.safeParse({ ...valid, orgSig: '' }).success).toBe(false);
-    expect(contractSchema.safeParse({}).success).toBe(false);
-  });
-});
+import { cvSchema } from './forms';
 
 describe('cvSchema', () => {
-  it('accepts empty optional CV data (legacy had no required fields)', () => {
+  it('requires only the name; every other CV field is optional', () => {
     const empty = { fullName: '', email: '', phone: '', edu: '', city: '', years: '', exp: '', portfolio: '' };
-    expect(cvSchema.safeParse(empty).success).toBe(true);
+    expect(cvSchema.safeParse(empty).success).toBe(false);
+    expect(cvSchema.safeParse({ ...empty, fullName: 'خالد سعيد' }).success).toBe(true);
+  });
+
+  it('bounds lengths and the years of experience', () => {
+    const base = { fullName: 'خالد', email: '', phone: '', edu: '', city: '', years: '', exp: '', portfolio: '' };
+    expect(cvSchema.safeParse({ ...base, years: '12' }).success).toBe(true);
+    expect(cvSchema.safeParse({ ...base, years: '120' }).success).toBe(false);
+    expect(cvSchema.safeParse({ ...base, years: '5.5' }).success).toBe(false);
+    expect(cvSchema.safeParse({ ...base, exp: 'x'.repeat(5001) }).success).toBe(false);
   });
 
   it('rejects malformed email when provided', () => {

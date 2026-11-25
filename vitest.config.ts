@@ -14,6 +14,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // DB-backed suites run separately: `npm run test:integration`.
+    exclude: ['src/**/*.integration.test.ts', 'node_modules/**'],
     css: false,
     restoreMocks: true,
     testTimeout: 15000,

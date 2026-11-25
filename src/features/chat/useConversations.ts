@@ -5,7 +5,10 @@ import { fetchConversations } from './conversationRepository';
 import type { Conversation, UserRole } from '@/types';
 
 export interface ConversationView extends Conversation {
+  /** Counterpart's user id (chat key part). */
   otherId: string | null;
+  /** Counterpart's PROFILE id (specialists.id / organizations.id) — used for CV / profile links. */
+  otherProfileId: string | null;
   otherName: string;
 }
 
@@ -39,6 +42,7 @@ export const useConversations = (
           return {
             ...c,
             otherId,
+            otherProfileId: (role === 'spec' ? c.organizationId : c.specialistId) ?? null,
             // Each side sees the counterpart's name; generic label as fallback.
             otherName: (role === 'spec' ? c.organizationName : c.specialistName) || 'محادثة',
           };

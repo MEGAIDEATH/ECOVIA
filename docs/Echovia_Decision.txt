@@ -34,3 +34,99 @@ Remove the /waiting page and any redirect logic sending unapproved/pending users
 5. Cleanup: Delete the unused /waiting page/component and remove dead references to it across the codebase.
 clean the database and create a clean database that makes easy to maintain in the long run and clean tables that connect to each other and easy to follow 
 make the backend more secure and i want you make it more stable and more effective and remove unnecessary code that is unrelated or just full of shit 
+the skills that claude have 
+Active
+Connectors
+
+
+Figma
+Connector
+By Figma
+
+GitHub
+Built-in integration
+By Anthropic
+
+Neon icon
+Neon
+Connector
+By Neon (A Databricks, Inc. company)
+
+
+Vercel
+Connector
+By Vercel
+Other plugins
+
+10x-Team
+Community
+Commands & skills
+jaan-mustafa/10x-team
+
+Backend Design
+Community
+Hook, agents, commands & skills
+sheitabrk/backend-design
+
+Data icon
+Data
+Connectors & skills
+anthropics/knowledge-work-plugins
+
+Design icon
+Design
+Connectors & skills
+anthropics/knowledge-work-plugins
+
+design-skills icon
+design-skills
+Community
+Skills
+cuellarfr/design-skills
+
+frontend-design icon
+frontend-design
+Skill
+anthropics/claude-plugins-official
+
+mindmap-skills
+Community
+Skills
+galiacheng/mindmap-skills
+
+system-design-skills
+Community
+Agent, command & skills
+proyecto26/system-design-skills
+
+VectorLab UI/UX Skills
+Community
+Skills
+vectorlabau/skills
+
+Vercel icon
+Vercel
+Hooks, agents, commands, connector & skills
+vercel/vercel-plugin
+
+Included
+
+deep-research
+Skill
+From Anthropic
+
+google-workspace
+Skill
+From Anthropic
+
+import-memory
+Skill
+From Anthropic
+
+morning
+Skill
+From Anthropic
+
+skill-creator
+Skill
+From Anthropic

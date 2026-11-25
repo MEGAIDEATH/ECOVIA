@@ -6,19 +6,19 @@ import { useState } from 'react';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { Field } from '@/components/ui/Field';
 import { LoadingButton } from '@/components/ui/LoadingButton';
-import { useAuth } from '@/features/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
+import { safeRedirectPath } from '@/lib/utils/url';
 
 export default function SetPasswordForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const { refresh } = useAuth();
   const { showToast } = useToast();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const next = params.get('next') || '/';
+  // Only same-origin paths (no open redirect through ?next=).
+  const next = safeRedirectPath(params.get('next')) ?? '/dashboard';
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -34,9 +34,9 @@ export default function SetPasswordForm() {
         showToast(data?.error ?? 'تعذر إعداد كلمة المرور.', true);
         return;
       }
-      await refresh();
       showToast('تم إعداد كلمة المرور بنجاح.');
-      router.push(next);
+      router.replace(next);
+      router.refresh();
     } finally {
       setSubmitting(false);
     }

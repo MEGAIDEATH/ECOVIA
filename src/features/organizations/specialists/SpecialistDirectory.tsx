@@ -1,18 +1,20 @@
 'use client';
 
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { useAuth } from '@/features/auth/AuthProvider';
-import { getApprovedSpecialists } from '@/features/specialists/specialistRepository';
+import { REGIONS } from '@/lib/regions';
 import type { PublicSpecialistSummary } from '@/types';
 
 import { SpecialistDirectoryCard } from './SpecialistDirectoryCard';
 
 interface SpecialistDirectoryProps {
+  /** Approved specialists, loaded and authorized on the server (the viewer excluded). */
+  specialists: PublicSpecialistSummary[];
   onViewCv: (specialist: PublicSpecialistSummary) => void;
   onContact: (specialist: PublicSpecialistSummary) => void;
+  onPrivateRequest?: (specialist: PublicSpecialistSummary) => void;
 }
 
 function parseYears(value: PublicSpecialistSummary['years']): number | null {
@@ -29,31 +31,12 @@ const YEAR_OPTIONS = [
   { value: '11+', label: 'أكثر من 10 سنوات' },
 ];
 
-export function SpecialistDirectory({ onViewCv, onContact }: SpecialistDirectoryProps) {
-  const { user } = useAuth();
-  const [specialists, setSpecialists] = useState<PublicSpecialistSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+export function SpecialistDirectory({ specialists, onViewCv, onContact, onPrivateRequest }: SpecialistDirectoryProps) {
   const [query, setQuery] = useState('');
   const [yearsFilter, setYearsFilter] = useState('');
   const [cityFilter, setCityFilter] = useState('');
+  const [regionFilter, setRegionFilter] = useState('');
   const deferredQuery = useDeferredValue(query);
-
-  useEffect(() => {
-    let active = true;
-    getApprovedSpecialists()
-      .then((list) => {
-        if (active) setSpecialists(list.filter((spec) => spec.userId !== user?.id));
-      })
-      .catch((err: unknown) => {
-        console.error('[specialist-directory] load failed:', err);
-        if (active) setError(true);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => { active = false; };
-  }, [user?.id]);
 
   const filtered = useMemo(() => {
     const normalized = deferredQuery.trim().toLowerCase();
@@ -65,6 +48,7 @@ export function SpecialistDirectory({ onViewCv, onContact }: SpecialistDirectory
       if (cityFilter.trim()) {
         if ((spec.city ?? '').toLowerCase() !== cityFilter.trim().toLowerCase()) return false;
       }
+      if (regionFilter && spec.region !== regionFilter) return false;
       if (yearsFilter) {
         const n = parseYears(spec.years);
         if (n === null) return false;
@@ -75,14 +59,15 @@ export function SpecialistDirectory({ onViewCv, onContact }: SpecialistDirectory
       }
       return true;
     });
-  }, [specialists, deferredQuery, yearsFilter, cityFilter]);
+  }, [specialists, deferredQuery, yearsFilter, cityFilter, regionFilter]);
 
-  const hasFilters = Boolean(query.trim() || yearsFilter || cityFilter);
+  const hasFilters = Boolean(query.trim() || yearsFilter || cityFilter || regionFilter);
 
   const clearFilters = () => {
     setQuery('');
     setYearsFilter('');
     setCityFilter('');
+    setRegionFilter('');
   };
 
   return (
@@ -115,6 +100,20 @@ export function SpecialistDirectory({ onViewCv, onContact }: SpecialistDirectory
               ))}
             </select>
           </div>
+          <div className="md:w-56">
+            <label htmlFor="region-filter" className="sr-only">فلترة حسب المنطقة</label>
+            <select
+              id="region-filter"
+              value={regionFilter}
+              onChange={(event) => setRegionFilter(event.target.value)}
+              className="field-input"
+            >
+              <option value="">كل المناطق</option>
+              {REGIONS.map((region) => (
+                <option key={region.code} value={region.nameAr}>{region.nameAr}</option>
+              ))}
+            </select>
+          </div>
           <div className="md:w-48">
             <label htmlFor="city-filter" className="sr-only">فلترة حسب المدينة</label>
             <input
@@ -136,13 +135,17 @@ export function SpecialistDirectory({ onViewCv, onContact }: SpecialistDirectory
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {loading && <div className="col-span-full"><LoadingState /></div>}
-        {error && !loading && <div className="col-span-full"><ErrorState /></div>}
-        {!loading && !error && filtered.length === 0 && (
+        {filtered.length === 0 && (
           <div className="card col-span-full"><EmptyState message={hasFilters ? 'لا توجد نتائج مطابقة' : 'لا يوجد كفاءات معتمدة'} /></div>
         )}
-        {!loading && !error && filtered.map((spec) => (
-          <SpecialistDirectoryCard key={spec.id} specialist={spec} onViewCv={() => onViewCv(spec)} onContact={() => onContact(spec)} />
+        {filtered.map((spec) => (
+          <SpecialistDirectoryCard
+            key={spec.id}
+            specialist={spec}
+            onViewCv={() => onViewCv(spec)}
+            onContact={() => onContact(spec)}
+            onPrivateRequest={onPrivateRequest ? () => onPrivateRequest(spec) : undefined}
+          />
         ))}
       </div>
     </div>

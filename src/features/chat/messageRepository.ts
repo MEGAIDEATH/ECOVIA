@@ -1,4 +1,3 @@
-import type { ContractValues } from '@/lib/validation/forms';
 import type { Message } from '@/types';
 
 export interface SendMessageInput {
@@ -20,32 +19,15 @@ export async function sendMessage(input: SendMessageInput): Promise<Message> {
   return res.json();
 }
 
-export async function createContract(chatId: string, values: ContractValues): Promise<void> {
-  const res = await fetch('/api/chat/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chatId,
-      isContract: true,
-      contractData: {
-        title: values.title,
-        value: values.value,
-        duration: values.duration,
-        orgSig: values.orgSig,
-      },
-    }),
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => null);
-    throw new Error(data?.error || 'تعذر إرسال العقد.');
-  }
-}
-
-export async function signContract(messageId: string, signature: string): Promise<void> {
+/** Signs a contract from its chat card (same atomic server path as the request page). */
+export async function signContract(
+  target: { contractId?: string; messageId: string },
+  signature: string,
+): Promise<void> {
   const res = await fetch('/api/chat/contracts/sign', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messageId, signature }),
+    body: JSON.stringify({ ...target, signature }),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => null);

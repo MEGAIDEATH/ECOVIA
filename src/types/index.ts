@@ -36,6 +36,8 @@ export interface Specialist {
   /** Specialization (التخصص الدقيق). */
   edu?: string | null;
   city?: string | null;
+  /** Canonical region the specialist serves (regional notifications). */
+  region?: string | null;
   years?: string | number | null;
   /** Detailed experience/projects description. */
   exp?: string | null;
@@ -60,6 +62,11 @@ export interface Organization {
   crNumber: string;
   phone: string;
   orgDesc: string;
+  /** Field(s) of business shown on the facility profile. */
+  businessFields?: string[];
+  /** Logo / profile picture document id. */
+  profileImageId?: string | null;
+  website?: string | null;
   /** Uploaded commercial registration document id. */
   crDocId?: string | null;
   createdAt?: string | null;
@@ -75,12 +82,16 @@ export type PublicSpecialist = Omit<Specialist, 'nationalId'> & {
  * (`chat_{orgUserId}_{specUserId}`) the server expects. */
 export type PublicSpecialistSummary = Pick<
   Specialist,
-  'id' | 'userId' | 'status' | 'fullName' | 'edu' | 'years' | 'city'
+  'id' | 'userId' | 'status' | 'fullName' | 'edu' | 'years' | 'city' | 'region'
 >;
 
-export type ContractStatus = 'pending' | 'signed';
+export type ContractStatus = 'pending' | 'signed' | 'cancelled';
 
 export interface ContractData {
+  /** Contract id (`contracts.id`) — opens the contract document page. */
+  contractId?: string;
+  /** Request the contract belongs to (null on legacy chat contracts). */
+  serviceRequestId?: string | null;
   title: string;
   value: string;
   duration: string;
@@ -105,6 +116,9 @@ export interface Conversation {
   chatId: string;
   /** [organizationUserId, specialistUserId] — kept for client display logic. */
   participants: string[];
+  /** Profile ids of both sides (CV / facility links use these, never user ids). */
+  organizationId?: string;
+  specialistId?: string;
   lastMessage: string;
   lastMessageAt?: string | null;
   lastMessageIsContract?: boolean;
@@ -145,32 +159,106 @@ export type ServiceRequestStatus =
 
 export type ServiceDurationUnit = 'day' | 'week' | 'month';
 
-/** A general service request published by an organization. */
+export type RequestVisibility = 'public' | 'private';
+
+export type OfferStatus = 'submitted' | 'selected' | 'accepted' | 'declined' | 'withdrawn';
+
+/** A specialist's offer on a service request (facility and specialist views). */
+export interface Offer {
+  id: string;
+  serviceRequestId: string;
+  specialistId: string;
+  specialistName: string;
+  specialistEdu?: string | null;
+  specialistRegion?: string | null;
+  specialistYears?: string | null;
+  durationValue: number;
+  durationUnit: ServiceDurationUnit;
+  /** Display label, e.g. "3 أسابيع". */
+  durationLabel: string;
+  message?: string | null;
+  status: OfferStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Contract as listed on request / offer screens (no signatures). */
+export interface ContractSummary {
+  id: string;
+  serviceRequestId: string | null;
+  offerId: string | null;
+  status: ContractStatus;
+  title: string;
+  value: string;
+  duration: string;
+  specialistId: string;
+  organizationId: string;
+  createdAt: string;
+  signedAt: string | null;
+}
+
+/**
+ * A service request published by a facility.
+ * Legacy rows (before the 0006 form) carry `serviceName`, `cost` and
+ * `duration` instead of `serviceTypes` / `activityDescription`.
+ */
 export interface ServiceRequest {
   id: string;
   organizationId: string;
-  /** Specialist who took the request (set on accept). */
+  organizationName?: string;
+  /** The contracted specialist (set when the contract is signed). */
   specialistId?: string | null;
-  serviceName: string;
-  /** Cost in SAR; null only on requests created before costs existed. */
-  cost?: number | null;
-  durationValue?: number | null;
-  durationUnit?: ServiceDurationUnit | null;
-  /** Display label for the duration (always present). */
-  duration: string;
+  specialistName?: string;
+  serviceTypes: string[];
+  activityDescription?: string | null;
+  notes?: string | null;
+  visibility: RequestVisibility;
+  /** Private requests: the only specialist who can see and answer it. */
+  targetSpecialistId?: string | null;
+  targetSpecialistName?: string;
   region: string;
-  serviceCategory?: string | null;
   city?: string | null;
-  description?: string | null;
   status: ServiceRequestStatus;
   rejectionReason?: string | null;
   conversationId?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
-  organizationName?: string;
-  /** Name of the specialist who took the request (organization view). */
-  specialistName?: string;
-  /** Specialist view only: this specialist declined it (stays open for others). */
+  /** Legacy fields (pre-0006 form). */
+  serviceName?: string | null;
+  serviceCategory?: string | null;
+  cost?: number | null;
+  duration?: string | null;
+  description?: string | null;
+  /** Facility view: number of active offers. */
+  offerCount?: number;
+  /** A contract awaiting the specialist's signature exists. */
+  hasPendingContract?: boolean;
+  /** Specialist view: this specialist declined it (stays open for others). */
   declinedByMe?: boolean;
+  /** Specialist view: status of this specialist's own offer. */
+  myOfferStatus?: OfferStatus | null;
 }
 
+export type NotificationType =
+  | 'request.published'
+  | 'request.private'
+  | 'offer.received'
+  | 'offer.updated'
+  | 'offer.withdrawn'
+  | 'offer.declined'
+  | 'contract.prepared'
+  | 'contract.withdrawn'
+  | 'contract.signed'
+  | 'request.awarded_elsewhere'
+  | 'request.cancelled'
+  | 'request.status';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType | string;
+  title: string;
+  message: string | null;
+  relatedId: string | null;
+  isRead: boolean;
+  createdAt: string;
+}

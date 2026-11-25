@@ -19,10 +19,13 @@ export interface ClientUser {
   role: string;
 }
 
-export interface AuthContextValue {
+export interface ClientSession {
   user: ClientUser | null;
   specialist: Specialist | null;
   organization: Organization | null;
+}
+
+export interface AuthContextValue extends ClientSession {
   loading: boolean;
   refresh: () => Promise<ClientUser | null>;
 }
@@ -35,42 +38,39 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<ClientUser | null>(null);
-  const [specialist, setSpecialist] = useState<Specialist | null>(null);
-  const [organization, setOrganization] = useState<Organization | null>(null);
-  const [loading, setLoading] = useState(true);
+/**
+ * Client view of the session.
+ * - With `initial` (workspace layouts): the server already resolved the
+ *   session, so nothing is fetched — client islands just read it.
+ * - Without it (auth screens): bootstraps once from GET /api/session.
+ * Authorization never depends on this context; it is display state only.
+ */
+export function AuthProvider({ children, initial }: { children: ReactNode; initial?: ClientSession }) {
+  const [session, setSession] = useState<ClientSession>(
+    initial ?? { user: null, specialist: null, organization: null },
+  );
+  const [loading, setLoading] = useState(!initial);
 
   const refresh = useCallback(async () => {
     const res = await fetch('/api/session').catch(() => null);
     const data = res?.ok ? await res.json().catch(() => null) : null;
-
-    if (data?.authenticated) {
-      setUser(data.user);
-      setSpecialist(data.specialist);
-      setOrganization(data.organization);
-      setLoading(false);
-      return data.user as ClientUser;
-    }
-
-    setUser(null);
-    setSpecialist(null);
-    setOrganization(null);
+    const next: ClientSession = data?.authenticated
+      ? { user: data.user, specialist: data.specialist, organization: data.organization }
+      : { user: null, specialist: null, organization: null };
+    setSession(next);
     setLoading(false);
-    return null;
+    return next.user;
   }, []);
 
   useEffect(() => {
-    // Bootstrap the session once. `refresh` awaits the network before any
-    // setState, so nothing is set synchronously during this commit.
+    if (initial) return;
+    // `refresh` awaits the network before any setState, so nothing is set
+    // synchronously during this commit.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- setState runs only after `await fetch`
     void refresh();
-  }, [refresh]);
+  }, [initial, refresh]);
 
-  const value = useMemo(
-    () => ({ user, specialist, organization, loading, refresh }),
-    [user, specialist, organization, loading, refresh],
-  );
+  const value = useMemo(() => ({ ...session, loading, refresh }), [session, loading, refresh]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

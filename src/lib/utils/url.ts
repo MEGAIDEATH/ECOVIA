@@ -51,8 +51,8 @@ export function safeRedirectPath(value: string | null | undefined): string | nul
   const trimmed = value.trim();
   if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return null;
   if (trimmed.includes('\\')) return null;
-  // Reject control characters and CR/LF injection.
-  if (/[\\r\\n]/.test(trimmed)) return null;
+  // Reject control characters (CR/LF header injection, NUL, …).
+  if (/[\u0000-\u001f\u007f]/.test(trimmed)) return null;
   try {
     const url = new URL(trimmed, 'http://ecovia.local');
     if (url.origin !== 'http://ecovia.local') return null;

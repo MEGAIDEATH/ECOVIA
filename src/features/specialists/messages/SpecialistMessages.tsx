@@ -3,7 +3,10 @@
 import { ChatLayout } from '@/features/chat/ChatLayout';
 import { useAuth } from '@/features/auth/AuthProvider';
 
-/** Specialist messages tab (legacy requests pane + secure-channel badge). */
+/**
+ * Specialist messages. (The former "قناة مشفرة" badge was removed: messages
+ * are protected in transit and by access control, not end-to-end encrypted.)
+ */
 export function SpecialistMessages() {
   const { user } = useAuth();
   if (!user) return null;
@@ -12,16 +15,16 @@ export function SpecialistMessages() {
     <ChatLayout
       role="spec"
       currentUid={user.id}
-      listTitle="الطلبات والمحادثات"
+      listTitle="المحادثات"
       listIcon="inbox"
       emptyIcon="forum"
-      emptyTitle="نافذة التواصل الآمن"
-      emptyDescription="اختر محادثة من القائمة لعرض التفاصيل أو الموافقة على الطلبات الجديدة."
+      emptyTitle="المراسلات مع المنشآت"
+      emptyDescription="اختر محادثة من القائمة. تبدأ المحادثة مع منشأة بعد تقديم عرض على أحد طلباتها أو عند تواصلها معك."
       inputPlaceholder="اكتب رسالتك هنا..."
       headerIcon="corporate_fare"
       renderHeaderActions={() => (
-        <span className="badge badge-success shrink-0">
-          <span aria-hidden="true" className="material-symbols-outlined text-[14px]">lock</span> قناة مشفرة
+        <span className="badge badge-neutral shrink-0">
+          <span aria-hidden="true" className="material-symbols-outlined text-[14px]">lock</span> محادثة خاصة بين الطرفين
         </span>
       )}
     />

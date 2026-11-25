@@ -1,7 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { jsonError, mapError } from '@/lib/api/http';
-import { getSessionUserFromRequest } from '@/lib/auth/session';
+import { requireAuthenticatedUser } from '@/lib/auth/policies';
+import { approvedIds } from '@/lib/auth/recordAccess';
+import { ForbiddenError } from '@/lib/auth/session';
+import { isUuid } from '@/lib/utils/ids';
 import { maskNationalIdForOrganization } from '@/lib/utils/cv';
 import {
   getOrganizationById,
@@ -14,75 +17,43 @@ import {
 import type { OrganizationDirectoryEntry, PublicSpecialist } from '@/types';
 
 /**
- * GET /api/directory?kind=specialists|organizations[&id=...]
- *
- * Server-authorized directory lookup:
- * - Approved organizations can view approved specialists and full specialist CV details
- * - Approved specialists can view approved organizations
+ * GET /api/directory?kind=specialists|organizations[&id=<profile id | user id>]
+ * - approved organizations (or admins) → approved specialists and their CV;
+ * - approved specialists (or admins) → approved organizations (name only).
+ * Pending / rejected accounts → 403.
  */
 export async function GET(request: NextRequest): Promise<Response> {
   try {
-    const user = await getSessionUserFromRequest(request);
-    if (!user) return jsonError('غير مصرح بالوصول.', 401);
-
+    const account = await requireAuthenticatedUser(request);
+    const ids = approvedIds(account);
     const kind = request.nextUrl.searchParams.get('kind');
     const targetId = request.nextUrl.searchParams.get('id');
 
-    if (kind !== 'specialists' && kind !== 'organizations') {
-      return jsonError('طلب غير صالح.', 400);
-    }
+    if (kind !== 'specialists' && kind !== 'organizations') return jsonError('طلب غير صالح.', 400);
+    if (targetId && targetId.length > 64) return jsonError('طلب غير صالح.', 400);
 
     if (kind === 'specialists') {
-      // Caller must be an approved organization OR an admin
-      const isCallerOrg = await getOrganizationByUserId(user.id);
-      if (user.role !== 'admin' && (!isCallerOrg || isCallerOrg.status !== 'approved')) {
-        return jsonError('غير مصرح بالوصول.', 403);
-      }
-
+      if (!account.isAdmin && !ids.approvedOrganizationId) throw new ForbiddenError();
       if (targetId) {
-        // Can lookup by profile ID or user ID
-        let specialist = await getSpecialistById(targetId);
-        if (!specialist) specialist = await getSpecialistByUserId(targetId);
-
-        if (!specialist || specialist.status !== 'approved') {
-          return jsonError('غير موجود.', 404);
-        }
-
+        const specialist = isUuid(targetId) ? await getSpecialistById(targetId) : await getSpecialistByUserId(targetId);
+        if (!specialist || specialist.status !== 'approved') return jsonError('غير موجود.', 404);
         const publicDetails: PublicSpecialist = {
           ...specialist,
           nationalId: maskNationalIdForOrganization(specialist.nationalId),
         };
         return NextResponse.json(publicDetails);
       }
-
-      const list = await listApprovedSpecialists();
-      return NextResponse.json(list);
+      return NextResponse.json(await listApprovedSpecialists());
     }
 
-    // kind === 'organizations'
-    // Caller must be an approved specialist OR an admin
-    const isCallerSpec = await getSpecialistByUserId(user.id);
-    if (user.role !== 'admin' && (!isCallerSpec || isCallerSpec.status !== 'approved')) {
-      return jsonError('غير مصرح بالوصول.', 403);
-    }
-
+    if (!account.isAdmin && !ids.approvedSpecialistId) throw new ForbiddenError();
     if (targetId) {
-      let organization = await getOrganizationById(targetId);
-      if (!organization) organization = await getOrganizationByUserId(targetId);
-
-      if (!organization || organization.status !== 'approved') {
-        return jsonError('غير موجود.', 404);
-      }
-
-      const entry: OrganizationDirectoryEntry = {
-        id: organization.id,
-        orgName: organization.orgName,
-      };
+      const organization = isUuid(targetId) ? await getOrganizationById(targetId) : await getOrganizationByUserId(targetId);
+      if (!organization || organization.status !== 'approved') return jsonError('غير موجود.', 404);
+      const entry: OrganizationDirectoryEntry = { id: organization.id, orgName: organization.orgName };
       return NextResponse.json(entry);
     }
-
-    const list = await listApprovedOrganizations();
-    return NextResponse.json(list);
+    return NextResponse.json(await listApprovedOrganizations());
   } catch (error) {
     return mapError(error, 'directory');
   }
