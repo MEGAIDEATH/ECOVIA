@@ -15,8 +15,9 @@
  * Password: FIXTURE_PASSWORD (default "Ecovia-Test-2026!"). Idempotent:
  * existing fixture users keep their password; profiles are created once.
  *
- * Guard: refuses unless NEON_BRANCH is "dev" or starts with "test"/"ci", and
- * never on Vercel production. Usage: `npm run db:seed:fixtures`.
+ * Guard: refuses unless NEON_BRANCH is "dev" or starts with "test"/"ci" (or is
+ * "preview" with FIXTURES_ALLOW_PREVIEW=true — the Vercel Preview QA database),
+ * and never on Vercel production. The live site's database ("demo") is never allowed. Usage: `npm run db:seed:fixtures`.
  */
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
@@ -134,7 +135,9 @@ const FIXTURES: Fixture[] = [
 
 function assertSafeTarget(): void {
   const branch = (process.env.NEON_BRANCH ?? '').trim();
-  const allowed = branch === 'dev' || branch.startsWith('test') || branch.startsWith('ci');
+  // The Vercel Preview QA database is allowed only with an explicit second opt-in.
+  const previewQa = branch === 'preview' && process.env.FIXTURES_ALLOW_PREVIEW === 'true';
+  const allowed = branch === 'dev' || branch.startsWith('test') || branch.startsWith('ci') || previewQa;
   if (process.env.VERCEL_ENV === 'production' || !allowed) {
     throw new Error(
       `Refusing to seed fixtures: NEON_BRANCH="${branch}". Fixtures are for the "dev" or "test-*" branches only.`,
@@ -152,7 +155,9 @@ async function main(): Promise<void> {
   const pool = new Pool({ connectionString, max: 1 });
   try {
     const db = drizzle(pool);
-    const auth = betterAuth({ ...authOptions, database: drizzleAdapter(db, { provider: 'pg', schema: authSchema }) });
+    const auth = betterAuth({ ...authOptions, database: drizzleAdapter(db, { provider: 'pg', schema: authSchema }),
+      // Trusted CLI context: account creation is allowed here only.
+      emailAndPassword: { ...authOptions.emailAndPassword, disableSignUp: false } });
 
     for (const fixture of FIXTURES) {
       let [row] = await db.select().from(user).where(eq(user.email, fixture.email)).limit(1);

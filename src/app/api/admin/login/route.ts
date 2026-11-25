@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { asString, jsonError, mapError, readJson } from '@/lib/api/http';
 import { getAuth } from '@/lib/auth';
+import { assertLoginAllowed, recordLoginFailure } from '@/lib/auth/rateLimit';
 import { getUserByEmail } from '@/repositories/users';
 
 /**
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     if (!email || !email.includes('@')) return jsonError('البريد الإلكتروني غير صالح.', 400);
     if (!password) return jsonError('رمز الدخول غير صحيح!', 401);
+    await assertLoginAllowed(`admin:${email}`, request.headers);
 
     let authHeaders: Headers;
     try {
@@ -32,9 +34,10 @@ export async function POST(request: NextRequest): Promise<Response> {
         body: { email, password },
         returnHeaders: true,
       });
-      if (!authRes.response?.user) return jsonError('رمز الدخول غير صحيح!', 401);
+      if (!authRes.response?.user) throw new Error('no user');
       authHeaders = authRes.headers;
     } catch {
+      await recordLoginFailure(`admin:${email}`, request.headers);
       // Better Auth rejected the credentials — identical message to the legacy
       // flow, and no distinction between "unknown email" and "wrong password".
       return jsonError('رمز الدخول غير صحيح!', 401);
