@@ -29,7 +29,8 @@ async function query<T>(sql: string, params: unknown[] = []): Promise<T[]> {
 }
 
 async function login(browser: Browser, email: string): Promise<Page> {
-  const context = await browser.newContext({ locale: 'ar-SA' });
+  // E2E_STORAGE_STATE: access cookie for a protected deployment (remote runs only).
+  const context = await browser.newContext({ locale: 'ar-SA', storageState: process.env.E2E_STORAGE_STATE || undefined });
   const page = await context.newPage();
   await page.goto('/login');
   await page.getByLabel('البريد الإلكتروني أو رقم الجوال').fill(email);

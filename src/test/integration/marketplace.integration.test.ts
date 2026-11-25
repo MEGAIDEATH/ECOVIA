@@ -9,7 +9,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { closeDb, getDb } from '@/db';
-import { contracts, documents, notifications, organizations, serviceRequestOffers, serviceRequests, specialists, user } from '@/db/schema';
+import { accountEvents, contracts, documents, notifications, organizations, serviceRequestOffers, serviceRequests, specialists, user } from '@/db/schema';
 import { specialistCanView } from '@/lib/marketplace/rules';
 import { DomainError } from '@/lib/marketplace/errors';
 import { getContractDocument } from '@/repositories/contracts';
@@ -224,6 +224,11 @@ describe('one signed contract per request (concurrency)', () => {
       .from(contracts)
       .where(and(eq(contracts.serviceRequestId, request.id), eq(contracts.status, 'signed')));
     expect(signed).toHaveLength(1);
+    // Audit trail is consistent: one signing event, request closed, offer accepted.
+    const events = await getDb().select().from(accountEvents).where(and(eq(accountEvents.targetId, contractId), eq(accountEvents.action, 'contract.signed')));
+    expect(events).toHaveLength(1);
+    expect((await getRequestWithFacts(request.id))!.facts.status).toBe('accepted');
+    expect((await getOwnOffer(request.id, riyadhA.id))?.status).toBe('accepted');
   });
 
   it('serializes two facilities-side selections so only one contract is pending', async () => {
