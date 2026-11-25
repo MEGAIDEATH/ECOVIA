@@ -74,7 +74,11 @@ export const accountEvents = pgTable(
     detail: text('detail'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('account_events_created_idx').on(table.createdAt.desc())],
+  (table) => [
+    index('account_events_created_idx').on(table.createdAt.desc()),
+    // Admin review history: events of one profile in order.
+    index('account_events_target_idx').on(table.targetId, table.createdAt),
+  ],
 );
 
 /**

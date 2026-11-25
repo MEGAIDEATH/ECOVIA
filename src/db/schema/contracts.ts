@@ -68,6 +68,8 @@ export const contracts = pgTable(
     index('contracts_conversation_idx').on(table.conversationId),
     index('contracts_organization_idx').on(table.organizationId),
     index('contracts_specialist_idx').on(table.specialistId),
+    // withdrawOffer / cancellation look contracts up by offer.
+    index('contracts_offer_idx').on(table.offerId),
     uniqueIndex('contracts_one_signed_per_request')
       .on(table.serviceRequestId)
       .where(sql`${table.status} = 'signed'`),
