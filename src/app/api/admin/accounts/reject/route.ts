@@ -3,9 +3,9 @@ import type { NextRequest } from 'next/server';
 import { asString, jsonError, jsonOk, mapError, readJson } from '@/lib/api/http';
 import { requireAdmin } from '@/lib/auth/session';
 import { isUuid } from '@/lib/utils/ids';
-import { rejectAccount } from '@/repositories/profiles';
+import { transitionAccountReview } from '@/repositories/profiles';
 
-/** POST /api/admin/accounts/reject { collection, id, reason } — admin only, audited. */
+/** POST /api/admin/accounts/reject { collection, id, reason } — admin only; pending → rejected (audited). */
 export async function POST(request: NextRequest): Promise<Response> {
   try {
     const admin = await requireAdmin(request);
@@ -16,8 +16,9 @@ export async function POST(request: NextRequest): Promise<Response> {
     if ((collection !== 'specialists' && collection !== 'organizations') || !isUuid(id) || !reason) {
       return jsonError('بيانات غير صالحة.', 400);
     }
-    const updated = await rejectAccount(collection, id, reason, admin.id);
-    if (!updated) return jsonError('الحساب غير موجود.', 404);
+    const result = await transitionAccountReview(collection, id, 'reject', admin.id, reason);
+    if (result === 'not_found') return jsonError('الحساب غير موجود.', 404);
+    if (result === 'invalid_state') return jsonError('يمكن رفض الحسابات قيد المراجعة فقط.', 409);
     return jsonOk({ ok: true });
   } catch (error) {
     return mapError(error, 'admin:reject');

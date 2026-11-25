@@ -1,27 +1,13 @@
-'use client';
+import type { Metadata } from 'next';
 
-import dynamic from 'next/dynamic';
+import { AdminEntry } from '@/features/admin/AdminEntry';
 
-import { Spinner } from '@/components/ui/Spinner';
+export const metadata: Metadata = { title: 'بوابة الإدارة', robots: { index: false } };
 
 /**
- * `/admin` is the ONLY entry point for the admin dashboard, and the component
- * is loaded lazily (never server-rendered) so its module graph — the admin
- * repository and the `/api/admin/accounts` calls — can never be pulled into a
- * public route bundle or executed by public pages.
+ * Admin portal. The dashboard stays a lazily loaded client island so its code
+ * never ships with public pages; every admin API re-checks role=admin.
  */
-const AdminDashboard = dynamic(
-  () => import('@/features/admin/AdminDashboard').then((module) => module.AdminDashboard),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <Spinner className="w-12 h-12 border-4" />
-      </div>
-    ),
-  },
-);
-
 export default function AdminPage() {
-  return <AdminDashboard />;
+  return <AdminEntry />;
 }

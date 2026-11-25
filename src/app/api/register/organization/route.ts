@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { jsonError, mapError, readJson } from '@/lib/api/http';
 import { ACTIVE_ROLE_COOKIE } from '@/lib/auth/access';
+import { getDb } from '@/db';
+import { accountEvents } from '@/db/schema';
 import { isOwnDocumentOfKind } from '@/repositories/documents';
 import { requireUser } from '@/lib/auth/session';
 import { createOrganization, getOrganizationByUserId } from '@/repositories/profiles';
@@ -44,6 +46,13 @@ export async function POST(request: NextRequest): Promise<Response> {
       phone: parsed.data.phone,
       orgDesc: parsed.data.orgDesc,
       crDocumentId: parsed.data.crDocId,
+    });
+
+    await getDb().insert(accountEvents).values({
+      actorUserId: user.id,
+      action: 'account.registered',
+      targetKind: 'organization',
+      targetId: created.id,
     });
 
     return withContext({ status: 'created', role: 'org', accountStatus: created.status, userId: user.id });

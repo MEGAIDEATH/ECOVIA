@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { jsonError, mapError, readJson } from '@/lib/api/http';
 import { ACTIVE_ROLE_COOKIE } from '@/lib/auth/access';
+import { getDb } from '@/db';
+import { accountEvents } from '@/db/schema';
 import { isOwnDocumentOfKind } from '@/repositories/documents';
 import { requireUser } from '@/lib/auth/session';
 import { createSpecialist, getSpecialistByUserId } from '@/repositories/profiles';
@@ -41,6 +43,13 @@ export async function POST(request: NextRequest): Promise<Response> {
       license: parsed.data.license,
       issueDate: parsed.data.issueDate ?? null,
       licenseDocumentId: parsed.data.licenseDocId,
+    });
+
+    await getDb().insert(accountEvents).values({
+      actorUserId: user.id,
+      action: 'account.registered',
+      targetKind: 'specialist',
+      targetId: created.id,
     });
 
     return withContext({

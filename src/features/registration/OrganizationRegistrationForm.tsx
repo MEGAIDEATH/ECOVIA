@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
+import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -19,7 +20,7 @@ import { DocumentUploadCard } from './DocumentUploadCard';
 import { useRegistrationDraft } from './RegistrationProvider';
 
 /** Organization registration (legacy `view-org-step1`). */
-export function OrganizationRegistrationForm() {
+export function OrganizationRegistrationForm({ notice, linking = false }: { notice?: ReactNode; linking?: boolean } = {}) {
   const router = useRouter();
   const { draft, update } = useRegistrationDraft();
   const { showToast } = useToast();
@@ -104,12 +105,12 @@ export function OrganizationRegistrationForm() {
       orgPhone: values.phone,
       orgDesc: values.orgDesc,
     });
-    showToast('استخدم 123456 للتجربة');
+    if (!linking) showToast('استخدم 123456 للتجربة');
     router.push('/register/organization/verify');
   });
 
   return (
-    <AuthShell backHref="/choose-role" title="تسجيل جهة" subtitle="بيانات المنشأة" width="md">
+    <AuthShell notice={notice} backHref="/choose-role" title="تسجيل جهة" subtitle="بيانات المنشأة" width="md">
       <form noValidate onSubmit={onSubmit} className="space-y-5">
         <DocumentUploadCard
           inputId="org_file_upload"

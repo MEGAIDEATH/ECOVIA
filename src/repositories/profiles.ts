@@ -1,9 +1,9 @@
 import 'server-only';
 
-import { desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, like } from 'drizzle-orm';
 
 import { getDb } from '@/db';
-import { accountEvents, organizations, specialists } from '@/db/schema';
+import { accountEvents, organizations, specialists, user } from '@/db/schema';
 import { isUuid } from '@/lib/utils/ids';
 import type { AccountStatus, Organization, Specialist } from '@/types';
 
@@ -218,60 +218,121 @@ export async function listApprovedOrganizations() {
 
 export type AdminTarget = 'specialists' | 'organizations';
 
-/** Sets the approval status; only ever called from an admin-authorized route. */
-export async function approveAccount(
+/**
+ * Account review state machine (admin + owner), every step audited in
+ * `account_events` (the rejection history is never overwritten):
+ *
+ *   pending  → approved   admin approves            (account.approved)
+ *   pending  → rejected   admin rejects with reason (account.rejected)
+ *   rejected → pending    owner resubmits after corrections (account.resubmitted)
+ *                         or admin reopens the review       (account.reopened)
+ *
+ * Transitions are conditional updates (`WHERE status = <from>`), so a stale
+ * admin screen or a double click can never jump states — e.g. a rejected
+ * account cannot be approved without going back to review first.
+ */
+export type ReviewTransition = 'approve' | 'reject' | 'reopen' | 'resubmit';
+
+const TRANSITIONS: Record<ReviewTransition, { from: AccountStatus; to: AccountStatus; action: string }> = {
+  approve: { from: 'pending', to: 'approved', action: 'account.approved' },
+  reject: { from: 'pending', to: 'rejected', action: 'account.rejected' },
+  reopen: { from: 'rejected', to: 'pending', action: 'account.reopened' },
+  resubmit: { from: 'rejected', to: 'pending', action: 'account.resubmitted' },
+};
+
+export type ReviewResult = 'ok' | 'not_found' | 'invalid_state';
+
+export async function transitionAccountReview(
   target: AdminTarget,
   id: string,
+  transition: ReviewTransition,
   actorUserId: string,
-): Promise<boolean> {
-  const db = getDb();
-  const status: AccountStatus = 'approved';
-  const updated =
-    target === 'specialists'
-      ? await db
-          .update(specialists)
-          .set({ status, rejectionReason: null, updatedAt: new Date() })
-          .where(eq(specialists.id, id))
-          .returning({ id: specialists.id })
-      : await db
-          .update(organizations)
-          .set({ status, rejectionReason: null, updatedAt: new Date() })
-          .where(eq(organizations.id, id))
-          .returning({ id: organizations.id });
-
-  if (updated.length === 0) return false;
-
-  await db.insert(accountEvents).values({
-    actorUserId,
-    action: 'account.approved',
-    targetKind: target === 'specialists' ? 'specialist' : 'organization',
-    targetId: id,
+  reason?: string,
+): Promise<ReviewResult> {
+  if (!isUuid(id)) return 'not_found';
+  const { from, to, action } = TRANSITIONS[transition];
+  return getDb().transaction(async (tx) => {
+    // Approval clears the last rejection reason; rejection sets it; reopening
+    // and resubmitting keep it visible as "previous reason" until a decision.
+    const values = {
+      status: to,
+      updatedAt: new Date(),
+      ...(transition === 'approve' ? { rejectionReason: null } : {}),
+      ...(transition === 'reject' ? { rejectionReason: reason ?? null } : {}),
+    };
+    const updated =
+      target === 'specialists'
+        ? await tx
+            .update(specialists)
+            .set(values)
+            .where(and(eq(specialists.id, id), eq(specialists.status, from)))
+            .returning({ id: specialists.id })
+        : await tx
+            .update(organizations)
+            .set(values)
+            .where(and(eq(organizations.id, id), eq(organizations.status, from)))
+            .returning({ id: organizations.id });
+    if (updated.length === 0) {
+      const exists =
+        target === 'specialists'
+          ? await tx.select({ id: specialists.id }).from(specialists).where(eq(specialists.id, id)).limit(1)
+          : await tx.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, id)).limit(1);
+      return exists.length ? 'invalid_state' : 'not_found';
+    }
+    await tx.insert(accountEvents).values({
+      actorUserId,
+      action,
+      targetKind: target === 'specialists' ? 'specialist' : 'organization',
+      targetId: id,
+      detail: reason ? reason.slice(0, 500) : null,
+    });
+    return 'ok';
   });
-  return true;
 }
 
-/** Rejects an account with a reason (admin only) and records the audit event. */
+/** Kept for callers of the original API: approve a pending account. */
+export async function approveAccount(target: AdminTarget, id: string, actorUserId: string): Promise<ReviewResult> {
+  return transitionAccountReview(target, id, 'approve', actorUserId);
+}
+
+/** Reject a pending account with a reason. */
 export async function rejectAccount(
   target: AdminTarget,
   id: string,
   reason: string,
   actorUserId: string,
-): Promise<boolean> {
-  const db = getDb();
-  const values = { status: 'rejected' as AccountStatus, rejectionReason: reason, updatedAt: new Date() };
-  const updated =
-    target === 'specialists'
-      ? await db.update(specialists).set(values).where(eq(specialists.id, id)).returning({ id: specialists.id })
-      : await db.update(organizations).set(values).where(eq(organizations.id, id)).returning({ id: organizations.id });
-  if (updated.length === 0) return false;
-  await db.insert(accountEvents).values({
-    actorUserId,
-    action: 'account.rejected',
-    targetKind: target === 'specialists' ? 'specialist' : 'organization',
-    targetId: id,
-    detail: reason.slice(0, 500),
-  });
-  return true;
+): Promise<ReviewResult> {
+  return transitionAccountReview(target, id, 'reject', actorUserId, reason);
+}
+
+export interface ReviewEvent {
+  action: string;
+  detail: string | null;
+  createdAt: string;
+  byAdmin: boolean;
+}
+
+/** Review history of one profile, oldest first (admin view). */
+export async function listReviewHistory(target: AdminTarget, id: string): Promise<ReviewEvent[]> {
+  if (!isUuid(id)) return [];
+  const rows = await getDb()
+    .select({ action: accountEvents.action, detail: accountEvents.detail, createdAt: accountEvents.createdAt, role: user.role })
+    .from(accountEvents)
+    .leftJoin(user, eq(user.id, accountEvents.actorUserId))
+    .where(
+      and(
+        eq(accountEvents.targetKind, target === 'specialists' ? 'specialist' : 'organization'),
+        eq(accountEvents.targetId, id),
+        like(accountEvents.action, 'account.%'),
+      ),
+    )
+    .orderBy(asc(accountEvents.createdAt));
+  return rows.map((row) => ({
+    action: row.action,
+    detail: row.detail,
+    createdAt: row.createdAt.toISOString(),
+    byAdmin: row.role === 'admin',
+  }));
 }
 
 /** Admin table rows (id + display name + status) for both account kinds. */

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { BrandMark } from '@/components/brand/BrandMark';
@@ -56,7 +57,9 @@ export function AppShell({ role, account, unreadCount, children }: AppShellProps
   const displayName = role === 'spec' ? account.specialist!.fullName : account.organization!.orgName;
   const imageId = role === 'spec' ? account.specialist!.profilePicId : account.organization!.profileImageId;
   const otherRole: UserRole = role === 'spec' ? 'org' : 'spec';
-  const canSwitch = Boolean(role === 'spec' ? account.organization : account.specialist);
+  const otherProfile = role === 'spec' ? account.organization : account.specialist;
+  const canSwitch = Boolean(otherProfile);
+  const otherPending = Boolean(otherProfile && !isApprovedStatus(otherProfile.status));
   const tabs = approved ? APPROVED_TABS[role] : PENDING_TABS[role];
 
   return (
@@ -82,10 +85,26 @@ export function AppShell({ role, account, unreadCount, children }: AppShellProps
                   <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
                     swap_horiz
                   </span>
-                  <span className="hidden sm:inline">التبديل إلى حساب {ROLE_LABEL[otherRole]}</span>
+                  <span className="hidden sm:inline">
+                    التبديل إلى حساب {ROLE_LABEL[otherRole]}
+                    {otherPending && ' (قيد المراجعة)'}
+                  </span>
                   <span className="sm:hidden">{ROLE_LABEL[otherRole]}</span>
                 </button>
               </form>
+            )}
+            {!canSwitch && (
+              <Link
+                href={otherRole === 'org' ? '/register/organization' : '/register/specialist'}
+                className="btn btn-ghost btn-sm gap-1"
+                data-testid="add-profile"
+              >
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                  person_add
+                </span>
+                <span className="hidden lg:inline">إضافة حساب {ROLE_LABEL[otherRole]}</span>
+                <span className="sr-only lg:hidden">إضافة حساب {ROLE_LABEL[otherRole]}</span>
+              </Link>
             )}
             <form action={logoutAction}>
               <button type="submit" className="btn btn-secondary btn-sm gap-1.5 text-danger" aria-label="تسجيل الخروج">
