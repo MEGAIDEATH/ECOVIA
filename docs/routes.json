@@ -1,0 +1,1277 @@
+{
+ "generatedFrom": "src/app (verified by scripts/route-docs.mjs)",
+ "routes": [
+  {
+   "path": "/",
+   "kind": "page",
+   "group": "Public",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Public landing page (Server Component with small interactive islands).",
+   "file": "src/app/page.tsx"
+  },
+  {
+   "path": "/choose-role",
+   "kind": "page",
+   "group": "Public",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Choose account type before registration.",
+   "file": "src/app/choose-role/page.tsx"
+  },
+  {
+   "path": "/admin",
+   "kind": "page",
+   "group": "Admin/Review",
+   "access": "public",
+   "roles": [
+    "admin"
+   ],
+   "purpose": "Admin portal (server page + lazily loaded client dashboard): approve/reject pending accounts, reopen rejected ones, account details with attachments and review history. Admin APIs re-check role=admin.",
+   "file": "src/app/admin/page.tsx"
+  },
+  {
+   "path": "/login",
+   "kind": "page",
+   "group": "Authentication",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Email/phone + password sign-in. Signed-in visitors are redirected to ?next or /dashboard.",
+   "file": "src/app/login/page.tsx",
+   "params": [
+    "next",
+    "returnTo",
+    "callbackUrl",
+    "redirect",
+    "redirectUrl (same-origin paths only)"
+   ],
+   "redirects": "signed in → next || /dashboard"
+  },
+  {
+   "path": "/register/specialist",
+   "kind": "page",
+   "group": "Authentication",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Specialist registration form (OCR-assisted). Signed-in users without a specialist profile see a \"linking\" notice: the profile is added to their existing login (pending). Users who already own one are redirected to it.",
+   "file": "src/app/register/specialist/page.tsx",
+   "redirects": "→ /register/specialist/verify"
+  },
+  {
+   "path": "/register/specialist/step-1",
+   "kind": "redirect",
+   "group": "Authentication",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Legacy step URL.",
+   "file": "src/app/register/specialist/step-1/page.tsx",
+   "redirects": "→ /register/specialist"
+  },
+  {
+   "path": "/register/specialist/step-2",
+   "kind": "redirect",
+   "group": "Authentication",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Legacy step URL.",
+   "file": "src/app/register/specialist/step-2/page.tsx",
+   "redirects": "→ /register/specialist"
+  },
+  {
+   "path": "/register/specialist/verify",
+   "kind": "page",
+   "group": "Authentication",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "New visitors: phone OTP → session → PENDING specialist profile. Signed-in users: confirmation step (no OTP) that attaches the pending profile to the same login.",
+   "file": "src/app/register/specialist/verify/page.tsx",
+   "redirects": "→ /set-password?next=/dashboard, or (signed in) → /dashboard → own new profile"
+  },
+  {
+   "path": "/register/organization",
+   "kind": "page",
+   "group": "Authentication",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Facility registration form (CR lookup). Signed-in users without a facility profile add it to their existing login (pending); existing owners are redirected.",
+   "file": "src/app/register/organization/page.tsx",
+   "redirects": "→ /register/organization/verify"
+  },
+  {
+   "path": "/register/organization/verify",
+   "kind": "page",
+   "group": "Authentication",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "New visitors: email OTP → session → PENDING facility profile. Signed-in users: confirmation step attaching the pending profile to the same login.",
+   "file": "src/app/register/organization/verify/page.tsx",
+   "redirects": "→ /set-password?next=/dashboard"
+  },
+  {
+   "path": "/set-password",
+   "kind": "page",
+   "group": "Authentication",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Password setup after OTP sign-up (POSTs /api/account/password, which requires the session).",
+   "file": "src/app/set-password/page.tsx",
+   "params": [
+    "next (same-origin only; default /dashboard)"
+   ],
+   "redirects": "→ next"
+  },
+  {
+   "path": "/forgot-password",
+   "kind": "page",
+   "group": "Authentication",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Password reset by phone/email OTP (server page; client form).",
+   "file": "src/app/forgot-password/page.tsx"
+  },
+  {
+   "path": "/dashboard",
+   "kind": "page",
+   "group": "Shared",
+   "access": "authenticated",
+   "roles": [
+    "spec",
+    "org",
+    "admin"
+   ],
+   "purpose": "Server-side entry point: approved → workspace; pending/rejected → own CV / facility profile; no profile → /choose-role; admin → /admin. Never /waiting.",
+   "file": "src/app/dashboard/page.tsx",
+   "redirects": "→ /specialist | /specialist/cv | /organization | /organization/profile | /choose-role | /admin"
+  },
+  {
+   "path": "/contracts/[id]",
+   "kind": "page",
+   "group": "Shared",
+   "access": "approved",
+   "roles": [
+    "spec",
+    "org",
+    "admin"
+   ],
+   "purpose": "Contract document for its two parties (or admin). Drafts are labelled as drafts; signing (specialist) and withdrawal (facility) of pending contracts. Printable. Others get 404.",
+   "file": "src/app/contracts/[id]/page.tsx",
+   "params": [
+    "id (contract uuid)",
+    "notice"
+   ],
+   "redirects": "unapproved → own CV/profile; unrelated → 404"
+  },
+  {
+   "path": "/specialist/cv",
+   "kind": "page",
+   "group": "Pending CV",
+   "access": "pending-ok",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Own CV editor (+ work region), print, registration details and attachments. Landing page for pending/rejected specialists with the approval banner.",
+   "file": "src/app/specialist/cv/page.tsx"
+  },
+  {
+   "path": "/organization/profile",
+   "kind": "page",
+   "group": "Pending CV",
+   "access": "pending-ok",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Facility profile: logo, fields of business, description, website, phone; registration details and CR attachment. Landing page for pending facilities.",
+   "file": "src/app/organization/profile/page.tsx"
+  },
+  {
+   "path": "/specialist",
+   "kind": "page",
+   "group": "Specialist",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Specialist home: live counters (available/private requests, active offers, contracts to sign, ongoing services, unread notifications).",
+   "file": "src/app/specialist/page.tsx",
+   "redirects": "pending → /specialist/cv"
+  },
+  {
+   "path": "/specialist/requests",
+   "kind": "page",
+   "group": "Specialist",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Request discovery: open public requests (region filter) + private requests addressed to me; tabs for my offers, contracts, declined.",
+   "file": "src/app/specialist/requests/page.tsx",
+   "params": [
+    "tab=open|offers|contracted|declined",
+    "region=<region code>",
+    "page"
+   ],
+   "redirects": "pending → /specialist/cv"
+  },
+  {
+   "path": "/specialist/requests/[id]",
+   "kind": "page",
+   "group": "Specialist",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Request detail per visibility rules (private: target only, else 404): facility card (+CR after relationship), offer form (duration), withdraw/decline, contract signing, progress steps, chat link.",
+   "file": "src/app/specialist/requests/[id]/page.tsx",
+   "params": [
+    "id",
+    "notice"
+   ],
+   "redirects": "pending → /specialist/cv"
+  },
+  {
+   "path": "/specialist/services",
+   "kind": "page",
+   "group": "Specialist",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Requests contracted to me (signed contracts): ongoing and completed.",
+   "file": "src/app/specialist/services/page.tsx",
+   "params": [
+    "page"
+   ],
+   "redirects": "pending → /specialist/cv"
+  },
+  {
+   "path": "/specialist/messages",
+   "kind": "page",
+   "group": "Specialist",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Chat with facilities (client island polling /api/chat/*); contract cards link to /contracts/[id].",
+   "file": "src/app/specialist/messages/page.tsx",
+   "params": [
+    "chat=chat_<orgUserId>_<specUserId>"
+   ],
+   "redirects": "pending → /specialist/cv"
+  },
+  {
+   "path": "/specialist/notifications",
+   "kind": "page",
+   "group": "Specialist",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "The user's own notifications; open / mark read / mark all read (Server Actions).",
+   "file": "src/app/specialist/notifications/page.tsx",
+   "params": [
+    "page"
+   ],
+   "redirects": "pending → /specialist/cv"
+  },
+  {
+   "path": "/specialist/organizations",
+   "kind": "redirect",
+   "group": "Specialist",
+   "access": "authenticated",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Legacy URL (removed \"apply to organizations\").",
+   "file": "src/app/specialist/organizations/page.tsx",
+   "redirects": "→ /specialist"
+  },
+  {
+   "path": "/specialist/projects",
+   "kind": "redirect",
+   "group": "Specialist",
+   "access": "authenticated",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Legacy URL.",
+   "file": "src/app/specialist/projects/page.tsx",
+   "redirects": "→ /specialist/services"
+  },
+  {
+   "path": "/specialist/projects/[id]",
+   "kind": "redirect",
+   "group": "Specialist",
+   "access": "authenticated",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Legacy URL.",
+   "file": "src/app/specialist/projects/[id]/page.tsx",
+   "redirects": "→ /specialist/services"
+  },
+  {
+   "path": "/organization",
+   "kind": "page",
+   "group": "Facility/Organization",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Facility home: live counters (open requests, offers to review, contracts awaiting signature, ongoing, unread notifications) and open requests.",
+   "file": "src/app/organization/page.tsx",
+   "redirects": "pending → /organization/profile"
+  },
+  {
+   "path": "/organization/requests",
+   "kind": "page",
+   "group": "Facility/Organization",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Own requests with offer counts.",
+   "file": "src/app/organization/requests/page.tsx",
+   "params": [
+    "tab=open|contracted|previous",
+    "page"
+   ],
+   "redirects": "pending → /organization/profile"
+  },
+  {
+   "path": "/organization/requests/new",
+   "kind": "page",
+   "group": "Facility/Organization",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Submit New Service Request: Service Type multi-select (4 services), Activity Description, Notes, region, city. No price, no duration. ?specialist= makes it private.",
+   "file": "src/app/organization/requests/new/page.tsx",
+   "params": [
+    "specialist=<specialist uuid> (private request)"
+   ],
+   "redirects": "→ /organization/requests/[id]?created=1"
+  },
+  {
+   "path": "/organization/requests/[id]",
+   "kind": "page",
+   "group": "Facility/Organization",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Own request detail: compare offers, decline, select & prepare contract (request stays open), withdraw contract, cancel request, chat links, view contract.",
+   "file": "src/app/organization/requests/[id]/page.tsx",
+   "params": [
+    "id",
+    "created",
+    "notice"
+   ],
+   "redirects": "foreign id → 404"
+  },
+  {
+   "path": "/organization/specialists",
+   "kind": "page",
+   "group": "Facility/Organization",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Competency directory of approved specialists, filtered on the server from URL params (search, region, experience, city, page); contact, profile, private request.",
+   "file": "src/app/organization/specialists/page.tsx",
+   "params": [
+    "q",
+    "region=<region code>",
+    "years=0-2|3-5|6-10|11+",
+    "city",
+    "page"
+   ]
+  },
+  {
+   "path": "/organization/specialists/[id]",
+   "kind": "page",
+   "group": "Facility/Organization",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Specialist profile + current CV (national ID masked), print, contact, private request; permit file only after a business relationship.",
+   "file": "src/app/organization/specialists/[id]/page.tsx",
+   "params": [
+    "id (specialist uuid)"
+   ]
+  },
+  {
+   "path": "/organization/messages",
+   "kind": "page",
+   "group": "Facility/Organization",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Chat with specialists; View CV (by specialist profile id) and full profile link.",
+   "file": "src/app/organization/messages/page.tsx",
+   "params": [
+    "chat"
+   ],
+   "redirects": "pending → /organization/profile"
+  },
+  {
+   "path": "/organization/notifications",
+   "kind": "page",
+   "group": "Facility/Organization",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "The user's own notifications.",
+   "file": "src/app/organization/notifications/page.tsx",
+   "params": [
+    "page"
+   ],
+   "redirects": "pending → /organization/profile"
+  },
+  {
+   "path": "/api/auth/[...all]",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Better Auth handler (sessions, sign-in endpoints). Public email/password sign-up is disabled — accounts come only from the OTP registration flow.",
+   "file": "src/app/api/auth/[...all]/route.ts",
+   "methods": [
+    "GET",
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/login",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Email or phone + password sign-in; failed attempts are throttled per identity and IP (429).",
+   "file": "src/app/api/login/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/session",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Who is signed in: user, own profiles, active context, entryPath.",
+   "file": "src/app/api/session/route.ts",
+   "methods": [
+    "GET"
+   ]
+  },
+  {
+   "path": "/api/session/logout",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Revokes the session (any account state) and clears cookies.",
+   "file": "src/app/api/session/logout/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/session/otp",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Request an email OTP (rate-limited; demo mode by allowlist).",
+   "file": "src/app/api/session/otp/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/session/verify",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Verify email OTP and create the session.",
+   "file": "src/app/api/session/verify/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/session/phone-otp",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Request a phone OTP (rate-limited).",
+   "file": "src/app/api/session/phone-otp/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/session/phone-verify",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Verify phone OTP and create the session.",
+   "file": "src/app/api/session/phone-verify/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/password/forgot/request",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Start password reset.",
+   "file": "src/app/api/password/forgot/request/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/password/forgot/reset",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Finish password reset.",
+   "file": "src/app/api/password/forgot/reset/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/account/password",
+   "kind": "api",
+   "group": "API",
+   "access": "authenticated",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Set the first password for the session user.",
+   "file": "src/app/api/account/password/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/account/password-status",
+   "kind": "api",
+   "group": "API",
+   "access": "authenticated",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Whether the session user has a password.",
+   "file": "src/app/api/account/password-status/route.ts",
+   "methods": [
+    "GET"
+   ]
+  },
+  {
+   "path": "/api/register/specialist",
+   "kind": "api",
+   "group": "API",
+   "access": "authenticated",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Create the PENDING specialist profile for the session user (attached permit must be own upload).",
+   "file": "src/app/api/register/specialist/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/register/organization",
+   "kind": "api",
+   "group": "API",
+   "access": "authenticated",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Create the PENDING facility profile for the session user (attached CR must be own upload).",
+   "file": "src/app/api/register/organization/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/specialist/profile",
+   "kind": "api",
+   "group": "API",
+   "access": "pending-ok",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Own CV read/update (pending allowed; attached files must be own uploads of the right kind).",
+   "file": "src/app/api/specialist/profile/route.ts",
+   "methods": [
+    "GET",
+    "PATCH"
+   ]
+  },
+  {
+   "path": "/api/organization/profile",
+   "kind": "api",
+   "group": "API",
+   "access": "pending-ok",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Own facility profile read/update (pending allowed; name/CR not editable).",
+   "file": "src/app/api/organization/profile/route.ts",
+   "methods": [
+    "GET",
+    "PATCH"
+   ]
+  },
+  {
+   "path": "/api/files",
+   "kind": "api",
+   "group": "API",
+   "access": "authenticated",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Upload a document (magic-byte type check, 4 MB, 30 uploads/15 min/user).",
+   "file": "src/app/api/files/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/files/[id]",
+   "kind": "api",
+   "group": "API",
+   "access": "authenticated",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Stream a private file after the document policy (owner, admin, or workflow counterparty). 401/403/404.",
+   "file": "src/app/api/files/[id]/route.ts",
+   "methods": [
+    "GET"
+   ],
+   "params": [
+    "id"
+   ]
+  },
+  {
+   "path": "/api/service-requests",
+   "kind": "api",
+   "group": "API",
+   "access": "approved",
+   "roles": [
+    "spec",
+    "org"
+   ],
+   "purpose": "GET: caller-scoped request lists (?as, ?tab, ?region, ?page). POST: approved facility publishes (service types, activity description, notes, region) — no price/duration.",
+   "file": "src/app/api/service-requests/route.ts",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "params": [
+    "as=org|spec",
+    "tab",
+    "region",
+    "page"
+   ]
+  },
+  {
+   "path": "/api/service-requests/[id]",
+   "kind": "api",
+   "group": "API",
+   "access": "approved",
+   "roles": [
+    "spec",
+    "org"
+   ],
+   "purpose": "One request if visible to the caller (private: target only). 403 unapproved, 404 invisible.",
+   "file": "src/app/api/service-requests/[id]/route.ts",
+   "methods": [
+    "GET"
+   ],
+   "params": [
+    "id"
+   ]
+  },
+  {
+   "path": "/api/directory",
+   "kind": "api",
+   "group": "API",
+   "access": "approved",
+   "roles": [
+    "spec",
+    "org",
+    "admin"
+   ],
+   "purpose": "Approved organizations → specialists (and one CV by profile id); approved specialists → organizations. 403 for pending.",
+   "file": "src/app/api/directory/route.ts",
+   "methods": [
+    "GET"
+   ],
+   "params": [
+    "kind=specialists|organizations",
+    "id"
+   ]
+  },
+  {
+   "path": "/api/chat/conversations",
+   "kind": "api",
+   "group": "API",
+   "access": "approved",
+   "roles": [
+    "spec",
+    "org"
+   ],
+   "purpose": "Own conversations (approved profiles only).",
+   "file": "src/app/api/chat/conversations/route.ts",
+   "methods": [
+    "GET"
+   ]
+  },
+  {
+   "path": "/api/chat/messages",
+   "kind": "api",
+   "group": "API",
+   "access": "approved",
+   "roles": [
+    "spec",
+    "org"
+   ],
+   "purpose": "Read / send plain messages as a participant (2000 chars, 30/min). Contract creation from chat was removed.",
+   "file": "src/app/api/chat/messages/route.ts",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "params": [
+    "chatId"
+   ]
+  },
+  {
+   "path": "/api/chat/contracts/sign",
+   "kind": "api",
+   "group": "API",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Sign a contract from its chat card (same atomic path as the request page).",
+   "file": "src/app/api/chat/contracts/sign/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/notifications/unread-count",
+   "kind": "api",
+   "group": "API",
+   "access": "approved",
+   "roles": [
+    "spec",
+    "org"
+   ],
+   "purpose": "Session user's unread count (bell polling).",
+   "file": "src/app/api/notifications/unread-count/route.ts",
+   "methods": [
+    "GET"
+   ]
+  },
+  {
+   "path": "/api/admin/login",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "admin"
+   ],
+   "purpose": "Admin email/password sign-in (role checked server-side; failed attempts throttled).",
+   "file": "src/app/api/admin/login/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/admin/logout",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "admin"
+   ],
+   "purpose": "Admin sign-out.",
+   "file": "src/app/api/admin/logout/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/admin/session",
+   "kind": "api",
+   "group": "API",
+   "access": "public",
+   "roles": [
+    "admin"
+   ],
+   "purpose": "Whether the caller is an admin.",
+   "file": "src/app/api/admin/session/route.ts",
+   "methods": [
+    "GET"
+   ]
+  },
+  {
+   "path": "/api/admin/accounts",
+   "kind": "api",
+   "group": "API",
+   "access": "admin",
+   "roles": [
+    "admin"
+   ],
+   "purpose": "All specialist/facility accounts for review.",
+   "file": "src/app/api/admin/accounts/route.ts",
+   "methods": [
+    "GET"
+   ]
+  },
+  {
+   "path": "/api/admin/accounts/approve",
+   "kind": "api",
+   "group": "API",
+   "access": "admin",
+   "roles": [
+    "admin"
+   ],
+   "purpose": "Approve a PENDING account (audited); rejected accounts must be reopened/resubmitted first (409).",
+   "file": "src/app/api/admin/accounts/approve/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/admin/accounts/reject",
+   "kind": "api",
+   "group": "API",
+   "access": "admin",
+   "roles": [
+    "admin"
+   ],
+   "purpose": "Reject a PENDING account with a reason (audited).",
+   "file": "src/app/api/admin/accounts/reject/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/admin/accounts/reopen",
+   "kind": "api",
+   "group": "API",
+   "access": "admin",
+   "roles": [
+    "admin"
+   ],
+   "purpose": "Reopen a REJECTED account for review (rejected → pending, audited; grants nothing).",
+   "file": "src/app/api/admin/accounts/reopen/route.ts",
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "path": "/api/admin/accounts/[kind]/[id]",
+   "kind": "api",
+   "group": "API",
+   "access": "admin",
+   "roles": [
+    "admin"
+   ],
+   "purpose": "Full registration record, attachment metadata and review history (registered / rejected / resubmitted / reopened / approved) of one account.",
+   "file": "src/app/api/admin/accounts/[kind]/[id]/route.ts",
+   "methods": [
+    "GET"
+   ],
+   "params": [
+    "kind=specialists|organizations",
+    "id"
+   ]
+  },
+  {
+   "path": "switchAccountAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "authenticated",
+   "roles": [
+    "spec",
+    "org"
+   ],
+   "purpose": "Switch the active context to another OWNED profile (cookie; never grants a role).",
+   "file": "src/server/actions/account.ts",
+   "usedOn": "AppShell"
+  },
+  {
+   "path": "logoutAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "authenticated",
+   "roles": [
+    "any"
+   ],
+   "purpose": "Revoke the session and clear cookies (works for pending users).",
+   "file": "src/server/actions/account.ts",
+   "usedOn": "AppShell"
+  },
+  {
+   "path": "updateOrganizationProfileAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "pending-ok",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Save facility profile (logo must be own upload).",
+   "file": "src/server/actions/profile.ts",
+   "usedOn": "/organization/profile"
+  },
+  {
+   "path": "createServiceRequestAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Publish a public/private request + notifications in one transaction.",
+   "file": "src/server/actions/marketplace.ts",
+   "usedOn": "/organization/requests/new"
+  },
+  {
+   "path": "cancelServiceRequestAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Cancel an open request; void pending contracts; inform offerers.",
+   "file": "src/server/actions/marketplace.ts",
+   "usedOn": "/organization/requests/[id]"
+  },
+  {
+   "path": "declineOfferAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Decline a submitted offer.",
+   "file": "src/server/actions/marketplace.ts",
+   "usedOn": "/organization/requests/[id]"
+  },
+  {
+   "path": "prepareContractAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Select an offer and prepare its contract (request stays open).",
+   "file": "src/server/actions/marketplace.ts",
+   "usedOn": "/organization/requests/[id]"
+  },
+  {
+   "path": "withdrawContractAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "org"
+   ],
+   "purpose": "Withdraw a pending contract (offer returns to submitted).",
+   "file": "src/server/actions/marketplace.ts",
+   "usedOn": "/organization/requests/[id], /contracts/[id]"
+  },
+  {
+   "path": "submitOfferAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Submit or revise an offer with execution duration.",
+   "file": "src/server/actions/marketplace.ts",
+   "usedOn": "/specialist/requests/[id]"
+  },
+  {
+   "path": "withdrawOfferAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Withdraw own offer (cancels its pending contract).",
+   "file": "src/server/actions/marketplace.ts",
+   "usedOn": "/specialist/requests/[id]"
+  },
+  {
+   "path": "signContractAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Atomically sign; closes the request; declines other offers.",
+   "file": "src/server/actions/marketplace.ts",
+   "usedOn": "/specialist/requests/[id], /contracts/[id]"
+  },
+  {
+   "path": "declineRequestAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "\"Not for me\" (personal decline).",
+   "file": "src/server/actions/marketplace.ts",
+   "usedOn": "/specialist/requests/[id]"
+  },
+  {
+   "path": "undoDeclineAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Undo personal decline.",
+   "file": "src/server/actions/marketplace.ts",
+   "usedOn": "/specialist/requests/[id]"
+  },
+  {
+   "path": "advanceRequestStatusAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "spec"
+   ],
+   "purpose": "Contracted specialist: accepted → in_progress → completed.",
+   "file": "src/server/actions/marketplace.ts",
+   "usedOn": "/specialist/requests/[id]"
+  },
+  {
+   "path": "openNotificationAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "spec",
+    "org"
+   ],
+   "purpose": "Mark own notification read and open its record.",
+   "file": "src/server/actions/notifications.ts",
+   "usedOn": "/*/notifications"
+  },
+  {
+   "path": "markNotificationReadAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "spec",
+    "org"
+   ],
+   "purpose": "Mark own notification read.",
+   "file": "src/server/actions/notifications.ts",
+   "usedOn": "/*/notifications"
+  },
+  {
+   "path": "markAllNotificationsReadAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "approved",
+   "roles": [
+    "spec",
+    "org"
+   ],
+   "purpose": "Mark all own notifications read.",
+   "file": "src/server/actions/notifications.ts",
+   "usedOn": "/*/notifications"
+  },
+  {
+   "path": "resubmitForReviewAction",
+   "kind": "action",
+   "group": "Server Actions",
+   "access": "pending-ok",
+   "roles": [
+    "spec",
+    "org"
+   ],
+   "purpose": "A REJECTED owner resubmits for review after corrections (rejected → pending, audited; stays unapproved).",
+   "file": "src/server/actions/profile.ts",
+   "usedOn": "Approval banner on /specialist/cv and /organization/profile"
+  }
+ ],
+ "flows": [
+  {
+   "name": "Sign-up (pending) → own CV",
+   "steps": [
+    "/choose-role",
+    "/register/specialist",
+    "/register/specialist/verify",
+    "/set-password",
+    "/dashboard",
+    "/specialist/cv"
+   ],
+   "note": "Pending accounts never see a waiting page; approved-only pages redirect back to /specialist/cv."
+  },
+  {
+   "name": "Facility sign-up (pending) → own profile",
+   "steps": [
+    "/register/organization",
+    "/register/organization/verify",
+    "/set-password",
+    "/dashboard",
+    "/organization/profile"
+   ]
+  },
+  {
+   "name": "Login",
+   "steps": [
+    "/login",
+    "/dashboard",
+    "/specialist"
+   ],
+   "note": "/dashboard decides: workspace if approved, own CV/profile if pending, /choose-role without a profile."
+  },
+  {
+   "name": "Request → offers → contract",
+   "steps": [
+    "/organization/requests/new",
+    "createServiceRequestAction",
+    "/organization/requests/[id]",
+    "/specialist/notifications",
+    "/specialist/requests",
+    "/specialist/requests/[id]",
+    "submitOfferAction",
+    "prepareContractAction",
+    "/contracts/[id]",
+    "signContractAction",
+    "/specialist/services"
+   ],
+   "note": "The request stays open for offers until signContractAction; at most one signed contract per request (DB unique index)."
+  },
+  {
+   "name": "Private request",
+   "steps": [
+    "/organization/specialists",
+    "/organization/specialists/[id]",
+    "/organization/requests/new",
+    "/specialist/requests/[id]"
+   ],
+   "note": "?specialist=<id>; only that specialist can see it (others: 404)."
+  },
+  {
+   "name": "Chat & documents",
+   "steps": [
+    "/organization/requests/[id]",
+    "/organization/messages",
+    "/api/directory",
+    "/organization/specialists/[id]",
+    "/api/files/[id]",
+    "/contracts/[id]"
+   ]
+  },
+  {
+   "name": "Account switch (dual profile)",
+   "steps": [
+    "/specialist",
+    "switchAccountAction",
+    "/organization"
+   ]
+  },
+  {
+   "name": "Add a second profile to the same login",
+   "steps": [
+    "/specialist/cv",
+    "/register/organization",
+    "/register/organization/verify",
+    "/dashboard",
+    "/organization/profile"
+   ],
+   "note": "Signed-in user, no OTP; the new profile is pending until approved; the switcher then lists it as pending."
+  },
+  {
+   "name": "Rejected account re-review",
+   "steps": [
+    "/admin",
+    "/api/admin/accounts/reject",
+    "/specialist/cv",
+    "resubmitForReviewAction",
+    "/api/admin/accounts/[kind]/[id]",
+    "/api/admin/accounts/approve"
+   ],
+   "note": "rejected → pending (owner resubmits or admin reopens via /api/admin/accounts/reopen) → approved/rejected; every step is in the review history."
+  }
+ ]
+}

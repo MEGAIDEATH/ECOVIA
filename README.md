@@ -106,10 +106,16 @@ Schema lives in `src/db/schema/`; generated SQL migrations in `drizzle/`.
 | `specialists` | Specialist profile + CV + approval `status`. |
 | `organizations` | Organization profile + approval `status`. |
 | `documents` | Uploaded files: `storage_key`, MIME, size, owner, kind. |
+| `regions` | The 13 canonical regions (`code` for URLs, `name_ar` referenced by FKs). |
+| `service_requests` | Facility requests: `service_types` (enum array), activity description, notes, region, `visibility` public/private + `target_specialist_id`. |
+| `service_request_offers` | One offer per specialist per request (execution duration + message, status lifecycle). |
+| `contracts` | Request/offer-linked contracts; ≤ 1 signed and ≤ 1 pending per request (partial unique indexes); FKs `RESTRICT`. |
+| `notifications` | Per-recipient notifications with a `dedupe_key` (idempotent fan-out). |
 | `conversations` | One chat per specialist↔organization pair. |
-| `messages` | Chat messages, including contract messages. |
-| `contracts` | Contract fields, signatures, `pending` → `signed`. |
-| `applications` | Structured specialist→organization applications. |
+| `messages` | Chat messages, including contract cards. |
+| `service_request_declines` | A specialist's personal "not for me" on a request. |
+| `account_events` | Audit trail (approvals, rejections, publishing, offers, contract events). |
+| `applications` | Deprecated (old "apply to organization" flow; no rows; candidate for removal). |
 
 Enums (`account_status`, `profile_kind`, `document_kind`, …) keep status values
 consistent at the database level, and every relationship is a real foreign key
@@ -121,7 +127,11 @@ with an explicit `onDelete` rule.
 npm run db:generate   # generate a migration from the schema
 npm run db:migrate    # apply pending migrations
 npm run db:seed       # create the admin account from ADMIN_EMAIL/ADMIN_PASSWORD
+npm run db:seed:fixtures  # DEV/TEST ONLY: labelled fixture accounts (refuses unless NEON_BRANCH is dev/test-*)
 ```
+
+Migration `0006` is additive; its manual rollback is `drizzle/rollback/0006_down.sql`. See
+`docs/ECHOVIA_IMPLEMENTATION_REPORT.md` for the lifecycle, access rules and rollout steps.
 
 ### Production (Neon)
 
@@ -181,10 +191,12 @@ loading task is destroyed in a `finally` path and object URLs are revoked.
 
 ```bash
 npm run lint          # ESLint
-npx tsc --noEmit      # type check
+npm run typecheck     # tsc --noEmit
 npm test              # Vitest unit + component tests
+INTEGRATION_DATABASE_URL=<disposable db> npm run test:integration   # real-DB lifecycle/concurrency tests
 npm run build         # production build
-npm run test:e2e      # Playwright (builds and serves the app on :3100)
+npm run test:e2e      # Playwright (builds and serves the app on :3100; needs db:seed:fixtures)
+node scripts/route-docs.mjs --check   # route docs match src/app
 ```
 
 Playwright needs a reachable `DATABASE_URL` (see `webServer` in

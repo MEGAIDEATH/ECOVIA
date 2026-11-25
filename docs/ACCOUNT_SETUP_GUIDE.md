@@ -50,8 +50,9 @@ To register a brand-new account when all identities are taken, see
 5. The screen shows **وضع العرض التجريبي** and **رمز تجريبي للاختبار فقط: ……**.
    Type that 6-digit code and click **تأكيد الدخول**.
 6. Choose a password on the **set-password** screen.
-7. You land on the **waiting** screen (جاري التحقق من الاعتماد). The account stays
-   pending until an admin approves it (see [Approving accounts](#4-approving-accounts)).
+7. You land on your own **CV page** (`/specialist/cv`) with a "pending approval" banner. You can
+   complete and edit the CV and log out; everything else unlocks once an admin approves the
+   account (see [Approving accounts](#4-approving-accounts)).
 8. After approval, sign in at `/login`:
    - **البريد الإلكتروني أو رقم الجوال**: the phone number, for example `0500000102`.
    - **كلمة المرور**: the password from step 6.
@@ -71,7 +72,8 @@ To register a brand-new account when all identities are taken, see
 3. Click **المتابعة للتحقق**. You reach the verification screen.
 4. Type the 6-digit **test code** shown on the screen and click **تأكيد الدخول**.
 5. Choose a password on the **set-password** screen.
-6. You land on the **waiting** screen until an admin approves the organization.
+6. You land on the **facility profile** (`/organization/profile`) with a "pending approval" banner;
+   requests, chat and contracts unlock once an admin approves the organization.
 7. After approval, sign in at `/login`:
    - **البريد الإلكتروني أو رقم الجوال**: `org_<CR number>@ecovia.local`,
      for example `org_7000000102@ecovia.local`.
