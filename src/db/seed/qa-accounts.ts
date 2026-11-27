@@ -12,7 +12,8 @@
  * own sign-up API, so passwords are hashed exactly as on the login path.
  *
  * Idempotent: existing accounts keep their password (unless
- * QA_RESET_PASSWORDS=true, which re-hashes them through Better Auth), profiles
+ * QA_RESET_PASSWORDS=true, which re-hashes them — and the QA-only admin named by
+ * QA_ADMIN_EMAIL/QA_ADMIN_PASSWORD, if it exists — through Better Auth), profiles
  * are created once and re-asserted as approved, and each profile is linked to
  * the account's OWN uploaded permit / commercial-registration document when it
  * has none yet (uploads happen through the app; see docs/QA_TEST_ACCOUNTS.md).
@@ -210,6 +211,19 @@ async function main(): Promise<void> {
             console.info(`[qa-accounts] linked own synthetic commercial-registration document for ${account.email}`);
           }
         }
+      }
+    }
+
+    // Optional: rotate the QA-only administrator (created by `npm run db:seed`) on this QA branch.
+    const adminEmail = (process.env.QA_ADMIN_EMAIL ?? '').trim().toLowerCase();
+    if (resetPasswords && adminEmail.endsWith('@test.ecovia.local')) {
+      const adminPassword = (process.env.QA_ADMIN_PASSWORD ?? '').trim();
+      if (adminPassword.length < 12) throw new Error('QA_ADMIN_PASSWORD must be at least 12 characters.');
+      const [admin] = await db.select().from(user).where(eq(user.email, adminEmail)).limit(1);
+      if (admin) {
+        const context = await auth.$context;
+        await context.internalAdapter.updatePassword(admin.id, await context.password.hash(adminPassword));
+        console.info(`[qa-accounts] password re-hashed for ${adminEmail}`);
       }
     }
     console.info(`[qa-accounts] ${ACCOUNTS.length} QA accounts ready.`);
