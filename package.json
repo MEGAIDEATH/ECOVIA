@@ -16,7 +16,8 @@
     "db:seed": "tsx src/db/seed/index.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit",
-    "db:seed:fixtures": "tsx src/db/seed/fixtures.ts"
+    "db:seed:fixtures": "tsx src/db/seed/fixtures.ts",
+    "db:seed:qa": "tsx src/db/seed/qa-accounts.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1166.0",
