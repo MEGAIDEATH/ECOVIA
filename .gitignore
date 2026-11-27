@@ -40,3 +40,6 @@ next-env.d.ts
 .vercel
 .env*
 !.env.example
+
+# Local QA credential notes (never commit)
+docs/account.txt

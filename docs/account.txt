@@ -1,5 +1,0 @@
-Account	Email	Password
-Ecovia QA Organization	qa.organization@test.ecovia.local	Qa-M2IZPp3wxHu9VYcoL3d9
-Ecovia QA Specialist	qa.specialist@test.ecovia.local	Qa-YI6giA9MSaLcZEQwPgJp
-Ecovia QA Observer	qa.observer@test.ecovia.local	Qa-IKbRtYbdkiZ7zKmeob5B
-QA admin (optional)	qa.admin@test.ecovia.local	U8FTUXRjWT9Tom3rYpLVweft
