@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isSafeExternalUrl, safeDownloadUrl, safeExternalUrl, safeImageUrl } from './url';
+import { isSafeExternalUrl, safeDownloadUrl, safeExternalUrl, safeImageUrl, safeRedirectPath } from './url';
 
 describe('safeExternalUrl', () => {
   it('allows http(s) URLs', () => {
@@ -46,5 +46,22 @@ describe('safeExternalUrl', () => {
     expect(safeDownloadUrl(`/api/files/${id}/x`)).toBeNull();
     expect(safeImageUrl('/etc/passwd')).toBeNull();
     expect(safeDownloadUrl('//evil.example/api/files/x')).toBeNull();
+  });
+});
+
+describe('safeRedirectPath (post-login ?next=)', () => {
+  it('accepts same-origin paths, including ones containing r and n', () => {
+    // Regression: the old control-character check rejected every path with "r" or "n".
+    expect(safeRedirectPath('/organization/requests/new')).toBe('/organization/requests/new');
+    expect(safeRedirectPath('/specialist/cv')).toBe('/specialist/cv');
+    expect(safeRedirectPath('/dashboard?tab=open')).toBe('/dashboard?tab=open');
+  });
+  it('rejects open redirects and header injection', () => {
+    expect(safeRedirectPath('https://evil.example')).toBeNull();
+    expect(safeRedirectPath('//evil.example/x')).toBeNull();
+    expect(safeRedirectPath('/\\evil.example')).toBeNull();
+    expect(safeRedirectPath('/ok\r\nSet-Cookie: x=1')).toBeNull();
+    expect(safeRedirectPath('javascript:alert(1)')).toBeNull();
+    expect(safeRedirectPath('')).toBeNull();
   });
 });

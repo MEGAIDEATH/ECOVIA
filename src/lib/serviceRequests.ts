@@ -1,31 +1,17 @@
 /**
- * Shared vocabulary for general service requests — used by the API (server
- * validation) and the UI (form options, labels, category grouping), so both
- * sides always agree.
+ * Shared vocabulary for service requests — used by the server (validation)
+ * and the UI (labels, tab grouping), so both sides always agree.
  */
-import type { ServiceRequest, ServiceRequestStatus } from '@/types';
+import { REGIONS, isRegionName, type RegionName } from '@/lib/regions';
+import type { ServiceRequestStatus } from '@/types';
 
-/** The 13 administrative regions of Saudi Arabia (canonical stored values). */
-export const SAUDI_REGIONS = [
-  'منطقة الرياض',
-  'منطقة مكة المكرمة',
-  'منطقة المدينة المنورة',
-  'منطقة القصيم',
-  'المنطقة الشرقية',
-  'منطقة عسير',
-  'منطقة تبوك',
-  'منطقة حائل',
-  'منطقة الحدود الشمالية',
-  'منطقة جازان',
-  'منطقة نجران',
-  'منطقة الباحة',
-  'منطقة الجوف',
-] as const;
+/** The 13 administrative regions (canonical stored names; see src/lib/regions.ts). */
+export const SAUDI_REGIONS: readonly RegionName[] = REGIONS.map((region) => region.nameAr);
 
-export type SaudiRegion = (typeof SAUDI_REGIONS)[number];
+export type SaudiRegion = RegionName;
 
 export function isSaudiRegion(value: unknown): value is SaudiRegion {
-  return typeof value === 'string' && (SAUDI_REGIONS as readonly string[]).includes(value);
+  return isRegionName(value);
 }
 
 export const DURATION_UNITS = ['day', 'week', 'month'] as const;
@@ -74,37 +60,59 @@ export function parseDuration(value: unknown, unit: unknown): { value: number; u
 }
 
 /* ---------------------------------------------------------------------------
- * Lifecycle grouping
+ * Lifecycle grouping (facility request list tabs, kept in `?tab=`)
  * ------------------------------------------------------------------------- */
 
 /**
- * The three request tabs. Every status maps to exactly one category, so a
- * request can never appear twice:
- * - pending  → published, waiting for a specialist
- * - ongoing  → a specialist took it (accepted / in progress)
- * - previous → finished or closed (completed / cancelled / legacy rejected)
- * A specialist's personal decline moves the request to *their* "previous".
+ * Every status maps to exactly one tab, so a request never appears twice:
+ * - open       → published, accepting offers (may have a contract awaiting signature)
+ * - contracted → a contract was signed (accepted / in progress)
+ * - previous   → finished or closed (completed / cancelled / legacy rejected)
  */
-export type RequestCategory = 'pending' | 'ongoing' | 'previous';
+export type RequestCategory = 'open' | 'contracted' | 'previous';
 
 export const REQUEST_CATEGORIES: ReadonlyArray<{ key: RequestCategory; label: string; empty: string }> = [
-  { key: 'pending', label: 'الطلبات المعلقة', empty: 'لا توجد طلبات معلقة.' },
-  { key: 'ongoing', label: 'الطلبات الجارية', empty: 'لا توجد طلبات جارية.' },
-  { key: 'previous', label: 'الطلبات السابقة', empty: 'لا توجد طلبات سابقة.' },
+  { key: 'open', label: 'مفتوحة للعروض', empty: 'لا توجد طلبات مفتوحة.' },
+  { key: 'contracted', label: 'متعاقد عليها', empty: 'لا توجد طلبات متعاقد عليها.' },
+  { key: 'previous', label: 'السابقة', empty: 'لا توجد طلبات سابقة.' },
 ];
 
-const STATUS_CATEGORY: Record<ServiceRequestStatus, RequestCategory> = {
-  pending: 'pending',
-  accepted: 'ongoing',
-  in_progress: 'ongoing',
-  completed: 'previous',
-  cancelled: 'previous',
-  rejected: 'previous',
+export const CATEGORY_STATUSES: Record<RequestCategory, readonly ServiceRequestStatus[]> = {
+  open: ['pending'],
+  contracted: ['accepted', 'in_progress'],
+  previous: ['completed', 'cancelled', 'rejected'],
 };
 
-export function categorizeRequest(request: Pick<ServiceRequest, 'status' | 'declinedByMe'>): RequestCategory {
-  if (request.declinedByMe) return 'previous';
-  return STATUS_CATEGORY[request.status] ?? 'previous';
+export function categorizeStatus(status: ServiceRequestStatus): RequestCategory {
+  if (CATEGORY_STATUSES.open.includes(status)) return 'open';
+  if (CATEGORY_STATUSES.contracted.includes(status)) return 'contracted';
+  return 'previous';
+}
+
+export function parseRequestCategory(value: unknown): RequestCategory {
+  return value === 'contracted' || value === 'previous' ? value : 'open';
 }
 
 export const ONGOING_STATUSES: readonly ServiceRequestStatus[] = ['accepted', 'in_progress'];
+
+/** Specialist discovery tabs (`/specialist/requests?tab=`). */
+export type SpecialistRequestTab = 'open' | 'offers' | 'contracted' | 'declined';
+
+export const SPECIALIST_TABS: ReadonlyArray<{ key: SpecialistRequestTab; label: string; empty: string }> = [
+  { key: 'open', label: 'متاحة لتقديم عرض', empty: 'لا توجد طلبات متاحة حالياً.' },
+  { key: 'offers', label: 'عروضي', empty: 'لم تقدّم أي عرض بعد.' },
+  { key: 'contracted', label: 'تعاقداتي', empty: 'لا توجد تعاقدات بعد.' },
+  { key: 'declined', label: 'اعتذرت عنها', empty: 'لم تعتذر عن أي طلب.' },
+];
+
+export function parseSpecialistTab(value: unknown): SpecialistRequestTab {
+  return value === 'offers' || value === 'contracted' || value === 'declined' ? value : 'open';
+}
+
+/** `?page=` → 1-based page number (invalid values fall back to 1). */
+export function parsePage(value: unknown): number {
+  const n = typeof value === 'string' && /^\d{1,4}$/.test(value) ? Number(value) : 1;
+  return n >= 1 ? n : 1;
+}
+
+export const PAGE_SIZE = 20;

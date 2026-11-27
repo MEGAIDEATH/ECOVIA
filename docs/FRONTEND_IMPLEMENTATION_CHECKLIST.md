@@ -6,7 +6,7 @@
 - [x] Login preserves existing flow
 - [x] Role resolution preserved (useDashboardEntry)
 - [ ] Role selection only for accounts without resolved profile (existing behavior)
-- [x] /waiting approval flow preserved
+- [x] /waiting removed — pending users land on their own CV / facility profile (see docs/ROUTES.md)
 
 ## Route cleanup
 - [x] Route inventory documented in docs/FRONTEND_ROUTES.md

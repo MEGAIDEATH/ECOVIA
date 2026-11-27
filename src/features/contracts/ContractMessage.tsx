@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import type { Message, UserRole } from '@/types';
 
 import { ContractSignature } from './ContractSignature';
@@ -19,6 +21,7 @@ export function ContractMessage({ message, role }: ContractMessageProps) {
   if (!contract) return null;
 
   const signed = contract.status === 'signed';
+  const cancelled = contract.status === 'cancelled';
 
   return (
     <div className="flex justify-center mb-4 w-full">
@@ -30,7 +33,7 @@ export function ContractMessage({ message, role }: ContractMessageProps) {
             <span aria-hidden="true" className="material-symbols-outlined">contract</span>
             وثيقة عقد
           </h4>
-          <ContractStatusBadge signed={signed} />
+          <ContractStatusBadge status={contract.status} />
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-center text-sm">
@@ -46,8 +49,10 @@ export function ContractMessage({ message, role }: ContractMessageProps) {
               <p className="font-latin text-lg font-bold break-words text-success">
                 {contract.specSig}
               </p>
+            ) : cancelled ? (
+              <p className="mt-2 text-sm font-bold text-muted">لم يُوقّع</p>
             ) : role === 'spec' ? (
-              <ContractSignature messageId={message.id} />
+              <ContractSignature contractId={contract.contractId} messageId={message.id} />
             ) : (
               <p className="mt-2 text-sm font-bold text-warning motion-safe:animate-pulse">
                 بانتظار الأخصائي...
@@ -55,6 +60,14 @@ export function ContractMessage({ message, role }: ContractMessageProps) {
             )}
           </div>
         </div>
+        {contract.contractId && (
+          <div className="mt-4 flex justify-center">
+            <Link href={`/contracts/${contract.contractId}`} className="btn btn-secondary btn-sm" data-testid="chat-view-contract">
+              <span aria-hidden="true" className="material-symbols-outlined text-[16px]">description</span>
+              {signed ? 'عرض العقد' : cancelled ? 'عرض العقد الملغى' : 'عرض مسودة العقد'}
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

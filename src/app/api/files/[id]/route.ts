@@ -1,59 +1,35 @@
 import { type NextRequest } from 'next/server';
 
-import { jsonError, mapError } from '@/lib/api/http';
-import { getSessionUserFromRequest } from '@/lib/auth/session';
+import { mapError } from '@/lib/api/http';
+import { requireAuthenticatedUser } from '@/lib/auth/policies';
+import { requireRecordAccess } from '@/lib/auth/recordAccess';
 import { getStorage } from '@/lib/storage';
-import { getDocumentById } from '@/repositories/documents';
-import { isApprovedProfileOfKind } from '@/repositories/profiles';
 
 /**
- * GET /api/files/[id]
- *
- * Serves protected document files:
- * 1. Owner can always view/download
- * 2. Admin can always view/download
- * 3. Approved organizations can view specialist resume/profilePic
+ * GET /api/files/[id] — streams a private document after authorization
+ * (owner, admin, or a counterparty allowed by the workflow — see
+ * `canViewDocument`). Files are never served from a public URL; every request
+ * re-checks access, so a copied link is useless to anyone else.
+ * 401 signed out · 403 not allowed · 404 unknown id.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-): Promise<Response> {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
     const { id } = await params;
-    const user = await getSessionUserFromRequest(request);
-    if (!user) return jsonError('غير مصرح بالوصول.', 401);
+    const account = await requireAuthenticatedUser(request);
+    const doc = await requireRecordAccess(account, { kind: 'document', id });
 
-    const doc = await getDocumentById(id);
-    if (!doc) return jsonError('الملف غير موجود.', 404);
-
-    // Authorization checks
-    const isOwner = doc.ownerUserId === user.id;
-    const isAdmin = user.role === 'admin';
-    let isAuthorized = isOwner || isAdmin;
-
-    if (!isAuthorized) {
-      // Check if caller is an approved organization viewing a specialist document
-      if (doc.kind === 'resume' || doc.kind === 'profile_image') {
-        const callerIsOrg = await isApprovedProfileOfKind(user.id, 'organizations');
-        if (callerIsOrg) isAuthorized = true;
-      }
-    }
-
-    if (!isAuthorized) {
-      return jsonError('غير مصرح بالوصول إلى هذا الملف.', 403);
-    }
-
-    const storage = getStorage();
-    const file = await storage.get(doc.storageKey);
-
+    const file = await getStorage().get(doc.storageKey);
+    const sensitive = doc.kind === 'license' || doc.kind === 'commercial_registration' || doc.kind === 'resume';
     return new Response(file.stream, {
       headers: {
         'Content-Type': doc.contentType,
         'Content-Length': String(file.size),
-        'Cache-Control': 'private, max-age=3600',
+        // Registration documents and CVs are never kept in shared/disk caches.
+        'Cache-Control': sensitive ? 'private, no-store' : 'private, max-age=300',
         // Stored type was detected server-side; never let the browser sniff.
         'X-Content-Type-Options': 'nosniff',
         'Content-Disposition': 'inline',
+        'Referrer-Policy': 'no-referrer',
       },
     });
   } catch (error) {

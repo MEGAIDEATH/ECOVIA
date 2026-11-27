@@ -8,13 +8,11 @@ import { LoadingButton } from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/Toast';
 import { otpSchema } from '@/lib/validation/registration';
 import { uploadDocumentForOCR } from '@/features/storage/storageService';
-import { useAuth } from '@/features/auth/AuthProvider';
 import {
   registerOrganization,
   registerSpecialist,
   type RegistrationResult,
 } from '@/features/registration/registrationService';
-import { setPreferredRole } from '@/features/auth/preferredRole';
 import { documentIdFromUrl } from '@/lib/utils/cv';
 import type { UserRole } from '@/types';
 
@@ -43,7 +41,9 @@ interface OtpDeliveryInfo {
  *    PostgreSQL through Better Auth (dev code is 123456)
  * 2. Verifies the code (/api/session/verify), establishing the Better Auth session
  * 3. Uploads attached document (if any) to /api/files
- * 4. Registers specialist/organization in PostgreSQL
+ * 4. Registers specialist/organization in PostgreSQL (status `pending`)
+ * 5. Sends the user to password setup, then `/dashboard`, which lands
+ *    pending accounts on their own CV / facility profile (no waiting page).
  */
 export function OtpVerification({ role }: OtpVerificationProps) {
   const [code, setCode] = useState('');
@@ -51,7 +51,6 @@ export function OtpVerification({ role }: OtpVerificationProps) {
   const [otpState, setOtpState] = useState<OtpRequestState>('sending');
   const [delivery, setDelivery] = useState<OtpDeliveryInfo>({ mode: 'real' });
   const { draft } = useRegistrationDraft();
-  const { refresh } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
 
@@ -117,9 +116,7 @@ export function OtpVerification({ role }: OtpVerificationProps) {
     void sendOtp();
   }, [sendOtp]);
 
-  const finish = async (result: RegistrationResult, rolePath: UserRole) => {
-    setPreferredRole(rolePath);
-
+  const finish = async (result: RegistrationResult) => {
     let hasPassword = false;
     try {
       const statusRes = await fetch('/api/account/password-status');
@@ -129,30 +126,12 @@ export function OtpVerification({ role }: OtpVerificationProps) {
       hasPassword = false;
     }
 
-    if (!hasPassword) {
-      if (result.accountStatus === 'approved') {
-        showToast('تم التفعيل!');
-      }
-      if (result.status === 'existing' && result.accountStatus !== 'approved') {
-        showToast('هذا الحساب مسجل مسبقاً، سيتم فتح حالة التحقق الحالية.');
-      }
-      const next = result.accountStatus === 'approved'
-        ? (rolePath === 'spec' ? '/specialist' : '/organization')
-        : `/waiting?role=${rolePath}`;
-      router.replace(`/set-password?next=${encodeURIComponent(next)}`);
-      return;
-    }
+    if (result.accountStatus === 'approved') showToast('تم التفعيل!');
+    else if (result.status === 'existing') showToast('هذا الحساب مسجل مسبقاً، سيتم فتح ملفك الحالي.');
 
-    if (result.accountStatus === 'approved') {
-      showToast('تم التفعيل!');
-      router.replace(rolePath === 'spec' ? '/specialist' : '/organization');
-      return;
-    }
-
-    if (result.status === 'existing') {
-      showToast('هذا الحساب مسجل مسبقاً، سيتم فتح حالة التحقق الحالية.');
-    }
-    router.replace(`/waiting?role=${rolePath}`);
+    // `/dashboard` resolves the destination on the server: the workspace when
+    // approved, otherwise the account's own CV / facility profile.
+    router.replace(hasPassword ? '/dashboard' : `/set-password?next=${encodeURIComponent('/dashboard')}`);
   };
 
   const uploadOptionalDoc = async (
@@ -195,8 +174,6 @@ export function OtpVerification({ role }: OtpVerificationProps) {
         return;
       }
 
-      await refresh();
-
       // 2. Register role profile
       if (role === 'spec') {
         const licenseDocUrl = await uploadOptionalDoc(draft.licenseFile, 'license');
@@ -208,7 +185,7 @@ export function OtpVerification({ role }: OtpVerificationProps) {
           issueDate: draft.issueDate || null,
           licenseDocId: documentIdFromUrl(licenseDocUrl),
         });
-        finish(result, 'spec');
+        await finish(result);
       } else {
         const crDocUrl = await uploadOptionalDoc(draft.crFile, 'commercial');
         const result = await registerOrganization({
@@ -218,7 +195,7 @@ export function OtpVerification({ role }: OtpVerificationProps) {
           orgDesc: draft.orgDesc,
           crDocId: documentIdFromUrl(crDocUrl),
         });
-        finish(result, 'org');
+        await finish(result);
       }
     } catch (error) {
       console.error('[registration] OTP submit failed:', error);

@@ -26,6 +26,44 @@ export const OTP_RATE_LIMITS = {
   verifyPerIp: { scope: 'otp-verify-ip', max: 120, windowSeconds: FIFTEEN_MINUTES },
 } satisfies Record<string, RateLimitRule>;
 
+/**
+ * Password sign-in brute-force protection: FAILED attempts are counted per
+ * identity and per IP (DB-backed, shared by every instance); once a budget is
+ * spent, further attempts are refused until the window passes — even with
+ * the right password. Successful sign-ins never consume the budget.
+ */
+export const LOGIN_RATE_LIMITS = {
+  perIdentity: { scope: 'login-fail-id', max: 10, windowSeconds: FIFTEEN_MINUTES },
+  perIp: { scope: 'login-fail-ip', max: 100, windowSeconds: FIFTEEN_MINUTES },
+} satisfies Record<string, RateLimitRule>;
+
+/** True when the subject already spent its budget in the current window (read-only). */
+export async function isRateLimited(rule: RateLimitRule, subject: string): Promise<boolean> {
+  const key = keyFor(rule, subject);
+  const result = await getDb().execute<{ count: number }>(sql`
+    select count from otp_rate_limit
+    where key = ${key} and window_start >= now() - make_interval(secs => ${rule.windowSeconds})
+  `);
+  return Number(result.rows[0]?.count ?? 0) >= rule.max;
+}
+
+/** Throws `RateLimitError` when the identity or IP has too many recent failed sign-ins. */
+export async function assertLoginAllowed(identity: string, headers: Headers): Promise<void> {
+  const [identityBlocked, ipBlocked] = await Promise.all([
+    isRateLimited(LOGIN_RATE_LIMITS.perIdentity, identity),
+    isRateLimited(LOGIN_RATE_LIMITS.perIp, clientIp(headers)),
+  ]);
+  if (identityBlocked || ipBlocked) throw new RateLimitError();
+}
+
+/** Records one failed sign-in for the identity and the IP. */
+export async function recordLoginFailure(identity: string, headers: Headers): Promise<void> {
+  await Promise.all([
+    consumeRateLimit(LOGIN_RATE_LIMITS.perIdentity, identity),
+    consumeRateLimit(LOGIN_RATE_LIMITS.perIp, clientIp(headers)),
+  ]);
+}
+
 export class RateLimitError extends Error {
   constructor() {
     super('محاولات كثيرة، يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.');

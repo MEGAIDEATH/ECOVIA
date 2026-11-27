@@ -14,12 +14,14 @@ import {
   getAdminAccounts,
   isAdminAuthenticated,
   rejectAccount,
+  reopenAccount,
   type AdminAccountCollection,
   type AdminAccounts,
 } from '@/features/admin/adminRepository';
 import { usePerformLogout } from '@/features/auth/usePerformLogout';
 import { ACCOUNT_STATUS, presentStatus } from '@/lib/status';
 
+import { AdminAccountDetails } from './AdminAccountDetails';
 import { AdminLoginPanel } from './AdminLoginPanel';
 
 type AdminTab = 'specialists' | 'organizations';
@@ -41,6 +43,7 @@ export function AdminDashboard() {
   const [tab, setTab] = useState<AdminTab>('specialists');
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
   const loadAccounts = useCallback(async () => {
     setLoading(true);
@@ -92,6 +95,16 @@ export function AdminDashboard() {
       console.error('[admin] reject failed:', err);
       const message = err instanceof Error ? err.message : 'حدث خطأ';
       showToast(message, true);
+    }
+  };
+
+  const reopen = async (collection: AdminAccountCollection, id: string) => {
+    try {
+      await reopenAccount(collection, id);
+      showToast('أُعيد فتح المراجعة؛ الحساب الآن قيد المراجعة.');
+      await loadAccounts();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'حدث خطأ', true);
     }
   };
 
@@ -275,8 +288,26 @@ export function AdminDashboard() {
                               </button>
                             </div>
                           ) : (
-                            <span className="block text-center text-muted">-</span>
+                            <div className="flex flex-wrap items-center justify-center gap-2">
+                              {row.status === 'rejected' && (
+                                <button
+                                  type="button"
+                                  onClick={() => void reopen(tab, row.id)}
+                                  className="btn btn-secondary btn-sm"
+                                >
+                                  إعادة فتح المراجعة
+                                </button>
+                              )}
+                            </div>
                           )}
+                          <div className="mt-2 flex justify-center">
+                            <button type="button" onClick={() => setDetailsId(row.id)} className="btn btn-ghost btn-sm">
+                              <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
+                                manage_search
+                              </span>
+                              التفاصيل وسجل المراجعة
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -286,6 +317,8 @@ export function AdminDashboard() {
           </div>
         </section>
       </main>
+
+      {detailsId && <AdminAccountDetails target={tab} id={detailsId} onClose={() => setDetailsId(null)} />}
 
       <Modal open={rejectingId !== null} onClose={closeReject} title="رفض الحساب" icon="block" panelClassName="max-w-md">
         <Field id="reject-reason" label="سبب الرفض" required>

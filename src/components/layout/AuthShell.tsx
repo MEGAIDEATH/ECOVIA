@@ -14,6 +14,8 @@ interface AuthShellProps {
   width?: 'sm' | 'md' | 'lg';
   /** Content rendered below the card (secondary links). */
   footer?: ReactNode;
+  /** Context note at the top of the card (e.g. "adding a profile to your login"). */
+  notice?: ReactNode;
   children: ReactNode;
 }
 
@@ -31,6 +33,7 @@ export function AuthShell({
   icon,
   width = 'sm',
   footer,
+  notice,
   children,
 }: AuthShellProps) {
   return (
@@ -67,6 +70,7 @@ export function AuthShell({
                 {subtitle && <p className="mt-1 text-[15px] leading-relaxed text-muted">{subtitle}</p>}
               </div>
             </header>
+            {notice && <div className="mb-5">{notice}</div>}
             {children}
           </section>
           {footer && <div className="mt-5 text-center text-sm text-muted">{footer}</div>}

@@ -1,26 +1,22 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 
 import { useToast } from '@/components/ui/Toast';
 
-import { clearPreferredRole } from './preferredRole';
-
 /**
- * Signs the user out on the server:
- * clears the preferred role, toasts, then returns home after 1s.
- * Only the server session is authoritative — nothing is cached in the browser.
+ * Client logout for screens outside the workspaces (admin portal): destroys
+ * the server session through POST /api/session/logout, then reloads the home
+ * page so no client state survives. The workspaces use the `logoutAction`
+ * Server Action (works without JavaScript).
  */
 export function usePerformLogout() {
-  const router = useRouter();
   const { showToast } = useToast();
 
-  const performLogout = useCallback(() => {
-    clearPreferredRole();
+  return useCallback(async () => {
+    await fetch('/api/session/logout', { method: 'POST' }).catch(() => null);
     showToast('تم تسجيل الخروج بنجاح');
-    window.setTimeout(() => router.replace('/'), 1000);
-  }, [router, showToast]);
-
-  return performLogout;
+    // A full document load (not a client transition) so no in-memory state survives logout.
+    window.location.replace(window.location.origin);
+  }, [showToast]);
 }

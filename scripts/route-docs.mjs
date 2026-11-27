@@ -1,0 +1,162 @@
+#!/usr/bin/env node
+/**
+ * Keeps the route documentation honest.
+ *
+ *   node scripts/route-docs.mjs          verify docs/routes.json against src/app and
+ *                                        src/server/actions, then embed it into
+ *                                        docs/route-map.html
+ *   node scripts/route-docs.mjs --check  verify only (exit 1 on drift) — use in CI
+ *
+ * docs/routes.json is the single structured source; ROUTES.md and the
+ * interactive map describe the same entries.
+ */
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
+
+const root = new URL('..', import.meta.url).pathname;
+const data = JSON.parse(readFileSync(join(root, 'docs/routes.json'), 'utf8'));
+const checkOnly = process.argv.includes('--check');
+
+function walk(dir) {
+  return readdirSync(dir).flatMap((name) => {
+    const full = join(dir, name);
+    return statSync(full).isDirectory() ? walk(full) : [full];
+  });
+}
+
+const appDir = join(root, 'src/app');
+const files = walk(appDir)
+  .filter((file) => /\/(page\.tsx|route\.ts)$/.test(file))
+  .map((file) => relative(root, file));
+const actions = walk(join(root, 'src/server/actions'))
+  .filter((file) => file.endsWith('.ts'))
+  .flatMap((file) =>
+    [...readFileSync(file, 'utf8').matchAll(/^export async function (\w+)/gm)].map((m) => `${relative(root, file)}#${m[1]}`),
+  );
+
+const documentedFiles = new Set(data.routes.filter((r) => r.kind !== 'action').map((r) => r.file));
+const documentedActions = new Set(data.routes.filter((r) => r.kind === 'action').map((r) => `${r.file}#${r.path}`));
+const problems = [
+  ...files.filter((f) => !documentedFiles.has(f)).map((f) => `undocumented route file: ${f}`),
+  ...[...documentedFiles].filter((f) => !files.includes(f)).map((f) => `documented file does not exist: ${f}`),
+  ...actions.filter((a) => !documentedActions.has(a)).map((a) => `undocumented server action: ${a}`),
+  ...[...documentedActions].filter((a) => !actions.includes(a)).map((a) => `documented action does not exist: ${a}`),
+];
+const known = new Set(data.routes.map((r) => r.path));
+for (const flow of data.flows) {
+  for (const step of flow.steps) if (!known.has(step)) problems.push(`flow "${flow.name}" references unknown step ${step}`);
+}
+
+if (problems.length) {
+  console.error(problems.join('\n'));
+  process.exit(1);
+}
+console.log(`routes.json OK: ${files.length} route files, ${actions.length} server actions, ${data.flows.length} flows.`);
+
+if (!checkOnly) {
+  const htmlPath = join(root, 'docs/route-map.html');
+  const html = readFileSync(htmlPath, 'utf8');
+  const start = '/*ROUTE_DATA_START*/';
+  const end = '/*ROUTE_DATA_END*/';
+  const a = html.indexOf(start);
+  const b = html.indexOf(end);
+  if (a === -1 || b === -1) throw new Error('route-map.html is missing the data markers');
+  const json = JSON.stringify(data).replace(/</g, '\\u003c');
+  writeFileSync(htmlPath, `${html.slice(0, a + start.length)}${json}${html.slice(b)}`);
+  console.log('Embedded route data into docs/route-map.html');
+  writeFileSync(join(root, 'docs/ROUTES.md'), renderMarkdown(data));
+  console.log('Wrote docs/ROUTES.md');
+}
+
+function renderMarkdown({ routes, flows }) {
+  const access = {
+    public: 'Public',
+    authenticated: 'Signed in',
+    'pending-ok': 'Role · pending OK',
+    approved: 'Approved only',
+    admin: 'Admin',
+  };
+  const roles = { any: 'anyone', spec: 'specialist', org: 'facility', admin: 'admin' };
+  const cell = (v) => String(v ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  const table = (rows, kind) => {
+    const head =
+      kind === 'action'
+        ? '| Server Action | Access | Roles | Used on | Purpose | File |\n|---|---|---|---|---|---|'
+        : '| Path | Type | Access | Roles | Params | Redirects | Purpose | File |\n|---|---|---|---|---|---|---|---|';
+    const body = rows.map((r) =>
+      kind === 'action'
+        ? `| \`${r.path}\` | ${access[r.access]} | ${r.roles.map((x) => roles[x]).join(', ')} | ${cell(r.usedOn)} | ${cell(r.purpose)} | \`${r.file}\` |`
+        : `| \`${r.path}\` | ${r.kind}${r.methods ? ` (${r.methods.join(', ')})` : ''} | ${access[r.access]} | ${r.roles.map((x) => roles[x]).join(', ')} | ${cell((r.params || []).join('; '))} | ${cell(r.redirects)} | ${cell(r.purpose)} | \`${r.file}\` |`,
+    );
+    return [head, ...body].join('\n');
+  };
+  const groups = ['Public', 'Authentication', 'Pending CV', 'Shared', 'Specialist', 'Facility/Organization', 'Admin/Review', 'API', 'Server Actions'];
+  const sections = groups
+    .map((g) => {
+      const rows = routes.filter((r) => r.group === g);
+      return rows.length ? `### ${g}\n\n${table(rows, g === 'Server Actions' ? 'action' : 'page')}\n` : '';
+    })
+    .join('\n');
+  const flowText = flows
+    .map((f) => `- **${f.name}:** ${f.steps.map((s) => `\`${s}\``).join(' → ')}${f.note ? ` — ${f.note}` : ''}`)
+    .join('\n');
+  return `# ECOVIA routes
+
+> Generated by \`node scripts/route-docs.mjs\` from [\`routes.json\`](routes.json) — do not edit by hand.
+> The same data powers the interactive map: [\`route-map.html\`](route-map.html) (open it in a browser).
+> \`node scripts/route-docs.mjs --check\` fails when a page, Route Handler or Server Action is added/removed without updating the docs.
+
+**Access classes.** *Public*: no login. *Signed in*: any authenticated account. *Role · pending OK*: the
+caller must own a profile of that role but may be pending/rejected (own CV / facility profile only).
+*Approved only*: the profile must be \`status = 'approved'\` — pages redirect unapproved users to their own
+CV (\`/specialist/cv\`) or facility profile (\`/organization/profile\`); APIs answer **401** without a session and
+**403** for unapproved or role-less accounts. Records outside the caller's scope answer **404**. Rules live in
+\`src/lib/auth/access.ts\`, \`policies.ts\` and \`recordAccess.ts\`. There is no \`/waiting\` route.
+
+Server Actions are not URLs: they are POSTed by forms on the page listed under *Used on*.
+
+## Overview
+
+\`\`\`mermaid
+flowchart LR
+  subgraph Public
+    home["/"] --> choose["/choose-role"]
+    login["/login"]
+    choose --> regS["/register/specialist"] --> verS["/register/specialist/verify"]
+    choose --> regO["/register/organization"] --> verO["/register/organization/verify"]
+  end
+  verS --> setpw["/set-password"]
+  verO --> setpw
+  login --> dash["/dashboard"]
+  setpw --> dash
+  dash -->|pending specialist| cv["/specialist/cv"]
+  dash -->|pending facility| prof["/organization/profile"]
+  dash -->|approved specialist| spec["/specialist"]
+  dash -->|approved facility| org["/organization"]
+  dash -->|admin| admin["/admin"]
+  spec <-->|switchAccountAction| org
+  subgraph Facility
+    org --> newReq["/organization/requests/new"] -->|createServiceRequestAction| reqO["/organization/requests/[id]"]
+    org --> dir["/organization/specialists"] --> sp["/organization/specialists/[id]"] -->|?specialist=| newReq
+    reqO -->|prepareContractAction| contract
+    org --> msgO["/organization/messages"]
+  end
+  subgraph Specialist
+    spec --> disc["/specialist/requests?region=&tab="] --> reqS["/specialist/requests/[id]"]
+    reqS -->|submitOfferAction| reqO
+    reqS -->|signContractAction| contract["/contracts/[id]"]
+    spec --> services["/specialist/services"]
+    spec --> msgS["/specialist/messages"]
+  end
+  reqO -.->|notifications| notifS["/specialist/notifications"]
+  reqS -.->|notifications| notifO["/organization/notifications"]
+\`\`\`
+
+## Key flows
+
+${flowText}
+
+## Inventory
+
+${sections}`;
+}

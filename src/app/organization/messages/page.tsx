@@ -1,15 +1,21 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
 import { Spinner } from '@/components/ui/Spinner';
 import { OrganizationMessages } from '@/features/organizations/messages/OrganizationMessages';
+import { requireWorkspacePage } from '@/lib/auth/policies';
+
+export const metadata: Metadata = { title: 'المراسلات' };
 
 const fallback = (
-  <div className="h-[75vh] flex items-center justify-center">
-    <Spinner className="w-8 h-8 border-4" />
+  <div className="flex h-[75vh] items-center justify-center">
+    <Spinner className="h-8 w-8 border-4" />
   </div>
 );
 
-export default function OrganizationMessagesPage() {
+/** Chat (approved accounts only). The chat island polls the authorized chat API. */
+export default async function MessagesPage() {
+  await requireWorkspacePage('org', 'approved', '/organization/messages');
   return (
     <Suspense fallback={fallback}>
       <OrganizationMessages />

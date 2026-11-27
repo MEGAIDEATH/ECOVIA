@@ -48,6 +48,8 @@ async function main(): Promise<void> {
     const auth = betterAuth({
       ...authOptions,
       database: drizzleAdapter(db, { provider: 'pg', schema: authSchema }),
+      // Trusted CLI context: account creation is allowed here only.
+      emailAndPassword: { ...authOptions.emailAndPassword, disableSignUp: false },
     });
 
     const existing = await db.select().from(user).where(eq(user.email, email)).limit(1);

@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/Toast';
 import { signContract } from '@/features/chat/messageRepository';
 
 interface ContractSignatureProps {
+  contractId?: string;
   messageId: string;
 }
 
@@ -13,7 +14,7 @@ interface ContractSignatureProps {
  * Inline specialist signature input shown on pending contracts
  * (legacy `confirmInlineSignature`).
  */
-export function ContractSignature({ messageId }: ContractSignatureProps) {
+export function ContractSignature({ contractId, messageId }: ContractSignatureProps) {
   const [name, setName] = useState('');
   const [signing, setSigning] = useState(false);
   const { showToast } = useToast();
@@ -27,7 +28,7 @@ export function ContractSignature({ messageId }: ContractSignatureProps) {
 
     setSigning(true);
     try {
-      await signContract(messageId, signature);
+      await signContract({ contractId, messageId }, signature);
       showToast('تم اعتماد العقد بنجاح!');
     } catch (error) {
       console.error('[contract] signature failed:', error);

@@ -5,10 +5,21 @@ import { loadLocalEnv } from '../src/db/env';
 
 loadLocalEnv();
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@ecovia.local';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'admin_secure_password_123';
+/**
+ * Critical marketplace journeys against the real app + database.
+ * Requires the dev/test fixtures: `npm run db:seed:fixtures` (see
+ * src/db/seed/fixtures.ts). Accounts are fictional and labelled as tests.
+ */
+// The journeys share fixture accounts (e.g. one marks notifications read), so they run in order.
+test.describe.configure({ mode: 'serial' });
 
-async function query<T>(sql: string, params: unknown[]): Promise<T[]> {
+const PASSWORD = process.env.FIXTURE_PASSWORD || 'Ecovia-Test-2026!';
+const FACILITY = 'facility.approved@test.ecovia.local';
+const SPECIALIST = 'specialist.approved@test.ecovia.local'; // Riyadh
+const PENDING = 'specialist.pending@test.ecovia.local';
+const DUAL = 'dual.account@test.ecovia.local'; // approved specialist (Eastern) + approved facility
+
+async function query<T>(sql: string, params: unknown[] = []): Promise<T[]> {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   try {
     return (await pool.query(sql, params)).rows as T[];
@@ -17,176 +28,236 @@ async function query<T>(sql: string, params: unknown[]): Promise<T[]> {
   }
 }
 
-/** Registers through the real UI (dev OTP 123456) and stops at the waiting room. */
-async function verifyAndSetPassword(page: Page, password: string) {
-  await expect(page.getByRole('heading', { name: 'أدخل رمز التحقق' })).toBeVisible();
-  const boxes = page.getByLabel(/^خانة الرمز /);
-  for (const [index, digit] of Array.from('123456').entries()) await boxes.nth(index).fill(digit);
-  await page.getByRole('button', { name: 'تأكيد الدخول' }).click();
-  await expect(page).toHaveURL(/\/set-password/, { timeout: 30_000 });
-  await page.getByLabel('كلمة المرور الجديدة').fill(password);
-  await page.getByLabel('تأكيد كلمة المرور').fill(password);
-  await page.getByRole('button', { name: 'حفظ كلمة المرور' }).click();
-  await expect(page).toHaveURL(/\/waiting/, { timeout: 30_000 });
-}
-
-async function newPage(browser: Browser) {
-  const page = await (await browser.newContext({ locale: 'ar-SA' })).newPage();
+async function login(browser: Browser, email: string): Promise<Page> {
+  // E2E_STORAGE_STATE: access cookie for a protected deployment (remote runs only).
+  const context = await browser.newContext({ locale: 'ar-SA', storageState: process.env.E2E_STORAGE_STATE || undefined });
+  const page = await context.newPage();
+  await page.goto('/login');
+  await page.getByLabel('البريد الإلكتروني أو رقم الجوال').fill(email);
+  await page.getByLabel('كلمة المرور').fill(PASSWORD);
+  await page.getByRole('button', { name: 'دخول' }).click();
+  await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 30_000 });
   return page;
 }
 
-/** Approves exactly the accounts this test created (never other rows). */
-async function approve(browser: Browser, collection: 'specialists' | 'organizations', id: string) {
-  const admin = await browser.newContext();
-  const login = await admin.request.post('/api/admin/login', { data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } });
-  expect(login.ok()).toBeTruthy();
-  const res = await admin.request.post('/api/admin/accounts/approve', { data: { collection, id } });
-  expect(res.ok()).toBeTruthy();
-  await admin.close();
+async function publishRequest(page: Page, activity: string, options: { regionCode?: string; specialistId?: string } = {}) {
+  await page.goto(options.specialistId ? `/organization/requests/new?specialist=${options.specialistId}` : '/organization/requests/new');
+  await page.getByRole('checkbox', { name: /Environmental Activity Classification Service/ }).check();
+  await page.getByRole('checkbox', { name: /Environmental Management Plan Service/ }).check();
+  await page.getByLabel(/وصف النشاط/).fill(activity);
+  await page.getByLabel(/ملاحظات/).fill('ملاحظة اختبار');
+  await page.getByLabel('المنطقة').selectOption(options.regionCode ?? 'riyadh');
+  await page.getByRole('button', { name: options.specialistId ? 'إرسال الطلب الخاص' : 'نشر الطلب' }).click();
+  await page.waitForURL(/\/organization\/requests\/[0-9a-f-]{36}\?created=1$/, { timeout: 30_000 });
+  return new URL(page.url()).pathname.split('/').pop() as string;
 }
 
-async function publish(page: Page, name: string, cost: string, duration: string, unit: string, region: string) {
-  await page.goto('/organization/requests/new');
-  await page.getByLabel('اسم الخدمة').fill(name);
-  await page.getByLabel('تكلفة الخدمة (ريال)').fill(cost);
-  await page.locator('#req-duration').fill(duration);
-  await page.locator('#req-duration-unit').selectOption(unit);
-  await page.getByLabel('المنطقة').selectOption(region);
-  await page.getByRole('button', { name: 'نشر الطلب' }).click();
-  await expect(page).toHaveURL(/\/organization\/requests\/[0-9a-f-]{36}$/, { timeout: 20_000 });
-  return page.url().split('/').pop() as string;
-}
-
-test.describe('general service request marketplace', () => {
-  test('publish → discover → decline / accept → complete, cancel, dashboards', async ({ browser }) => {
-    test.skip(test.info().project.name !== 'desktop-chromium', 'full multi-account flow runs once');
+test.describe('offers stay open until one contract is signed', () => {
+  test('publish → notify region → several offers → contract → signature closes the request', async ({ browser }) => {
+    test.skip(test.info().project.name !== 'desktop-chromium', 'multi-account flow runs once');
     test.setTimeout(240_000);
+    const activity = `نشاط اختبار ${Date.now()}`;
 
-    const suffix = `${Date.now()}`.slice(-8);
-    const password = `E2e!${suffix}pass`;
-
-    // ---- Organization + specialist accounts
-    const org = await newPage(browser);
-    const crNumber = `9${suffix}1`;
-    await org.goto('/register/organization');
-    await expect(org.getByTestId('splash-screen')).toBeHidden({ timeout: 10_000 });
-    await org.getByLabel('رقم السجل التجاري').fill(crNumber);
-    await org.getByRole('button', { name: /جلب/ }).click();
-    await expect(org.getByLabel('اسم المنشأة')).not.toHaveValue('', { timeout: 10_000 });
-    await org.getByLabel('رقم التواصل').fill(`05${suffix}`);
-    await org.getByLabel('نبذة عن الجهة').fill('منشأة اختبار سوق الخدمات');
-    await org.getByRole('button', { name: /المتابعة للتحقق/ }).click();
-    await verifyAndSetPassword(org, password);
-
-    const spec = await newPage(browser);
-    const specName = `أخصائي السوق ${suffix}`;
-    const specPhone = `05${String(Number(suffix) + 7).padStart(8, '0').slice(-8)}`;
-    await spec.goto('/register/specialist');
-    await expect(spec.getByTestId('splash-screen')).toBeHidden({ timeout: 10_000 });
-    await spec.getByLabel('الاسم الثلاثي').fill(specName);
-    await spec.getByLabel('رقم الهوية').fill(`2${suffix}3`);
-    await spec.getByLabel('رقم الجوال').fill(specPhone);
-    await spec.getByLabel('رقم المعاملة / الترخيص').fill(`ELESL-2025-${suffix.slice(-5)}`);
-    await spec.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
-    await verifyAndSetPassword(spec, password);
-
-    const [orgRow] = await query<{ id: string }>('select id from organizations where cr_number = $1', [crNumber]);
-    const [specRow] = await query<{ id: string }>('select id from specialists where phone = $1', [specPhone]);
-    await approve(browser, 'organizations', orgRow.id);
-    await approve(browser, 'specialists', specRow.id);
-
-    // ---- Organization publishes three general requests
-    await org.goto('/organization');
-    await expect(org.getByRole('heading', { name: /الطلبات الجارية/ })).toBeVisible({ timeout: 20_000 });
-    await expect(org.getByText('لم تتعامل مع أي أخصائي بعد')).toBeVisible();
-
-    const declined = `تقييم أثر بيئي ${suffix}`;
-    const taken = `خطة إدارة بيئية ${suffix}`;
-    const withdrawn = `رصد جودة الهواء ${suffix}`;
-    const idDeclined = await publish(org, declined, '42000', '3', 'month', 'المنطقة الشرقية');
-    await expect(org.getByText('3 أشهر')).toBeVisible();
-    const idTaken = await publish(org, taken, '15000.50', '2', 'week', 'منطقة الرياض');
-    const idWithdrawn = await publish(org, withdrawn, '8000', '10', 'day', 'منطقة جازان');
-
-    const [stored] = await query<{ cost: string; duration_value: number; duration_unit: string; duration: string; region: string }>(
-      'select cost, duration_value, duration_unit, duration, region from service_requests where id = $1',
-      [idTaken],
+    // Facility publishes (Service Type multi-select, no price/duration).
+    const facility = await login(browser, FACILITY);
+    await expect(facility).toHaveURL(/\/organization$/);
+    const requestId = await publishRequest(facility, activity);
+    await expect(facility.getByText(/تم نشر الطلب وإشعار الأخصائيين المعتمدين/)).toBeVisible();
+    const [stored] = await query<{ service_types: string; cost: unknown; duration: unknown; notes: string }>(
+      'select service_types::text, cost, duration, notes from service_requests where id = $1',
+      [requestId],
     );
-    expect(stored).toEqual({ cost: '15000.50', duration_value: 2, duration_unit: 'week', duration: 'أسبوعين', region: 'منطقة الرياض' });
-
-    // Server-side validation, independent of the form.
-    const bad = await org.request.post('/api/service-requests', {
-      data: { serviceName: 'x', cost: '-1', durationValue: 1, durationUnit: 'month', region: 'منطقة الرياض' },
+    expect(stored).toEqual({
+      service_types: '{activity_classification,environmental_management_plan}',
+      cost: null,
+      duration: null,
+      notes: 'ملاحظة اختبار',
     });
-    expect(bad.status()).toBe(400);
 
-    // ---- Specialist sees the four key facts on the card
-    await spec.goto('/specialist/requests');
-    const card = spec.getByRole('link').filter({ hasText: declined });
-    await expect(card).toBeVisible({ timeout: 20_000 });
-    await expect(card).toContainText('3 أشهر');
-    await expect(card).toContainText('المنطقة الشرقية');
-    await expect(card).toContainText('ريال');
+    // Regional notification reached the Riyadh specialist (not the Eastern one).
+    const notified = await query<{ email: string }>(
+      `select u.email from notifications n join "user" u on u.id = n.recipient_user_id
+        where n.related_id = $1 and n.type = 'request.published'`,
+      [requestId],
+    );
+    expect(notified.map((row) => row.email)).toContain(SPECIALIST);
+    expect(notified.map((row) => row.email)).not.toContain(DUAL);
 
-    // Personal decline: leaves the specialist's pending list, stays open for the org.
-    await card.click();
-    await spec.getByRole('button', { name: 'اعتذار' }).click();
-    await spec.getByLabel('سبب الاعتذار').fill('خارج نطاق التخصص');
-    await spec.getByRole('dialog').getByRole('button', { name: 'تأكيد' }).click();
-    await expect(spec.getByText('اعتذرت عن هذا الطلب')).toBeVisible();
-    const [afterDecline] = await query<{ status: string; declines: number }>(
-      `select r.status, (select count(*)::int from service_request_declines d where d.service_request_id = r.id) declines
+    // Specialist: bell count, region filter in the URL, offer with duration.
+    const specialist = await login(browser, SPECIALIST);
+    await expect(specialist).toHaveURL(/\/specialist$/);
+    await expect(specialist.getByRole('link', { name: /^الإشعارات: / })).toBeVisible();
+    await expect(specialist.getByTestId('notification-badge')).toBeVisible();
+    await specialist.goto('/specialist/requests?region=riyadh');
+    await specialist.reload();
+    await expect(specialist.getByLabel('تصفية حسب المنطقة')).toHaveValue('riyadh');
+    await specialist.getByRole('link', { name: new RegExp('خدمة تصنيف النشاط البيئي') }).filter({ hasText: activity }).click();
+    await specialist.getByLabel('المدة المطلوبة لتنفيذ الخدمة').fill('0');
+    await specialist.getByRole('button', { name: 'تقديم العرض' }).click();
+    await expect(specialist.getByText(/أدخل مدة التنفيذ عدداً صحيحاً/)).toBeVisible();
+    await specialist.getByLabel('المدة المطلوبة لتنفيذ الخدمة').fill('3');
+    await specialist.getByRole('button', { name: 'تقديم العرض' }).click();
+    await expect(specialist.getByText('تم إرسال عرضك إلى المنشأة.')).toBeVisible();
+
+    // A second specialist (other region) can still apply.
+    const dual = await login(browser, DUAL);
+    await dual.goto(`/specialist/requests/${requestId}`);
+    await dual.getByLabel('المدة المطلوبة لتنفيذ الخدمة').fill('10');
+    await dual.getByLabel('وحدة المدة').selectOption('day');
+    await dual.getByRole('button', { name: 'تقديم العرض' }).click();
+    await expect(dual.getByText('تم إرسال عرضك إلى المنشأة.')).toBeVisible();
+
+    // Facility compares offers and selects one: the request stays OPEN.
+    await facility.goto(`/organization/requests/${requestId}`);
+    await expect(facility.getByTestId('offer-card')).toHaveCount(2);
+    const chosen = facility.getByTestId('offer-card').filter({ hasText: '3 أسابيع' });
+    await chosen.getByRole('button', { name: 'اختيار العرض وإعداد العقد' }).click();
+    const dialog = facility.getByRole('dialog');
+    await dialog.getByLabel(/قيمة العقد/).fill('15000');
+    await dialog.getByLabel(/توقيع المنشأة/).fill('مفوّض الاختبار');
+    await dialog.getByRole('checkbox').check();
+    await dialog.getByRole('button', { name: 'إرسال العقد للأخصائي' }).click();
+    await expect(facility.getByTestId('notice')).toContainText('تم إعداد العقد وإرساله للأخصائي');
+    await expect(facility.getByText('عقد بانتظار التوقيع').first()).toBeVisible();
+    const [stillOpen] = await query<{ status: string }>('select status from service_requests where id = $1', [requestId]);
+    expect(stillOpen.status).toBe('pending');
+
+    // The selected specialist reads the draft and signs it.
+    await specialist.goto(`/specialist/requests/${requestId}`);
+    await specialist.getByTestId('view-contract').click();
+    await expect(specialist.getByTestId('contract-draft-banner')).toBeVisible();
+    await specialist.getByLabel(/توقيعك/).fill('ريم الاختبارية');
+    await specialist.getByRole('checkbox', { name: /اطلعت على العقد/ }).check();
+    await specialist.getByRole('button', { name: 'توقيع العقد' }).click();
+    await expect(specialist.getByTestId('notice')).toContainText('تم توقيع العقد');
+
+    // Signing closed the request; the other offer was declined; both parties see the signed contract.
+    const [closed] = await query<{ status: string; signed: number }>(
+      `select r.status, (select count(*)::int from contracts c where c.service_request_id = r.id and c.status = 'signed') signed
          from service_requests r where r.id = $1`,
-      [idDeclined],
+      [requestId],
     );
-    expect(afterDecline).toEqual({ status: 'pending', declines: 1 });
+    expect(closed).toEqual({ status: 'accepted', signed: 1 });
+    await dual.goto(`/specialist/requests/${requestId}`);
+    await expect(dual.getByText('لم يُقبل').first()).toBeVisible();
+    await expect(dual.getByRole('button', { name: 'تقديم العرض' })).toHaveCount(0);
 
-    // Accept → start → complete.
-    await spec.goto(`/specialist/requests/${idTaken}`);
-    await spec.getByRole('button', { name: 'قبول الطلب' }).click();
-    await spec.getByRole('dialog').getByRole('button', { name: 'تأكيد' }).click();
-    await expect(spec.getByRole('button', { name: 'بدء تنفيذ الخدمة' })).toBeVisible();
+    await facility.goto(`/organization/requests/${requestId}`);
+    await facility.getByTestId('view-contract').click();
+    await expect(facility.getByText('عقد تقديم خدمة بيئية')).toBeVisible();
+    await expect(facility.getByTestId('contract-draft-banner')).toHaveCount(0);
+    await expect(facility.getByText('ريم الاختبارية', { exact: true })).toBeVisible();
 
-    await org.goto('/organization');
-    await expect(org.locator('section', { has: org.getByRole('heading', { name: /الطلبات الجارية/ }) })).toContainText(taken);
-    await expect(org.locator('section', { has: org.getByRole('heading', { name: /آخر الأخصائيين/ }) })).toContainText(specName);
+    // Chat: the facility opens the specialist's CV from the conversation.
+    await facility.goto('/organization/messages');
+    await facility.getByRole('button', { name: /ريم الاختبارية/ }).first().click();
+    await facility.getByTestId('chat-view-cv').click();
+    await expect(facility.getByRole('dialog').getByText('ريم الاختبارية (أخصائية تجريبية)')).toBeVisible();
+  });
 
-    await spec.getByRole('button', { name: 'بدء تنفيذ الخدمة' }).click();
-    await spec.getByRole('button', { name: 'إنهاء الخدمة' }).click();
-    await expect(spec.getByText('مكتمل').first()).toBeVisible();
-
-    // Organization withdraws the third request.
-    await org.goto(`/organization/requests/${idWithdrawn}`);
-    await org.getByRole('button', { name: 'إلغاء الطلب' }).click();
-    await org.getByRole('dialog').getByRole('button', { name: 'تأكيد الإلغاء' }).click();
-    await expect(org.getByText('ملغى')).toBeVisible();
-
-    const statuses = await query<{ id: string; status: string }>(
-      'select id, status from service_requests where id = any($1::uuid[])',
-      [[idDeclined, idTaken, idWithdrawn]],
+  test('a private request is visible to its designated specialist only', async ({ browser }) => {
+    test.skip(test.info().project.name !== 'desktop-chromium', 'multi-account flow runs once');
+    test.setTimeout(180_000);
+    const [target] = await query<{ id: string }>(
+      `select s.id from specialists s join "user" u on u.id = s.user_id where u.email = $1`,
+      [SPECIALIST],
     );
-    expect(Object.fromEntries(statuses.map((r) => [r.id, r.status]))).toEqual({
-      [idDeclined]: 'pending',
-      [idTaken]: 'completed',
-      [idWithdrawn]: 'cancelled',
-    });
+    const facility = await login(browser, FACILITY);
+    const requestId = await publishRequest(facility, `طلب خاص ${Date.now()}`, { regionCode: 'eastern', specialistId: target.id });
 
-    // Category tabs: each request in exactly one tab.
-    await org.goto('/organization/requests?tab=previous');
-    const previous = org.getByRole('tabpanel');
-    await expect(previous).toContainText(taken);
-    await expect(previous).toContainText(withdrawn);
-    await expect(previous).not.toContainText(declined);
-    await org.getByRole('tab', { name: /الطلبات المعلقة/ }).click();
-    await expect(org.getByRole('tabpanel')).toContainText(declined);
-    await expect(org.getByRole('tabpanel')).not.toContainText(taken);
+    const outsider = await login(browser, DUAL);
+    const response = await outsider.goto(`/specialist/requests/${requestId}`);
+    expect(response?.status()).toBe(404);
+    const api = await outsider.request.get(`/api/service-requests/${requestId}`);
+    expect(api.status()).toBe(404);
 
-    // ---- Terminology + CV printing placement
-    await spec.goto('/specialist/cv');
-    await expect(spec.getByRole('button', { name: /طباعة السيرة/ })).toBeVisible({ timeout: 20_000 });
-    await expect(spec.getByRole('banner').getByRole('button', { name: 'طباعة' })).toHaveCount(0);
-    await expect(spec.getByRole('link', { name: 'الخدمات' })).toBeVisible();
-    await expect(spec.getByRole('link', { name: 'تقديم للمنشآت' })).toHaveCount(0);
-    await expect(spec.getByRole('link', { name: 'المشاريع' })).toHaveCount(0);
+    const specialist = await login(browser, SPECIALIST);
+    await specialist.goto(`/specialist/requests/${requestId}`);
+    await expect(specialist.getByText(/طلب خاص موجّه إليك وحدك/)).toBeVisible();
+  });
+});
+
+test.describe('pending accounts', () => {
+  test('land on their own CV, keep CV + logout, and get 403 from approved-only APIs', async ({ browser }) => {
+    test.setTimeout(120_000);
+    const page = await login(browser, PENDING);
+    await expect(page).toHaveURL(/\/specialist\/cv$/);
+    await expect(page.getByTestId('approval-banner')).toContainText('حسابك قيد المراجعة');
+    await expect(page.getByRole('link', { name: 'طلبات الخدمة' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /^الإشعارات/ })).toHaveCount(0);
+
+    for (const path of ['/specialist', '/specialist/requests', '/specialist/messages', '/specialist/notifications']) {
+      await page.goto(path);
+      await expect(page).toHaveURL(/\/specialist\/cv$/);
+    }
+    for (const path of [
+      '/api/service-requests?as=spec',
+      '/api/chat/conversations',
+      '/api/notifications/unread-count',
+      '/api/directory?kind=organizations',
+    ]) {
+      expect((await page.request.get(path)).status(), path).toBe(403);
+    }
+    // Own CV is readable and editable.
+    expect((await page.request.get('/api/specialist/profile')).status()).toBe(200);
+    await page.getByLabel('سنوات الخبرة').fill('3');
+    await page.getByRole('button', { name: /حفظ/ }).first().click();
+    await expect(page.getByText('تم حفظ التحديثات!')).toBeVisible();
+
+    // Another user's CV cannot be fetched by changing an id.
+    const [other] = await query<{ id: string }>(
+      `select s.id from specialists s join "user" u on u.id = s.user_id where u.email = $1`,
+      [SPECIALIST],
+    );
+    expect((await page.request.get(`/api/directory?kind=specialists&id=${other.id}`)).status()).toBe(403);
+
+    await page.getByRole('button', { name: 'تسجيل الخروج' }).click();
+    await expect(page).toHaveURL(/\/$/);
+    expect((await page.request.get('/api/specialist/profile')).status()).toBe(401);
+  });
+});
+
+test.describe('navigation', () => {
+  test('the account switcher appears only for a user owning both profiles and cannot grant a role', async ({ browser }) => {
+    test.setTimeout(120_000);
+    const dual = await login(browser, DUAL);
+    await expect(dual.getByTestId('account-switcher')).toBeVisible();
+    await dual.getByTestId('account-switcher').click();
+    await expect(dual).toHaveURL(/\/organization$/);
+    await dual.getByTestId('account-switcher').click();
+    await expect(dual).toHaveURL(/\/specialist$/);
+
+    const single = await login(browser, SPECIALIST);
+    await expect(single.getByTestId('account-switcher')).toHaveCount(0);
+    // A forged context cookie never opens the other workspace.
+    await single.context().addCookies([{ name: 'ecovia_active_role', value: 'org', url: test.info().project.use.baseURL! }]);
+    await single.goto('/organization');
+    await expect(single).toHaveURL(/\/specialist$/);
+  });
+
+  test('the old workspace headers are gone and the notification counter updates after reading', async ({ browser }) => {
+    test.setTimeout(120_000);
+    const page = await login(browser, SPECIALIST);
+    for (const path of ['/specialist', '/specialist/requests', '/specialist/cv', '/specialist/services']) {
+      await page.goto(path);
+      await expect(page.getByText('مرحباً، أخصائي')).toHaveCount(0);
+      await expect(page.getByText('لوحة التحكم والخدمات')).toHaveCount(0);
+    }
+    await page.goto('/specialist/notifications');
+    const markAll = page.getByRole('button', { name: 'تعليم الكل كمقروء' });
+    if (await markAll.isVisible()) await markAll.click();
+    await expect(page.getByTestId('notification-badge')).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByTestId('notification-badge')).toHaveCount(0);
+    await expect(page.getByTestId('home-notification-counter')).toHaveCount(0);
+    await page.goto('/specialist');
+    await expect(page.getByTestId('home-notification-counter')).toContainText('0');
+
+    const facility = await login(browser, FACILITY);
+    for (const path of ['/organization', '/organization/requests', '/organization/profile']) {
+      await facility.goto(path);
+      await expect(facility.getByText('بوابة المنشآت')).toHaveCount(0);
+      await expect(facility.getByText('لوحة التحكم والمواهب')).toHaveCount(0);
+    }
   });
 });

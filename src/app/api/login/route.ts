@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { asString, jsonError, mapError, readJson } from '@/lib/api/http';
 import { getAuth } from '@/lib/auth';
+import { assertLoginAllowed, recordLoginFailure } from '@/lib/auth/rateLimit';
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {
@@ -12,6 +13,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const identifier = asString(body.identifier, 320);
     const password = asString(body.password, 200);
     if (!identifier || !password) return jsonError('بيانات الدخول غير صحيحة.', 401);
+    await assertLoginAllowed(identifier.toLowerCase(), request.headers);
 
     let authHeaders: Headers;
     try {
@@ -21,7 +23,7 @@ export async function POST(request: NextRequest): Promise<Response> {
           body: { email, password },
           returnHeaders: true,
         });
-        if (!authRes.response?.user) return jsonError('بيانات الدخول غير صحيحة.', 401);
+        if (!authRes.response?.user) throw new Error('no user');
         authHeaders = authRes.headers;
       } else {
         const phoneNumber = identifier.trim();
@@ -29,10 +31,11 @@ export async function POST(request: NextRequest): Promise<Response> {
           body: { phoneNumber, password },
           returnHeaders: true,
         });
-        if (!authRes.response?.user) return jsonError('بيانات الدخول غير صحيحة.', 401);
+        if (!authRes.response?.user) throw new Error('no user');
         authHeaders = authRes.headers;
       }
     } catch {
+      await recordLoginFailure(identifier.toLowerCase(), request.headers);
       return jsonError('بيانات الدخول غير صحيحة.', 401);
     }
 

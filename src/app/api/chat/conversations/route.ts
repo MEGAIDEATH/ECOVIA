@@ -1,17 +1,14 @@
 import type { NextRequest } from 'next/server';
 
 import { jsonOk, mapError } from '@/lib/api/http';
-import { requireUser } from '@/lib/auth/session';
+import { requireChatActor } from '@/lib/chat/actor';
 import { listConversationsForUser } from '@/repositories/chat';
 
-/**
- * GET /api/chat/conversations — returns all active conversations for current user.
- */
+/** GET /api/chat/conversations — the caller's own conversations (approved profiles only). */
 export async function GET(request: NextRequest): Promise<Response> {
   try {
-    const user = await requireUser(request);
-    const conversations = await listConversationsForUser(user.id);
-    return jsonOk(conversations);
+    const actor = await requireChatActor(request);
+    return jsonOk(await listConversationsForUser(actor));
   } catch (error) {
     return mapError(error, 'chat/conversations');
   }

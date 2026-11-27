@@ -1,0 +1,12 @@
+# Never upload local secrets, data or test artifacts with `vercel deploy`.
+.env
+.env.*
+!.env.example
+.data/
+.neon
+test-results/
+playwright-report/
+blob-report/
+coverage/
+.next/
+*.tsbuildinfo

@@ -22,8 +22,12 @@ interface ChatLayoutProps {
   emptyDescription: string;
   inputPlaceholder: string;
   headerIcon: string;
-  /** Right side of the chat header (encrypted badge / CV + contract buttons). */
-  renderHeaderActions?: (context: { activeChatId: string; otherId: string | null }) => ReactNode;
+  /** Right side of the chat header (CV / profile actions). */
+  renderHeaderActions?: (context: {
+    activeChatId: string;
+    otherId: string | null;
+    otherProfileId: string | null;
+  }) => ReactNode;
 }
 
 /**
@@ -94,6 +98,7 @@ export function ChatLayout({
               actions={renderHeaderActions?.({
                 activeChatId,
                 otherId: activeConversation?.otherId ?? null,
+                otherProfileId: activeConversation?.otherProfileId ?? null,
               })}
             />
             <ChatMessages

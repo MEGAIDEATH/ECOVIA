@@ -11,6 +11,7 @@ const conversations: ConversationView[] = [
     lastMessage: 'مرحباً، أود التقديم للعمل معكم.',
     lastMessageIsContract: false,
     otherId: 'org1',
+    otherProfileId: '0f3d3600-2e7d-4733-8fbf-af0000000011',
     otherName: 'شركة التقنية البيئية المحدودة',
   },
   {
@@ -19,6 +20,7 @@ const conversations: ConversationView[] = [
     lastMessage: 'عقد جديد',
     lastMessageIsContract: true,
     otherId: 'org2',
+    otherProfileId: '0f3d3600-2e7d-4733-8fbf-af0000000012',
     otherName: 'شركة الاخضر',
   },
 ];

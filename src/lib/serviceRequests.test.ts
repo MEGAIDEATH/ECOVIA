@@ -3,12 +3,16 @@ import { describe, expect, it } from 'vitest';
 import {
   REQUEST_CATEGORIES,
   SAUDI_REGIONS,
-  categorizeRequest,
+  SPECIALIST_TABS,
+  categorizeStatus,
   formatCost,
   formatDuration,
   isSaudiRegion,
   parseCost,
   parseDuration,
+  parsePage,
+  parseRequestCategory,
+  parseSpecialistTab,
 } from './serviceRequests';
 import type { ServiceRequestStatus } from '@/types';
 
@@ -56,23 +60,38 @@ describe('regions', () => {
   });
 });
 
-describe('categorizeRequest', () => {
+describe('categorizeStatus (facility tabs)', () => {
   const expected: Record<ServiceRequestStatus, string> = {
-    pending: 'pending',
-    accepted: 'ongoing',
-    in_progress: 'ongoing',
+    pending: 'open',
+    accepted: 'contracted',
+    in_progress: 'contracted',
     completed: 'previous',
     cancelled: 'previous',
     rejected: 'previous',
   };
-  it('maps every status to exactly one category', () => {
+  it('maps every status to exactly one tab', () => {
     for (const [status, category] of Object.entries(expected)) {
-      expect(categorizeRequest({ status: status as ServiceRequestStatus })).toBe(category);
+      expect(categorizeStatus(status as ServiceRequestStatus)).toBe(category);
     }
-    expect(REQUEST_CATEGORIES.map((c) => c.key)).toEqual(['pending', 'ongoing', 'previous']);
+    expect(REQUEST_CATEGORIES.map((c) => c.key)).toEqual(['open', 'contracted', 'previous']);
   });
-  it("puts a specialist's personal decline in their previous requests", () => {
-    expect(categorizeRequest({ status: 'pending', declinedByMe: true })).toBe('previous');
+});
+
+describe('URL parameter parsing', () => {
+  it('normalizes unknown tab values to the default tab', () => {
+    expect(parseRequestCategory('contracted')).toBe('contracted');
+    expect(parseRequestCategory('<script>')).toBe('open');
+    expect(parseRequestCategory(undefined)).toBe('open');
+    expect(parseSpecialistTab('offers')).toBe('offers');
+    expect(parseSpecialistTab('all')).toBe('open');
+    expect(SPECIALIST_TABS.map((t) => t.key)).toEqual(['open', 'offers', 'contracted', 'declined']);
+  });
+  it('accepts only positive page numbers', () => {
+    expect(parsePage('3')).toBe(3);
+    expect(parsePage('0')).toBe(1);
+    expect(parsePage('-2')).toBe(1);
+    expect(parsePage('abc')).toBe(1);
+    expect(parsePage(undefined)).toBe(1);
   });
 });
 

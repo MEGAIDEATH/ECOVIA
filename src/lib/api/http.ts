@@ -2,10 +2,10 @@ import 'server-only';
 
 import { DatabaseConfigError } from '@/db';
 import { ChatAccessError, ContractError } from '@/repositories/chat';
-import { ApplicationError } from '@/repositories/applications';
-import { ForbiddenError, UnauthorizedError } from '@/lib/auth/session';
+import { ForbiddenError, NotFoundError, UnauthorizedError } from '@/lib/auth/session';
 import { OtpDeliveryUnavailableError } from '@/lib/auth/otp';
 import { RateLimitError } from '@/lib/auth/rateLimit';
+import { DomainError } from '@/lib/marketplace/errors';
 import { StorageConfigError } from '@/lib/storage';
 
 /** JSON error response helper (Arabic messages, explicit status). */
@@ -18,15 +18,18 @@ export function jsonOk<T>(payload: T, status = 200): Response {
 }
 
 /**
- * Maps domain errors to HTTP responses. Anything unrecognized is logged and
- * reported as a generic 500 so internals never leak to the browser.
+ * Maps domain errors to HTTP responses. 401 = no valid session, 403 = signed
+ * in but not allowed (wrong role, unapproved account), 404 = record missing or
+ * outside the caller's scope, 409/400 = business rule. Anything unrecognized
+ * is logged and reported as a generic 500 so internals never leak.
  */
 export function mapError(error: unknown, context: string): Response {
   if (error instanceof UnauthorizedError) return jsonError(error.message, 401);
   if (error instanceof ForbiddenError) return jsonError(error.message, 403);
+  if (error instanceof NotFoundError) return jsonError(error.message, 404);
+  if (error instanceof DomainError) return jsonError(error.message, error.status);
   if (error instanceof ChatAccessError) return jsonError(error.message, 403);
   if (error instanceof ContractError) return jsonError(error.message, 400);
-  if (error instanceof ApplicationError) return jsonError(error.message, 400);
   if (error instanceof RateLimitError) return jsonError(error.message, 429);
   if (error instanceof OtpDeliveryUnavailableError) {
     return jsonError(OTP_UNAVAILABLE_MESSAGE, 503);

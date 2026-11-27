@@ -1,6 +1,6 @@
 'use client';
 
-import type { OrganizationDirectoryEntry, PublicSpecialist, PublicSpecialistSummary } from '@/types';
+import type { PublicSpecialist } from '@/types';
 
 async function directoryRequest<T>(kind: 'specialists' | 'organizations', id?: string): Promise<T> {
   const params = new URLSearchParams({ kind });
@@ -24,18 +24,7 @@ async function directoryRequest<T>(kind: 'specialists' | 'organizations', id?: s
   return body as T;
 }
 
-export function getPublicSpecialists(): Promise<PublicSpecialistSummary[]> {
-  return directoryRequest<PublicSpecialistSummary[]>('specialists');
-}
-
+/** One approved specialist's CV by PROFILE id (approved organizations only — enforced by the API). */
 export function getPublicSpecialist(id: string): Promise<PublicSpecialist> {
   return directoryRequest<PublicSpecialist>('specialists', id);
-}
-
-export function getPublicOrganizations(): Promise<OrganizationDirectoryEntry[]> {
-  return directoryRequest<OrganizationDirectoryEntry[]>('organizations');
-}
-
-export function getPublicOrganization(id: string): Promise<OrganizationDirectoryEntry> {
-  return directoryRequest<OrganizationDirectoryEntry>('organizations', id);
 }

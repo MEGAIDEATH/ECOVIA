@@ -178,7 +178,7 @@ extractors; extracted values are populated into the form for user review.
    Better Auth session.
 6. Optional license document is uploaded via `POST /api/files`.
 7. `POST /api/register/specialist` persists the profile (`status: 'pending'`)
-   → redirect to `/waiting?role=spec` (or `/specialist` if already approved).
+   → password setup, then `/dashboard` → the own CV `/specialist/cv` while pending (or `/specialist` if already approved).
 
 **Historical fixes:**
 - The form previously omitted the `email` and `phone` inputs even though the
@@ -220,7 +220,7 @@ OTP request always has a valid address.
 2. OTP verification (see above)
 3. Optional CR document uploaded via `POST /api/files`
 4. `POST /api/register/organization` creates `organizations` row with `status: 'pending'`
-5. User is redirected to `/waiting?role=org` (or profile page if approved)
+5. User is redirected to the facility profile `/organization/profile` while pending (or `/organization` if approved)
 
 ---
 

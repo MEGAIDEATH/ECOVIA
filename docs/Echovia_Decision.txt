@@ -1,0 +1,132 @@
+- Add a profile page for the facility so it can add its field of business, profile picture, and additional information about itself.
+- Add at least one specialist name to review other flows, such as contracts, chats, how the specialist's name appears to the facility, how the specialist appears in the competency directory, and how sending a private request to a specific specialist works.
+- Add a notifications counter on the home page.
+- Enable the "View CV" button inside the chat between the specialist and the facility.
+- View the contract document after signing.
+- On the "Submit New Service Request" page, replace the "Service Name" field with "Service Type" as a multi-select option allowing multiple selections, with the following choices:
+  1. Environmental Activity Classification Service
+  2. Category 1 Construction Environmental Permit Issuance Service
+  3. Category 1 Operational Environmental Permit Issuance Service
+  4. Environmental Management Plan Service
+- Remove the "Price" and "Duration" fields.
+- Add an "Activity Description" field and a "Notes" field.
+- Add a button to switch between the facility and specialist accounts.
+- Add a notifications counter button.
+- When a specialist opens a public request submitted by a facility or a private request, allow the specialist to submit an offer and specify the duration required to execute the service.
+- Keep a service posted by a facility available until a contract is signed, rather than closing it immediately upon request acceptance.
+- Allow multiple specialists to apply for a posted service until a contract is signed with only one specialist.
+- View the contract document after it is signed.
+- Notify the specialist of new service requests added in their region.
+- Add a region filter for the specialist so they can track requests in their region.
+- Enable viewing the status of requests between the specialist and the facility.
+- View chats between the specialist and the facility.
+- View account registration details and enable viewing attachments, such as the specialist's permit and the facility's commercial registration.
+inside /specialist and /organization i want you to remove the old Specialist workspace header (CV printing lives on the CV page). and Organization workspace header.
+create a md file and write on it what you actually did and what improvement you did and to create an interactive digram where it have the full routes 
+i want the website to be public to if you can pushing "use client" down to tiny interactive buttons/inputs while keeping your page.tsx files as Server Components, combined with Server Actions and URL search params
+Remove the /waiting page and any redirect logic sending unapproved/pending users to /waiting. Instead, update the authentication and authorization flow with the following requirements:
+1. Post-Signup & Login Redirect: When a new user signs up or an unapproved user logs in, log them in normally and redirect them directly to their CV page (/cv or /cv/edit) instead of /waiting.
+2. Route Protection (Pending Users): Allow unapproved users (isApproved === false / status === 'pending') to access and edit their own CV page, profile basics, and logout functionality. If they try to navigate to any other protected routes or approved-only features, redirect them back to their CV page.
+3. UI Restrictions & Status Banner:
+	• On the CV page and navigation bar, hide or disable features/buttons reserved for approved users.
+	• Display a clear, non-blocking banner at the top of the dashboard/CV page letting the user know their account is currently pending approval, and that they can edit their CV while waiting.
+4. Backend / API Security: Ensure backend routes/endpoints for viewing and updating the user's own CV work for unapproved users, while all other protected endpoints strictly require the user to be approved (returning a 403 Forbidden error if an unapproved user attempts to call them).
+5. Cleanup: Delete the unused /waiting page/component and remove dead references to it across the codebase.
+clean the database and create a clean database that makes easy to maintain in the long run and clean tables that connect to each other and easy to follow 
+make the backend more secure and i want you make it more stable and more effective and remove unnecessary code that is unrelated or just full of shit 
+the skills that claude have 
+Active
+Connectors
+
+
+Figma
+Connector
+By Figma
+
+GitHub
+Built-in integration
+By Anthropic
+
+Neon icon
+Neon
+Connector
+By Neon (A Databricks, Inc. company)
+
+
+Vercel
+Connector
+By Vercel
+Other plugins
+
+10x-Team
+Community
+Commands & skills
+jaan-mustafa/10x-team
+
+Backend Design
+Community
+Hook, agents, commands & skills
+sheitabrk/backend-design
+
+Data icon
+Data
+Connectors & skills
+anthropics/knowledge-work-plugins
+
+Design icon
+Design
+Connectors & skills
+anthropics/knowledge-work-plugins
+
+design-skills icon
+design-skills
+Community
+Skills
+cuellarfr/design-skills
+
+frontend-design icon
+frontend-design
+Skill
+anthropics/claude-plugins-official
+
+mindmap-skills
+Community
+Skills
+galiacheng/mindmap-skills
+
+system-design-skills
+Community
+Agent, command & skills
+proyecto26/system-design-skills
+
+VectorLab UI/UX Skills
+Community
+Skills
+vectorlabau/skills
+
+Vercel icon
+Vercel
+Hooks, agents, commands, connector & skills
+vercel/vercel-plugin
+
+Included
+
+deep-research
+Skill
+From Anthropic
+
+google-workspace
+Skill
+From Anthropic
+
+import-memory
+Skill
+From Anthropic
+
+morning
+Skill
+From Anthropic
+
+skill-creator
+Skill
+From Anthropic

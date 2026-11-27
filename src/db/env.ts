@@ -10,7 +10,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-function loadEnvFile(file: string, root: string): void {
+/** Loads one env file if it exists; values already in `process.env` win. */
+export function loadEnvFile(file: string, root: string = process.cwd()): void {
   const path = resolve(root, file);
   if (!existsSync(path)) return;
   for (const rawLine of readFileSync(path, 'utf8').split('\n')) {

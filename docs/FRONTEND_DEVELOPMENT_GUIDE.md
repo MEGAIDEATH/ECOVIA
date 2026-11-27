@@ -128,11 +128,10 @@ Important files:
 - `src/app/specialist/page.tsx` and `src/app/specialist/layout.tsx`: Specialist dashboard area.
 - `src/app/organization/page.tsx` and `src/app/organization/layout.tsx`: Organization dashboard area.
 - `src/app/admin/page.tsx`: Administrator area.
-- `src/app/waiting/page.tsx`: Pending approval page.
-- `src/features/auth/AuthProvider.tsx`: Client auth context and session hydration.
-- `src/features/auth/useDashboardEntry.ts`: Role/profile resolution and redirect to dashboard or waiting page.
-- `src/features/auth/dashboardRouting.ts`: Pure destination resolver.
-- `src/features/auth/useDashboardGuard.ts`: Route protection for dashboard pages.
+- `src/app/dashboard/page.tsx`: Server-side entry point after login/signup (resolves the destination).
+- `src/features/auth/AuthProvider.tsx`: Client session context (seeded by the server in workspaces).
+- `src/lib/auth/access.ts`: Pure access/destination rules (approval rule, entry path, workspace decisions).
+- `src/lib/auth/policies.ts`, `src/lib/auth/recordAccess.ts`: Server-side guards for pages, actions and APIs.
 - `src/features/registration/OtpVerification.tsx`: OTP verification UI for registration.
 - `src/features/registration/SpecialistRegistrationConsolidated.tsx`: Specialist registration form.
 - `src/features/registration/OrganizationRegistrationForm.tsx`: Organization registration form.
@@ -156,7 +155,6 @@ Real routes in this project include:
 - `/specialist/cv`: optional specialist CV/contact email page.
 - `/organization`: organization dashboard.
 - `/admin`: administrator area.
-- `/waiting`: pending approval page.
 - `/forgot-password`: password recovery.
 - `/set-password`: first-time password setup.
 
@@ -298,15 +296,16 @@ Login flow:
 1. `src/app/login/page.tsx` posts credentials to `/api/login`.
 2. On success it refreshes the session.
 3. It reads a safe internal `next`/`returnTo`/`callbackUrl`/`redirect` parameter if present.
-4. Otherwise it calls `checkAndGoToDashboard()`, which resolves specialist/organization profiles and redirects to `/specialist`, `/organization`, or `/waiting?role=...`.
+4. Otherwise it navigates to `/dashboard`, which resolves the destination on the server.
 5. Failed login shows an error and does not navigate.
 
 Role-specific destinations:
 
-- Specialist: `/specialist` or `/waiting?role=spec`.
-- Organization: `/organization` or `/waiting?role=org`.
+- Specialist: `/specialist` when approved, otherwise their own CV `/specialist/cv`.
+- Organization: `/organization` when approved, otherwise the facility profile `/organization/profile`.
 - Administrator: `/admin`.
-- Incomplete account: `/waiting` or the incomplete registration workflow.
+- Account without a profile: `/choose-role`.
+- There is no waiting page; see `docs/ROUTES.md`.
 
 Authenticated users visiting `/login` are redirected away from login instead of being forced to log in again. Session loading is awaited before redirecting, preventing premature redirects to home.
 

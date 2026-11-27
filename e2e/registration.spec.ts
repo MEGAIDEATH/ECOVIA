@@ -33,6 +33,13 @@ async function findProfile(
   }
 }
 
+/** Unique Saudi-format mobile number per call (avoids per-identity OTP rate limits across runs). */
+let phoneCounter = 0;
+function uniquePhone(): string {
+  phoneCounter += 1;
+  return `05${String((Date.now() + phoneCounter * 7919) % 100_000_000).padStart(8, '0')}`;
+}
+
 const findSpecialistByPhone = (phone: string) =>
   findProfile('specialists', 'full_name', 'p.phone', phone);
 
@@ -73,12 +80,14 @@ test.describe('specialist registration flow', () => {
   test('valid step 1 proceeds to step 2, then to the OTP screen with the demo hint', async ({
     page,
   }) => {
+    // A fresh phone per run: OTP sends are rate-limited per identity (5 / 15 min).
+    const phone = uniquePhone();
     await page.goto('/register/specialist');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
     await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
     await page.getByLabel('رقم الهوية').fill('1098765432');
-    await page.getByLabel('رقم الجوال').fill('0512345678');
+    await page.getByLabel('رقم الجوال').fill(phone);
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
 
     await expect(page.getByRole('heading', { name: 'تسجيل أخصائي' })).toBeVisible();
@@ -96,16 +105,17 @@ test.describe('specialist registration flow', () => {
     await page.goto('/register/specialist');
     await expect(page.getByTestId('splash-screen')).toBeHidden({ timeout: 8_000 });
 
+    const phone = uniquePhone();
     await page.getByLabel('الاسم الثلاثي').fill('خالد سعيد عبدالله');
     await page.getByLabel('رقم الهوية').fill('1098765432');
-    await page.getByLabel('رقم الجوال').fill('0512345678');
+    await page.getByLabel('رقم الجوال').fill(phone);
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
 
     await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2024-99999');
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
     await expect(page).toHaveURL(/\/register\/specialist\/verify/);
 
-    const realOtp = await getPhoneOtp('0512345678');
+    const realOtp = await getPhoneOtp(phone);
     const wrongOtp = realOtp.slice(0, 5) + (realOtp.endsWith('9') ? '0' : '9');
     const boxes = page.getByLabel(/^خانة الرمز /);
     for (const [index, digit] of Array.from(wrongOtp).entries()) {
@@ -136,6 +146,8 @@ test.describe('specialist registration flow', () => {
     await page.getByLabel('رقم المعاملة / الترخيص').fill('ELESL-2024-99999');
     await page.getByRole('button', { name: /إرسال طلب التسجيل/ }).click();
     await expect(page).toHaveURL(/\/register\/specialist\/verify/);
+    // The code is requested when the step opens — wait for it before typing.
+    await expect(page.getByText('رمز تجريبي للاختبار فقط: 123456')).toBeVisible({ timeout: 20_000 });
 
     const boxes = page.getByLabel(/^خانة الرمز /);
     for (const [index, digit] of Array.from('123456').entries()) {
@@ -143,8 +155,13 @@ test.describe('specialist registration flow', () => {
     }
     await page.getByRole('button', { name: 'تأكيد الدخول' }).click();
 
-    // Pending accounts are routed to the waiting room, not the dashboard.
-    await expect(page).toHaveURL(/\/set-password/);
+    // New (pending) accounts set a password, then land on their own CV — no waiting room.
+    await expect(page).toHaveURL(/\/set-password/, { timeout: 30_000 });
+    await page.getByLabel('كلمة المرور الجديدة').fill('E2e!pending-pass1');
+    await page.getByLabel('تأكيد كلمة المرور').fill('E2e!pending-pass1');
+    await page.getByRole('button', { name: 'حفظ كلمة المرور' }).click();
+    await expect(page).toHaveURL(/\/specialist\/cv$/, { timeout: 30_000 });
+    await expect(page.getByTestId('approval-banner')).toBeVisible();
 
     // The account must exist in PostgreSQL as `pending` — approval stays an
     // admin-only operation.
@@ -188,7 +205,7 @@ test.describe('organization registration flow', () => {
     }
     await page.getByRole('button', { name: 'تأكيد الدخول' }).click();
 
-    await expect(page).toHaveURL(/\/set-password/);
+    await expect(page).toHaveURL(/\/set-password/, { timeout: 30_000 });
 
     await expect
       .poll(async () => (await findOrganizationByCr(crNumber))?.status, { timeout: 15_000 })

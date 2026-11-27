@@ -76,6 +76,10 @@ export const authOptions = {
     // mechanism and passwords exist for the seeded admin account.
     requireEmailVerification: false,
     minPasswordLength: 8,
+    // Accounts are created only through the OTP-verified registration flow.
+    // The public /api/auth/sign-up/email endpoint would otherwise let anyone
+    // skip phone/email verification. Seed/fixture scripts opt back in.
+    disableSignUp: true,
   },
   user: {
     additionalFields: {

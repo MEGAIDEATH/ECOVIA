@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
+import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -14,7 +15,7 @@ import { ScanCancelledError, scanDocument } from '@/features/ocr/scanDocument';
 import { DocumentUploadCard } from './DocumentUploadCard';
 import { useRegistrationDraft } from './RegistrationProvider';
 
-export function SpecialistRegistrationConsolidated() {
+export function SpecialistRegistrationConsolidated({ notice }: { notice?: ReactNode } = {}) {
   const router = useRouter();
   const { draft, update } = useRegistrationDraft();
   const { showToast } = useToast();
@@ -98,6 +99,7 @@ export function SpecialistRegistrationConsolidated() {
 
   return (
     <AuthShell
+      notice={notice}
       backHref="/choose-role"
       title="تسجيل أخصائي"
       subtitle="المعلومات الشخصية والترخيص المهني"

@@ -102,3 +102,21 @@ export async function rejectAccount(
   });
 }
 
+
+export async function reopenAccount(target: AdminAccountCollection, id: string, note?: string): Promise<void> {
+  await request<{ ok: boolean }>('/api/admin/accounts/reopen', {
+    method: 'POST',
+    body: JSON.stringify({ collection: target, id, note }),
+  });
+}
+
+export interface AdminAccountDetails {
+  kind: AdminAccountCollection;
+  profile: Record<string, unknown> & { status: AccountStatus; rejectionReason?: string | null };
+  attachments: Array<{ id: string; label: string; contentType: string; sizeBytes: number; createdAt: string }>;
+  history: Array<{ action: string; detail: string | null; createdAt: string; byAdmin: boolean }>;
+}
+
+export async function getAccountDetails(target: AdminAccountCollection, id: string): Promise<AdminAccountDetails> {
+  return request<AdminAccountDetails>(`/api/admin/accounts/${target}/${encodeURIComponent(id)}`);
+}
