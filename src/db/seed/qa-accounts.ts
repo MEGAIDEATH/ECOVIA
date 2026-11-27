@@ -20,10 +20,13 @@
  * The email is marked verified in the QA database only — no OTP is delivered.
  * Every value is synthetic and labelled as test data.
  *
- * Guard (all must hold): NEON_BRANCH is "dev", "test-*"/"ci-*", or "preview"
- * with QA_ALLOW_PREVIEW=true; not Vercel Production; the database's own
- * `neon.branch_id` equals QA_NEON_BRANCH_ID; and that id is not the live
- * (`demo`) or `production` branch. Usage: `npm run db:seed:qa`.
+ * Guard (all must hold): NEON_BRANCH is "dev", "test-*"/"ci-*", "preview" with
+ * QA_ALLOW_PREVIEW=true, or the live "demo" with QA_ALLOW_LIVE=true (owner
+ * decision 2026-11-27: the three QA accounts also exist on the live site; the
+ * QA admin is never created or rotated there); not Vercel Production; the
+ * database's own `neon.branch_id` equals QA_NEON_BRANCH_ID; and that id is not
+ * the unused `production` branch (nor `demo` without QA_ALLOW_LIVE).
+ * Usage: `npm run db:seed:qa`.
  */
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
@@ -35,8 +38,12 @@ import { authOptions, authSchema } from '../../lib/auth/options';
 import { loadEnvFile, loadLocalEnv } from '../env';
 import { documents, organizations, specialists, user } from '../schema';
 
-/** Neon branches that must never receive QA data (live `demo`, unused `production`). */
-const PROTECTED_BRANCH_IDS = new Set(['br-sparkling-hall-a1dylzla', 'br-still-lake-a123620b']);
+/** Live branch: QA accounts only with QA_ALLOW_LIVE=true. */
+const LIVE_BRANCH_ID = 'br-sparkling-hall-a1dylzla';
+/** Never receives QA data. */
+const PROTECTED_BRANCH_IDS = new Set(['br-still-lake-a123620b']);
+
+const allowLive = (): boolean => process.env.NEON_BRANCH === 'demo' && process.env.QA_ALLOW_LIVE === 'true';
 
 const QA_LABEL = 'حساب اختبار (QA) — بيانات اصطناعية لا تمثل جهة أو شخصاً حقيقياً';
 
@@ -105,7 +112,8 @@ const ACCOUNTS: QaAccount[] = [
 function assertDeclaredTarget(): void {
   const branch = (process.env.NEON_BRANCH ?? '').trim();
   const previewQa = branch === 'preview' && process.env.QA_ALLOW_PREVIEW === 'true';
-  const allowed = branch === 'dev' || branch.startsWith('test') || branch.startsWith('ci') || previewQa;
+  const allowed =
+    branch === 'dev' || branch.startsWith('test') || branch.startsWith('ci') || previewQa || allowLive();
   if (process.env.VERCEL_ENV === 'production' || !allowed) {
     throw new Error(`Refusing: NEON_BRANCH="${branch}" is not an approved QA branch.`);
   }
@@ -116,7 +124,10 @@ async function assertConnectedBranch(pool: Pool): Promise<string> {
   const { rows } = await pool.query<{ id: string | null }>("select current_setting('neon.branch_id', true) as id");
   const actual = rows[0]?.id ?? '';
   if (!actual) throw new Error('Refusing: cannot read neon.branch_id from the database.');
-  if (PROTECTED_BRANCH_IDS.has(actual)) throw new Error(`Refusing: ${actual} is a protected (live) branch.`);
+  if (PROTECTED_BRANCH_IDS.has(actual)) throw new Error(`Refusing: ${actual} is a protected branch.`);
+  if (actual === LIVE_BRANCH_ID && !allowLive()) {
+    throw new Error(`Refusing: ${actual} is the live branch; set NEON_BRANCH=demo QA_ALLOW_LIVE=true to opt in.`);
+  }
   if (actual !== process.env.QA_NEON_BRANCH_ID) {
     throw new Error(`Refusing: connected to ${actual}, expected QA_NEON_BRANCH_ID=${process.env.QA_NEON_BRANCH_ID}.`);
   }
@@ -216,7 +227,7 @@ async function main(): Promise<void> {
 
     // Optional: rotate the QA-only administrator (created by `npm run db:seed`) on this QA branch.
     const adminEmail = (process.env.QA_ADMIN_EMAIL ?? '').trim().toLowerCase();
-    if (resetPasswords && adminEmail.endsWith('@test.ecovia.local')) {
+    if (resetPasswords && adminEmail.endsWith('@test.ecovia.local') && branchId !== LIVE_BRANCH_ID) {
       const adminPassword = (process.env.QA_ADMIN_PASSWORD ?? '').trim();
       if (adminPassword.length < 12) throw new Error('QA_ADMIN_PASSWORD must be at least 12 characters.');
       const [admin] = await db.select().from(user).where(eq(user.email, adminEmail)).limit(1);
