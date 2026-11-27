@@ -38,6 +38,18 @@ is promoted, the pre-fix weaknesses listed below remain live.
 |---|---|---|---|---|---|
 | S5 | **Phone OTP codes are stored in plaintext** in `verification.value` (`<code>:<attempts>`) by Better Auth's `phone-number` plugin, which has no hashing option (email OTPs are hashed via `storeOTP: 'hashed'`). Reading them needs database access, and they expire after 5 minutes. Today nothing is delivered by SMS: rows hold either the configured demo code (allowlisted numbers) or codes that were never sent. | Low today; **Medium once real SMS is enabled** | `src/lib/auth/options.ts` (`phoneNumber` plugin) | By code review + `routes.mjs` of better-auth 1.7.6 | Use a provider-side verification API (the provider generates, delivers and checks the code) through the plugin's `sendOTP` / `verifyOTP` hooks, and overwrite the plugin's locally stored code with a random value. See NEXT_STEPS P0-3. |
 
+## Incident 2026-11-27: QA credentials pushed to the public repository
+
+The VS Code GitDoc extension (enabled in `.vscode/settings.json`) auto-committed and pushed
+`docs/account.txt`, containing the passwords of the four Preview-only QA accounts, to the public GitHub
+repository (commit `9fa7edc`, 14:26 UTC). Exposure: Preview QA accounts only (no production data, the
+accounts do not exist on `demo`); the Preview site additionally requires Vercel authentication or a share
+link. Within the hour: all four passwords rotated (Better Auth re-hash via `npm run db:seed:qa` with
+`QA_RESET_PASSWORDS=true`), all their sessions revoked on the Preview database, old passwords verified to
+return 401, the file untracked and git-ignored (`8b18d7b`), GitDoc disabled. The values remain in Git
+history (removing them would need a history rewrite + force-push, which is not authorised); they are
+invalid now.
+
 ## Verified controls (no change needed)
 
 | Area | Check | Result |

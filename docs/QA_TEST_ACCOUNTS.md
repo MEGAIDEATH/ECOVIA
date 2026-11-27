@@ -3,7 +3,8 @@
 Reusable accounts for manual and automated testing in the **isolated Preview QA environment only**.
 They never exist on the live site or its database (`demo`), and the seed script refuses to run there.
 Passwords are **not** in this file or anywhere in Git — they live in the git-ignored `.env.qa.local`
-on the machine that created them and are handed over separately.
+(and the git-ignored `docs/account.txt`) on the machine that created them. They were rotated on
+2026-11-27 after an auto-commit pushed the first set to GitHub (see SECURITY_AUDIT.md).
 
 ## Accounts
 
@@ -24,7 +25,7 @@ are invented and labelled *QA / SYNTHETIC*. No real person, facility, licence or
 
 | | |
 |---|---|
-| Login URL | `https://ecovia-eaiijq392-megaideaths-projects.vercel.app/login` (Vercel Preview of release candidate `d6909f1`) |
+| Login URL | `https://ecovia-git-branch-megaideaths-projects.vercel.app/login` — the latest Git-triggered Preview of `branch` (same Preview database). The fixed build of `d6909f1` stays available at `https://ecovia-eaiijq392-megaideaths-projects.vercel.app/login`. |
 | Access to the preview | protected by Vercel Authentication: sign in to Vercel with an account of the `megaideaths-projects` team, or use a share link from the Vercel dashboard (Deployment → Share) |
 | Database | Neon branch `preview` (`br-late-meadow-a1pla6ex`) — isolated QA data, not `demo` |
 | File storage | the Preview bucket configured in the Preview environment |

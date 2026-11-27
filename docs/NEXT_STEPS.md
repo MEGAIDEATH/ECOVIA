@@ -5,16 +5,13 @@ P2 = maintainability / architecture · P3 = optional. Updated 2026-11-27.
 
 ## P0
 
-1. **Release the verified build (owner decided Option A on 2026-11-26).** Production still serves the old
-   build `dpl_Cihe8…` against `demo` (0006 applied). Everything up to the approvals is prepared and
-   verified — implementation report §R:
-   a) approve building the production-target deployment of `d6909f1` (`vercel deploy --prod --skip-domain`);
-   b) approve `vercel promote` of that deployment; run the post-deployment checklist (§R.7);
-   c) approve migration 0007 on `demo` (backup branch first, then `db:migrate`).
-   *Rollback:* `vercel promote` the old deployment; `drizzle/rollback/0007_down.sql`.
-2. **Finish the Git sync.** Merge `origin/branch` (one notes commit, `17baea4`) into `branch` with the
-   prepared resolution (§R.5: the remote's only added line is already in the local file, byte-identical),
-   push `branch`, open a PR to `main`. The Vercel project has no Git integration, so merging does not deploy.
+1. **Release the verified build (Option A).** Production still serves the old build `dpl_Cihe8…`.
+   Preferred path now that GitHub drives deployments: merge PR #3 (`branch → main`) once `CI` and `Vercel`
+   are green → Vercel builds the merge commit as Production and assigns `ecovia-kappa.vercel.app`; run the
+   post-deployment checklist (report §R.7); then approve migration 0007 (backup first). Alternative: promote
+   the already-built `dpl_HcwNx…` first. *Rollback:* Instant Rollback / `vercel promote` the old deployment.
+2. **Lock down the repository.** Branch protection on `main` (PR required, checks `CI` + `Vercel`, no force
+   push); disconnect the Netlify site that still builds every push; keep GitDoc off for this repository.
 3. **Real OTP delivery before public launch** (the only remaining launch blocker). Smallest integration
    that keeps Better Auth:
    - *Email:* implement `deliverOtp()` in `src/lib/auth/otp.ts` with one transactional email provider

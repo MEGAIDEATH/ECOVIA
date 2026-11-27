@@ -8,8 +8,10 @@
 ## R. Final release handoff (2026-11-27) — current state
 
 **Decision recorded:** Option A (promote the verified build, keep 0006, then apply 0007 after a backup).
-**Status:** everything is prepared and verified; nothing in production has been changed. Three owner
-approvals remain (§R.10). Real OTP delivery remains the launch blocker for *public* registration.
+**Status (2026-11-27, 15:00 UTC):** production build `dpl_HcwNxzStkVV4FSNhX9ReV19uWSws` of `d6909f1` is built
+and verified, not promoted. **GitHub integration is fully operational** (§R.11): pushes to `branch` build
+Preview deployments with status + PR comment, CI runs on the PR, and merging PR #3 into `main` is now the
+release action. Real OTP delivery remains the launch blocker for *public* registration.
 
 ### R.1 Current state (checked 2026-11-27, 12:00 UTC)
 
@@ -20,7 +22,7 @@ approvals remain (§R.10). Real OTP delivery remains the launch blocker for *pub
 | `dpl_GBarc…` (`ecovia-5nfb0o1h8`, production target, 2026-11-25) | Built **before** this round's features — **not** the release candidate. Do not promote. |
 | `ecovia-ap8i5ueqf` (`dpl_AU1Dd…`, preview, 2026-11-25) | Exists. Git metadata says `f71b488` because the CLI uploaded a dirty tree; a file-by-file hash comparison shows every app file equals `d6909f1` (differences only in docs and e2e config). Built with **Preview** variables → not promotable. |
 | Release-candidate preview `ecovia-eaiijq392` (`dpl_5YyAJRRGnLHSdXrN6MmZMzHnH3t7`) | Built 2026-11-27 11:55 UTC from a clean worktree of `d6909f1`; uploaded files hash-identical to the commit. READY. |
-| Vercel project | `ecovia` / `prj_xQPtzt1nvW9y7vltAdEwB4VwCnh1`, team `team_ZaQXE8vDkkyplEbi8fWql2xH` (`megaideaths-projects`), CLI deployments only (no Git integration), SSO on all deployments except the production domain. |
+| Vercel project | `ecovia` / `prj_xQPtzt1nvW9y7vltAdEwB4VwCnh1`, team `team_ZaQXE8vDkkyplEbi8fWql2xH` (`megaideaths-projects`), SSO on all deployments except the production domain. **Correction (2026-11-27):** this row originally said "CLI deployments only (no Git integration)" — wrong; the project has been linked to GitHub `MEGAIDEATH/ECOVIA` with production branch `main` since 2026-11-11 (see §R.11). |
 | Production env | `DATABASE_URL` (sensitive, unchanged since it was pointed at the Neon `demo` branch on 2026-11-11), `BETTER_AUTH_*`, `STORAGE_*`, `OTP_MODE`, `OTP_DEMO_*`, `OTP_DEMO_ALLOW_PRODUCTION`. Same keys as Preview; nothing new is required by the candidate. |
 | Neon `demo` (live DB) | 7 migrations (0000–0006), 0007 indexes absent. 7 users, 3 specialists, 3 facilities, 2 legacy requests, 0 offers, 1 legacy contract. |
 | Neon `preview` / `dev` | 8 migrations each (0007 hash `06d6888c…` = file). |
@@ -179,11 +181,35 @@ git push origin branch                               # then open a PR branch →
 
 ### R.10 Approvals required from the owner
 
-1. Build the production-target deployment of `d6909f1` (step 1).
-2. Promote it to `ecovia-kappa.vercel.app` (step 2).
+1. ~~Build the production-target deployment of `d6909f1`~~ — done 2026-11-27 (`dpl_HcwNx…`).
+2. Release: **either** merge PR #3 into `main` (preferred — Vercel builds the merge commit as Production and
+   assigns the domain), **or** promote `dpl_HcwNx…` (step 2) and merge PR #3 afterwards.
 3. Apply migration 0007 to `demo` after creating `demo-backup-pre-0007` (step 3).
-4. Finalize the notes-file merge and push `branch` (step 4); later, merge the PR into `main`.
-5. Later: OTP provider accounts/credentials (NEXT_STEPS P0-3); deletion of backups/QA branches (§R.8).
+4. ~~Finalize the notes-file merge and push `branch`~~ — done 2026-11-27 (`25adce0`, pushed; PR #3 updated).
+5. Branch protection for `main` and disconnecting Netlify (§R.11); later OTP provider credentials
+   (NEXT_STEPS P0-3); deletion of backups/QA branches (§R.8).
+
+### R.11 GitHub ↔ Vercel integration (verified 2026-11-27)
+
+| Check | Result |
+|---|---|
+| Project link (Vercel API `/v9/projects`) | GitHub `MEGAIDEATH/ECOVIA`, repo id 1387380446, **production branch `main`**, linked 2026-11-11; PR comments on; fork protection on; no ignored-build-step; domain auto-assignment on; no rollback lock (`lastRollbackTarget` null) |
+| Vercel GitHub App | installed for the repo: posts the `Vercel` commit status and the *Vercel Preview Comments* check / PR comment |
+| Feature-branch push → Preview | `9fa7edc` → `dpl_2i7Sg7ch4Rw9mh29gGbuPbtGWEux` (`ecovia-pz3zf3uve`, meta `githubCommitSha` = `9fa7edc`), READY in ~25 s; `8b18d7b` → `dpl_4kB3KWrp…`, READY; status `Vercel`: pending → success on both commits |
+| PR #3 | open, `branch → main`; Vercel comment updated with *Ready* and the branch URL `ecovia-git-branch-megaideaths-projects.vercel.app` |
+| Preview uses Preview variables | the Git build reads Neon `preview` (database-side counter check: +3 reads on `preview`, 0 on `demo`/`dev`/`production`) |
+| CI (`.github/workflows/ci.yml`) | runs on the PR: typecheck, lint, unit (249), route docs, production build — **success** on `9fa7edc` and `8b18d7b` (an intermediate run was cancelled by the concurrency rule, as designed); verified beforehand in a clean checkout without any env file |
+| Production on merge | follows from `productionBranch: main` + domain auto-assignment; **not exercised** (merging is the owner's decision). `main` is still `08a2fc7` = the code of the live build; nothing was pushed to `main` |
+| Failure reporting | Vercel reports through the same `Vercel` commit status (failure + build-log link) — no Vercel build has failed in this project yet, so a failing Vercel status was not demonstrated; GitHub already shows the failing Netlify statuses on this PR |
+| Production domain | unchanged throughout: still `dpl_Cihe8…` |
+
+Found during this check: the workspace had the **GitDoc** extension enabled (`.vscode/settings.json`),
+which auto-commits and pushes on every save — all the date-titled commits come from it. It pushed
+`docs/account.txt` with the QA passwords to the public repository (`9fa7edc`). Response: all four QA
+passwords rotated on the Preview database and their sessions revoked, old passwords verified to fail
+(401), the file untracked and git-ignored (`8b18d7b`), GitDoc disabled. The old values remain in Git
+history but no longer work. A separate **Netlify** site still builds every push and fails; it is not part
+of the pipeline and should be disconnected (docs/DEPLOYMENT.md).
 
 ---
 
