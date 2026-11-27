@@ -1,7 +1,10 @@
 # ECOVIA — persistent QA test accounts
 
-Reusable accounts for manual and automated testing in the **isolated Preview QA environment only**.
-They never exist on the live site or its database (`demo`), and the seed script refuses to run there.
+Reusable accounts for manual testing. Since 2026-11-27 (owner decision) the three accounts below exist
+in **both** the isolated Preview database and the **live site** (`https://ecovia-kappa.vercel.app/login`,
+database `demo`), with the same passwords. The QA admin exists only on Preview. On the live site the
+accounts are visible to real users (directory, Riyadh request notifications), so label anything you create
+there as a test and avoid sending offers to real facilities. Automated specs still refuse the live domain.
 Passwords are **not** in this file or anywhere in Git — they live in the git-ignored `.env.qa.local`
 (and the git-ignored `docs/account.txt`) on the machine that created them. They were rotated on
 2026-11-27 after an auto-commit pushed the first set to GitHub (see SECURITY_AUDIT.md).
@@ -56,12 +59,20 @@ DATABASE_URL="$P" E2E_BASE_URL=https://ecovia-eaiijq392-megaideaths-projects.ver
 # 4. Link the uploaded permit / CR documents to the profiles (same command as step 2)
 ```
 
+Live site (accounts and profiles only, no synthetic files, QA admin never touched):
+
+```bash
+P="$(neon connection-string demo)"
+DATABASE_URL="$P" DATABASE_URL_UNPOOLED="$P" NEON_BRANCH=demo QA_ALLOW_LIVE=true \
+  QA_NEON_BRANCH_ID=br-sparkling-hall-a1dylzla npm run db:seed:qa
+```
+
 Re-running step 2 never duplicates accounts and keeps passwords. To change passwords, edit
 `.env.qa.local` and run step 2 with `QA_RESET_PASSWORDS=true` (re-hashed by Better Auth).
 
 The guard requires all of: `NEON_BRANCH` is `dev`, `test-*`/`ci-*`, or `preview` with
-`QA_ALLOW_PREVIEW=true`; not Vercel Production; the database's own `neon.branch_id` equals
-`QA_NEON_BRANCH_ID`; and that id is not the live `demo` or `production` branch.
+`QA_ALLOW_PREVIEW=true`, or `demo` with `QA_ALLOW_LIVE=true`; not Vercel Production; the database's own
+`neon.branch_id` equals `QA_NEON_BRANCH_ID`; and that id is never the unused `production` branch.
 
 ## Automated check of the accounts and scenarios
 
