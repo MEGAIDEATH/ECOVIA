@@ -5,7 +5,189 @@
 > interactive map: [route-map.html](route-map.html) · data: [routes.json](routes.json) ·
 > security: [SECURITY_AUDIT.md](SECURITY_AUDIT.md) · backlog: [NEXT_STEPS.md](NEXT_STEPS.md).
 
-## 0. Release-readiness round (2026-11-26) — current state
+## R. Final release handoff (2026-11-27) — current state
+
+**Decision recorded:** Option A (promote the verified build, keep 0006, then apply 0007 after a backup).
+**Status:** everything is prepared and verified; nothing in production has been changed. Three owner
+approvals remain (§R.10). Real OTP delivery remains the launch blocker for *public* registration.
+
+### R.1 Current state (checked 2026-11-27, 12:00 UTC)
+
+| Item | State |
+|---|---|
+| Production alias `ecovia-kappa.vercel.app` | → `dpl_Cihe8NXff7DJFrbSoXBiZ919Rf1i` (`ecovia-p4utbqxwk`), built 2026-11-11 from `08a2fc7` (`main`). Still the **old build**: `/waiting` 200, `/dashboard` 404, no anti-framing headers. |
+| Production runtime errors (7 days) | One group, 2026-11-23, `/api/directory` with a non-uuid id (old build; fixed in the candidate). |
+| `dpl_GBarc…` (`ecovia-5nfb0o1h8`, production target, 2026-11-25) | Built **before** this round's features — **not** the release candidate. Do not promote. |
+| `ecovia-ap8i5ueqf` (`dpl_AU1Dd…`, preview, 2026-11-25) | Exists. Git metadata says `f71b488` because the CLI uploaded a dirty tree; a file-by-file hash comparison shows every app file equals `d6909f1` (differences only in docs and e2e config). Built with **Preview** variables → not promotable. |
+| Release-candidate preview `ecovia-eaiijq392` (`dpl_5YyAJRRGnLHSdXrN6MmZMzHnH3t7`) | Built 2026-11-27 11:55 UTC from a clean worktree of `d6909f1`; uploaded files hash-identical to the commit. READY. |
+| Vercel project | `ecovia` / `prj_xQPtzt1nvW9y7vltAdEwB4VwCnh1`, team `team_ZaQXE8vDkkyplEbi8fWql2xH` (`megaideaths-projects`), CLI deployments only (no Git integration), SSO on all deployments except the production domain. |
+| Production env | `DATABASE_URL` (sensitive, unchanged since it was pointed at the Neon `demo` branch on 2026-11-11), `BETTER_AUTH_*`, `STORAGE_*`, `OTP_MODE`, `OTP_DEMO_*`, `OTP_DEMO_ALLOW_PRODUCTION`. Same keys as Preview; nothing new is required by the candidate. |
+| Neon `demo` (live DB) | 7 migrations (0000–0006), 0007 indexes absent. 7 users, 3 specialists, 3 facilities, 2 legacy requests, 0 offers, 1 legacy contract. |
+| Neon `preview` / `dev` | 8 migrations each (0007 hash `06d6888c…` = file). |
+| `demo-backup-pre-0006` | Present, ready, no expiry (no compute attached; restore = branch restore/reset, or add a compute to read it). |
+| Old QA branches `test-e2e`, `test-integration`, `test-0006-from-demo` | **Gone** (expired as scheduled). |
+| New QA branches | `test-final-qa` (expires 2026-11-30), `test-0007-from-demo` (copy of `demo`, expires 2026-11-29), `test-integration-final` (expires 2026-11-29). |
+| Git | `branch` = `d6909f1`, clean, ahead 8 / behind 1 of `origin/branch` (`17baea4`, notes file). `main` = `origin/main` = `08a2fc7`. Nothing pushed. |
+
+### R.2 Release candidate
+
+`d6909f1` on `branch`, containing `da35935` (features), `4ea0184` (security), `de2596f` (migration 0007),
+`396315a` (tests), `d6909f1` (docs) on top of `f71b488` (unchanged). The source has not changed since the
+previous report; the gates were re-run anyway (R.3).
+
+### R.3 Final QA (performed)
+
+| Environment | What | Result |
+|---|---|---|
+| Release-candidate preview `ecovia-eaiijq392` + `preview` DB (fixtures + a separate QA admin `qa.admin@test.ecovia.local`, created by `db:seed` on the preview DB only) | `marketplace.spec.ts` (browser) | **5/5 passed** |
+| same | final-QA spec (admin approval + re-review, second profile, facility profile editing, directory URL, attachments, DB-level one-signed-contract, throttling / sign-up / headers) | **7/7 passed**; fixtures restored afterwards |
+| Local production build of `d6909f1` + fresh disposable branch `test-final-qa` (QA admin, fixtures; demo OTP only in this local server) | full Playwright suite, desktop + mobile | **58 passed, 6 skipped** (intentional desktop-only), 0 failed |
+| Local production build of `d6909f1` + **copy of the live DB** (`test-0007-from-demo`, at 0006) | compatibility with real data | admin login, account list (3+3), details + history, legacy contract page 200; anonymous `/` 200, `/waiting` 404, protected API 401 |
+| Repository | typecheck · lint · unit · integration · route docs | see R.3a |
+
+R.3a gates (2026-11-27): `tsc` 0 errors · `eslint` 0 problems · unit **249/249** (39 files) ·
+integration **19/19** (2 files) (fresh branch `test-integration-final`) · `route-docs --check` OK (66 route
+files, 18 server actions, 9 flows).
+
+**The 20 smoke items:**
+
+| # | Item | Verified on | Result |
+|---|---|---|---|
+| 1 | Specialist registration (OTP) | local build | pass — preview cannot issue codes to new identities (allowlist), by design |
+| 2 | Facility registration (OTP) | local build | pass — same limitation |
+| 3 | Pending restrictions | preview + local | pass (CV only, 403 on approved APIs, chat 403) |
+| 4 | CV editing / facility profile editing | preview + local | pass |
+| 5 | Admin approval | preview (QA admin) + local | pass |
+| 6 | Public request | preview + local | pass |
+| 7 | Private request | preview + local | pass |
+| 8 | Private-request isolation | preview + local | pass (other specialist 404) |
+| 9 | Regional notifications | preview + local | pass |
+| 10 | Two independent offers | preview + local | pass |
+| 11 | Offer selection | preview + local | pass |
+| 12 | Contract preparation | preview + local | pass (request stays open) |
+| 13 | Contract signing | preview + local | pass (request closed, other offer declined) |
+| 14 | DB-level one signed contract | preview DB + integration | pass (`23505` on `contracts_one_signed_per_request`; 3 concurrent signatures → 1) |
+| 15 | Signed contract for both parties | preview + local | pass |
+| 16 | Chat and CV access | preview + local | pass |
+| 17 | Registration-document access | preview + local | pass (owner 200, unrelated facility 403, anonymous 401, guessed 404) |
+| 18 | Notification counters | preview + local | pass |
+| 19 | Account switching | preview + local | pass (and the new second profile shows the switcher) |
+| 20 | Rejected-account resubmission + re-review | preview (QA admin) + local | pass (approve on rejected → 409, history `rejected → resubmitted`, approve) |
+
+QA data kept for reproduction: the preview fixtures (5 accounts) + QA admin, and the requests/offers/
+contracts created by the runs; `test-final-qa` holds a full local run.
+
+### R.4 Migration 0007 readiness (rehearsed, not applied to `demo`)
+
+- Content: two `CREATE INDEX IF NOT EXISTS` statements (`contracts_offer_idx` on `contracts(offer_id)`,
+  `account_events_target_idx` on `account_events(target_id, created_at)`). No table, column, constraint or
+  data change. Drizzle records it as migration 8 (hash `06d6888c…`); 0006 is untouched.
+- Rehearsal on `test-0007-from-demo` (fresh copy of `demo`): row counts of 11 tables identical before and
+  after, both indexes created, 8 migrations; rollback (`drizzle/rollback/0007_down.sql`) → 7 migrations,
+  counts identical; re-apply → 8; a second run is a no-op.
+- Locking: plain `CREATE INDEX` holds a write lock on `contracts` (1 row) and `account_events` (7 rows)
+  for milliseconds.
+
+### R.5 Git synchronization (prepared, not executed)
+
+`17baea4` (remote) appends one line to `docs/Echovia_Decision.txt` — *"i want the website to be public…
+Server Components, combined with Server Actions and URL search params"*. The local file already contains
+that exact line (byte-identical, line 26) followed by 105 further lines added in `c25f06e`…`f71b488`. Git
+reports a conflict only because both sides appended at the end of the file. A dry-run merge in a
+throwaway worktree confirmed: the correct resolution is the local file unchanged; versus the remote it
+adds 106 lines and deletes none; versus local it changes nothing. Commands in §R.9.
+
+### R.6 Production release checklist (in order)
+
+1. ☐ Owner approves the production build (§R.9 step 1). Build it from a clean worktree of `d6909f1`.
+2. ☐ Verify the new deployment: target `production`, READY, no alias yet, uploaded files equal `d6909f1`.
+3. ☐ Owner approves promotion; run `vercel promote` (§R.9 step 2).
+4. ☐ Run the post-deployment checklist §R.7 within 15 minutes; roll back on any failure.
+5. ☐ Owner approves migration 0007; create `demo-backup-pre-0007`; run the migration (§R.9 step 3).
+6. ☐ Verify migration history (8 rows, last hash `06d6888c…`), both indexes, unchanged row counts.
+7. ☐ Owner runs the manual smoke test of §13 with real accounts.
+8. ☐ Merge `origin/branch`, push `branch`, open a PR to `main` (§R.9 step 4).
+9. ☐ After a stable period: clean-up list §R.8.
+
+### R.7 Post-deployment verification checklist
+
+| Check | Expected |
+|---|---|
+| `curl -sI https://ecovia-kappa.vercel.app/` | 200, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, no `X-Powered-By` |
+| `/waiting` · `/dashboard` (anonymous) | 404 · redirect to `/login` |
+| `/login`, `/choose-role`, `/register/specialist`, `/register/organization` | 200 |
+| `GET /api/service-requests`, `GET /api/files/<any uuid>` (anonymous) | 401 |
+| `POST /api/auth/sign-up/email` | ≥ 400 |
+| Owner logs in at `/admin` | dashboard loads, accounts listed, "التفاصيل وسجل المراجعة" opens |
+| A real approved specialist/facility logs in | lands on its workspace; pending user lands on own CV/profile |
+| Chat contract path | facility prepares a contract from an offer → specialist signs → request closed (this failed on the old build) |
+| File access | owner can open own attachments; anonymous 401 |
+| Vercel runtime errors / logs for the new deployment (first 30 min) | no new error groups |
+| `demo` DB | migrations still 7 until step 5; no unexpected rows |
+
+### R.8 Backup and temporary resources
+
+| Resource | Status | Keep / remove |
+|---|---|---|
+| `demo-backup-pre-0006` | present, no expiry | **keep** until the new build and 0007 are verified in production, then remove with owner approval |
+| `demo-backup-pre-0007` | not created yet (created right before the migration) | keep ≥ 7 days after 0007 |
+| `test-0007-from-demo` | copy of live data (contains personal data) | remove after the release (auto-expires 2026-11-29) |
+| `test-final-qa`, `test-integration-final` | QA only | safe to remove after release (auto-expire 2026-11-30 / 2026-11-29) |
+| `test-e2e`, `test-integration`, `test-0006-from-demo` | already expired | — |
+| Preview DB fixtures + `qa.admin@test.ecovia.local` | needed to reproduce QA | keep until the release is verified; then remove or keep for future QA (owner's call) |
+| Preview deployments `ecovia-eaiijq392`, `ecovia-ap8i5ueqf` | protected by SSO; share link on `eaiijq392` expires 2026-11-28 10:57 | keep `eaiijq392` until release; old previews can be deleted any time |
+| `dpl_GBarc…` (stale production build) | not used | safe to delete after release; keep `dpl_Cihe8…` as the rollback target |
+| `drizzle/proposed/0008_drop_applications.sql` | not applied | keep (needs separate approval) |
+
+### R.9 Prepared commands (nothing below has been executed against production)
+
+Step 1 — build the production deployment (no traffic change; the domain is not assigned):
+```bash
+cd ~/vscode
+git worktree add --detach /tmp/ecovia-rc d6909f1
+mkdir -p /tmp/ecovia-rc/.vercel && cp .vercel/project.json /tmp/ecovia-rc/.vercel/
+cd /tmp/ecovia-rc && vercel deploy --prod --skip-domain --yes      # prints https://ecovia-<id>-megaideaths-projects.vercel.app
+vercel inspect <that-url>                                         # expect target production, READY, no ecovia-kappa alias
+```
+Step 2 — promote (moves `ecovia-kappa.vercel.app` from `dpl_Cihe8…` to the new deployment; no rebuild):
+```bash
+vercel promote <that-url> --yes --scope megaideaths-projects
+# rollback (alias back to the old build; DB stays as is — the old build already runs on 0006):
+vercel promote https://ecovia-p4utbqxwk-megaideaths-projects.vercel.app --yes --scope megaideaths-projects
+```
+Step 3 — migration 0007 on `demo` (after §R.7 passes):
+```bash
+cd ~/vscode
+neon branches get demo                        # confirm id br-sparkling-hall-a1dylzla
+neon branches create --name demo-backup-pre-0007 --parent demo
+DB="$(neon connection-string demo)"
+psql "$DB" -c 'select count(*) from drizzle.__drizzle_migrations'          # expect 7
+DATABASE_URL="$DB" DATABASE_URL_UNPOOLED="$DB" npx tsx src/db/migrate.ts   # = npm run db:migrate
+psql "$DB" -c 'select id, left(hash, 8) from drizzle.__drizzle_migrations order by id'   # expect 8 rows, last 06d6888c
+psql "$DB" -c "select indexname from pg_indexes where indexname in ('contracts_offer_idx','account_events_target_idx')"
+# rollback: psql "$DB" -v ON_ERROR_STOP=1 -f drizzle/rollback/0007_down.sql
+```
+Step 4 — Git sync (keeps the five commits; no reset, no force-push, nothing into `main`):
+```bash
+git fetch origin
+git merge --no-ff origin/branch                      # conflict in docs/Echovia_Decision.txt
+git checkout --ours docs/Echovia_Decision.txt        # local file already contains the remote's line
+git diff --cached origin/branch -- docs/Echovia_Decision.txt   # review: only additions
+git add docs/Echovia_Decision.txt && git commit
+git push origin branch                               # then open a PR branch → main
+```
+
+### R.10 Approvals required from the owner
+
+1. Build the production-target deployment of `d6909f1` (step 1).
+2. Promote it to `ecovia-kappa.vercel.app` (step 2).
+3. Apply migration 0007 to `demo` after creating `demo-backup-pre-0007` (step 3).
+4. Finalize the notes-file merge and push `branch` (step 4); later, merge the PR into `main`.
+5. Later: OTP provider accounts/credentials (NEXT_STEPS P0-3); deletion of backups/QA branches (§R.8).
+
+---
+
+## 0. Release-readiness round (2026-11-26)
 
 **Verdict: ready for a production release with limitations — blocked only on an owner decision
 about the live site (P0 below).**
@@ -349,7 +531,8 @@ Use real (non-fixture) accounts; the admin password stays with the owner.
 
 ## 14. Rollback
 
-- App: `vercel promote https://ecovia-p4utbqxwk-megaideaths-projects.vercel.app` (previous production build).
+- App: `vercel promote https://ecovia-p4utbqxwk-megaideaths-projects.vercel.app --yes` (the build that is live today).
+- Migration 0007: `drizzle/rollback/0007_down.sql` (indexes only), or restore `demo-backup-pre-0007`.
 - Data: the old build tolerates the new schema except chat-contract creation; full revert:
   `psql "$DATABASE_URL_UNPOOLED" -v ON_ERROR_STOP=1 -f drizzle/rollback/0006_down.sql` (refuses while
   request-linked contracts exist), or restore from Neon branch `demo-backup-pre-0006`.

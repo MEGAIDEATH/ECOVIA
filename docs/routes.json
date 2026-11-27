@@ -518,7 +518,7 @@
    "roles": [
     "any"
    ],
-   "purpose": "Request an email OTP (rate-limited; demo mode by allowlist).",
+   "purpose": "Request an email OTP: 5 sends / 15 min per identity and 60 per IP (429); 6-digit code, hashed, 5-minute expiry, 5 attempts. Without a delivery provider only allowlisted demo identities get a code; others receive 503.",
    "file": "src/app/api/session/otp/route.ts",
    "methods": [
     "POST"
@@ -532,7 +532,7 @@
    "roles": [
     "any"
    ],
-   "purpose": "Verify email OTP and create the session.",
+   "purpose": "Verify the email OTP (10 tries / 15 min per identity, 120 per IP) and create the session.",
    "file": "src/app/api/session/verify/route.ts",
    "methods": [
     "POST"
@@ -546,7 +546,7 @@
    "roles": [
     "any"
    ],
-   "purpose": "Request a phone OTP (rate-limited).",
+   "purpose": "Request a phone OTP: same send limits as email; 5-minute expiry, 5 attempts. Without an SMS provider only allowlisted demo numbers get a code; others receive 503.",
    "file": "src/app/api/session/phone-otp/route.ts",
    "methods": [
     "POST"
@@ -560,7 +560,7 @@
    "roles": [
     "any"
    ],
-   "purpose": "Verify phone OTP and create the session.",
+   "purpose": "Verify the phone OTP (10 tries / 15 min per identity, 120 per IP) and create the session.",
    "file": "src/app/api/session/phone-verify/route.ts",
    "methods": [
     "POST"

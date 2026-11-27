@@ -1,26 +1,40 @@
 # ECOVIA — next steps (prioritized)
 
 P0 = security, data integrity or release-blocking · P1 = essential business functionality ·
-P2 = maintainability / architecture · P3 = optional. Updated 2026-11-26.
+P2 = maintainability / architecture · P3 = optional. Updated 2026-11-27.
 
 ## P0
 
-1. **Decide the production state (owner).** The live domain serves the *old* build (re-promoted on
-   2026-11-25 ~22:08 UTC) against the `demo` database that already has migration 0006.
-   *Impact:* old code's chat "create contract" fails (new NOT NULL party columns) and the old security
-   weaknesses (file IDOR, approval-blind chat, open redirect) are live again.
-   *Options:* (a) promote the verified build after your own smoke test (§13 of the report), then apply
-   0007 to `demo`; or (b) keep the old build and roll the DB back with `drizzle/rollback/0006_down.sql`
-   / branch `demo-backup-pre-0006` — loses nothing today because no 0006-only data was created there.
-   *Dependencies:* your approval; manual smoke test.
-2. **Commit review & merge path.** `branch` must merge `origin/branch` (one notes commit) before it can
-   be pushed; production deploys come from `main`. *Impact:* reviewable history, Git-based deploys.
-3. **Real OTP delivery before a real launch.** Demo OTP mode is the only verification channel.
-   *Dependencies:* an SMS/email provider integration in `src/lib/auth/otp.ts`.
+1. **Release the verified build (owner decided Option A on 2026-11-26).** Production still serves the old
+   build `dpl_Cihe8…` against `demo` (0006 applied). Everything up to the approvals is prepared and
+   verified — implementation report §R:
+   a) approve building the production-target deployment of `d6909f1` (`vercel deploy --prod --skip-domain`);
+   b) approve `vercel promote` of that deployment; run the post-deployment checklist (§R.7);
+   c) approve migration 0007 on `demo` (backup branch first, then `db:migrate`).
+   *Rollback:* `vercel promote` the old deployment; `drizzle/rollback/0007_down.sql`.
+2. **Finish the Git sync.** Merge `origin/branch` (one notes commit, `17baea4`) into `branch` with the
+   prepared resolution (§R.5: the remote's only added line is already in the local file, byte-identical),
+   push `branch`, open a PR to `main`. The Vercel project has no Git integration, so merging does not deploy.
+3. **Real OTP delivery before public launch** (the only remaining launch blocker). Smallest integration
+   that keeps Better Auth:
+   - *Email:* implement `deliverOtp()` in `src/lib/auth/otp.ts` with one transactional email provider
+     (SMTP or HTTP API). Codes are already random, hashed, 5-minute, 5 attempts.
+   - *SMS:* use a provider **verification API** (it generates, sends and checks the code) through the
+     `phoneNumber` plugin's `sendOTP` / `verifyOTP` hooks, and overwrite the locally stored code with a random
+     value — this also closes S5 (phone codes stored in plaintext). Keep the existing DB-backed limits
+     (5 sends / 15 min per identity, 60 per IP; 10 verifies / 15 min per identity, 120 per IP) and add a
+     60-second resend cooldown.
+   - Keep `OTP_MODE=demo` + allowlist until the provider is configured and tested on Preview; then
+     remove `OTP_DEMO_ALLOW_PRODUCTION` / `OTP_DEMO_*` from Production. Public sign-up
+     (`disableSignUp`) stays disabled — registration is only through OTP.
+   - *Needed from the owner:* the provider account(s), a verified sender (email domain with SPF/DKIM; SMS
+     sender ID registered for Saudi Arabia), API credentials stored as **sensitive** Vercel env vars for
+     Preview and Production, and a test phone/email for Preview.
 
 ## P1
 
-4. **Apply migration 0007 to `demo`** (two indexes, additive) once the code is promoted.
+4. **Delete temporary resources after the release is verified** — see the cleanup list in report §R.8
+   (`demo-backup-pre-0006`, `demo-backup-pre-0007`, QA branches, preview fixtures).
 5. **Facility member management.** A facility is one login today; multi-user facilities need memberships.
 6. **Uploaded-file retention.** 7 documents on the live DB are attached to nothing; add a reviewed job
    that lists (then, with approval, deletes) unattached uploads older than N days.

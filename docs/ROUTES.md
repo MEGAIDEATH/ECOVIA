@@ -140,10 +140,10 @@ flowchart LR
 | `/api/login` | api (POST) | Public | anyone |  |  | Email or phone + password sign-in; failed attempts are throttled per identity and IP (429). | `src/app/api/login/route.ts` |
 | `/api/session` | api (GET) | Public | anyone |  |  | Who is signed in: user, own profiles, active context, entryPath. | `src/app/api/session/route.ts` |
 | `/api/session/logout` | api (POST) | Public | anyone |  |  | Revokes the session (any account state) and clears cookies. | `src/app/api/session/logout/route.ts` |
-| `/api/session/otp` | api (POST) | Public | anyone |  |  | Request an email OTP (rate-limited; demo mode by allowlist). | `src/app/api/session/otp/route.ts` |
-| `/api/session/verify` | api (POST) | Public | anyone |  |  | Verify email OTP and create the session. | `src/app/api/session/verify/route.ts` |
-| `/api/session/phone-otp` | api (POST) | Public | anyone |  |  | Request a phone OTP (rate-limited). | `src/app/api/session/phone-otp/route.ts` |
-| `/api/session/phone-verify` | api (POST) | Public | anyone |  |  | Verify phone OTP and create the session. | `src/app/api/session/phone-verify/route.ts` |
+| `/api/session/otp` | api (POST) | Public | anyone |  |  | Request an email OTP: 5 sends / 15 min per identity and 60 per IP (429); 6-digit code, hashed, 5-minute expiry, 5 attempts. Without a delivery provider only allowlisted demo identities get a code; others receive 503. | `src/app/api/session/otp/route.ts` |
+| `/api/session/verify` | api (POST) | Public | anyone |  |  | Verify the email OTP (10 tries / 15 min per identity, 120 per IP) and create the session. | `src/app/api/session/verify/route.ts` |
+| `/api/session/phone-otp` | api (POST) | Public | anyone |  |  | Request a phone OTP: same send limits as email; 5-minute expiry, 5 attempts. Without an SMS provider only allowlisted demo numbers get a code; others receive 503. | `src/app/api/session/phone-otp/route.ts` |
+| `/api/session/phone-verify` | api (POST) | Public | anyone |  |  | Verify the phone OTP (10 tries / 15 min per identity, 120 per IP) and create the session. | `src/app/api/session/phone-verify/route.ts` |
 | `/api/password/forgot/request` | api (POST) | Public | anyone |  |  | Start password reset. | `src/app/api/password/forgot/request/route.ts` |
 | `/api/password/forgot/reset` | api (POST) | Public | anyone |  |  | Finish password reset. | `src/app/api/password/forgot/reset/route.ts` |
 | `/api/account/password` | api (POST) | Signed in | anyone |  |  | Set the first password for the session user. | `src/app/api/account/password/route.ts` |
